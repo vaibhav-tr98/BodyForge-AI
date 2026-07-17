@@ -59,3 +59,79 @@ See `docs/ROADMAP.md`
 ## License
 
 MIT
+# BodyForge AI 🏋️‍♂️🤖
+
+An AI-powered fitness coach built using the MERN stack and modern AI technologies.
+
+## 🚀 Tech Stack
+
+### Frontend
+- React
+- TypeScript
+- Vite
+- React Router
+- Axios
+- Tailwind CSS
+
+### Backend
+- Node.js
+- Express.js
+- TypeScript
+
+## 📁 Project Structure
+
+BodyForge-AI/
+├── client/
+├── server/
+├── docs/
+├── docker/
+└── .github/
+
+## ✅ Completed Features
+
+### Day 1
+- Project structure initialized
+- React + Vite setup
+- Express + TypeScript setup
+- React Router configured
+- Axios API service configured
+- Frontend successfully connected to backend
+- Development environment verified
+
+## 🔜 Upcoming
+
+### Day 2
+- JWT Authentication
+- User Model
+- Password Hashing
+- Login API
+- Register API
+- Auth Middleware
+
+## 🛠️ Run Locally
+
+### Backend
+
+```bash
+cd server
+npm install
+npm run dev
+```
+
+### Frontend
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+Backend:
+```
+http://localhost:5000
+```
+
+Frontend:
+```
+http://localhost:5173
+```
