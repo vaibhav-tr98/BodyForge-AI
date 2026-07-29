@@ -148,3 +148,16 @@ http://localhost:5173
 - React Query setup
 - Shared UI components
 - Tailwind layout
+## Day 3 – Landing Page
+
+### Completed
+- Responsive landing page
+- Sticky navigation bar
+- Hero section
+- Feature section
+- How It Works section
+- Stats section
+- CTA section
+- Reusable React components
+- Framer Motion animations
+- Improved project structure
