@@ -161,3 +161,11 @@ http://localhost:5173
 - Reusable React components
 - Framer Motion animations
 - Improved project structure
+## Day 4
+- Built reusable authentication UI
+- Added Login and Register pages
+- Implemented React Hook Form
+- Added Zod validation
+- Created reusable Input and Button components
+- Added Authentication Layout
+- Implemented feature-based auth structure
