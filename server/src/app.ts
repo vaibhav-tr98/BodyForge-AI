@@ -3,6 +3,7 @@ import cors from "cors";
 import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
 import workoutRoutes from "./routes/workout.routes";
+import { errorMiddleware } from "./middleware/error.middleware";
 
 const app = express();
 
@@ -17,8 +18,10 @@ app.use("/api/workouts", workoutRoutes);
 app.get("/", (_req: Request, res: Response) => {
   res.status(200).json({
     success: true,
-    message: "Welcome to BodyForge AI API 🚀",
+    message: "Welcome to BodyForge AI API",
   });
 });
+
+app.use(errorMiddleware);
 
 export default app;
