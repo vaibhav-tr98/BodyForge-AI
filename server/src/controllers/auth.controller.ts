@@ -4,6 +4,7 @@ import { MongoServerError } from "mongodb";
 import { Error as MongooseError } from "mongoose";
 import User from "../models/User";
 import { generateToken } from "../utils/generateToken";
+import logger from "../utils/logger";
 
 interface RegisterRequestBody {
   name?: unknown;
@@ -94,7 +95,7 @@ export const register = async (
       return;
     }
 
-    console.error("User registration failed:", error);
+    logger.error("User registration failed:", error);
     res.status(500).json({ success: false, message: "Unable to register user" });
   }
 };
@@ -149,7 +150,7 @@ export const login = async (
       return;
     }
 
-    console.error("User login failed:", error);
+    logger.error("User login failed:", error);
     res.status(500).json({ success: false, message: "Unable to login" });
   }
 };

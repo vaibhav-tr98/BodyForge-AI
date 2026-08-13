@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { IUser } from "../models/User";
 import User from "../models/User";
+import logger from "../utils/logger";
 
 type ProfileField = "name" | "height" | "weight" | "goal" | "experience";
 type ProfileUpdate = Partial<Pick<IUser, ProfileField>>;
@@ -47,7 +48,7 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
 
     res.status(200).json({ success: true, data: { user: toSafeUser(user) } });
   } catch (error) {
-    console.error("Get user profile failed:", error);
+    logger.error("Get user profile failed:", error);
     res.status(500).json({ success: false, message: "Unable to retrieve user profile" });
   }
 };
@@ -129,7 +130,7 @@ export const updateProfile = async (req: Request, res: Response): Promise<void> 
 
     res.status(200).json({ success: true, data: { user: toSafeUser(user) } });
   } catch (error) {
-    console.error("Update user profile failed:", error);
+    logger.error("Update user profile failed:", error);
     res.status(500).json({ success: false, message: "Unable to update user profile" });
   }
 };

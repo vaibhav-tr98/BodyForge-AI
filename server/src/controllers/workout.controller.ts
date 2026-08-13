@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import Workout, { IExercise, IWorkout } from "../models/Workout";
+import logger from "../utils/logger";
 
 type WorkoutField = "name" | "description" | "exercises";
 type WorkoutUpdate = Partial<Pick<IWorkout, WorkoutField>>;
@@ -157,7 +158,7 @@ export const createWorkout = async (
       data: { workout: toWorkoutResponse(workout) },
     });
   } catch (error) {
-    console.error("Create workout failed:", error);
+    logger.error("Create workout failed:", error);
     res.status(500).json({ success: false, message: "Unable to create workout" });
   }
 };
@@ -176,7 +177,7 @@ export const getWorkouts = async (req: Request, res: Response): Promise<void> =>
       data: { workouts: workouts.map(toWorkoutResponse) },
     });
   } catch (error) {
-    console.error("Get workouts failed:", error);
+    logger.error("Get workouts failed:", error);
     res.status(500).json({ success: false, message: "Unable to retrieve workouts" });
   }
 };
@@ -204,7 +205,7 @@ export const getWorkoutById = async (
 
     res.status(200).json({ success: true, data: { workout: toWorkoutResponse(workout) } });
   } catch (error) {
-    console.error("Get workout failed:", error);
+    logger.error("Get workout failed:", error);
     res.status(500).json({ success: false, message: "Unable to retrieve workout" });
   }
 };
@@ -275,7 +276,7 @@ export const updateWorkout = async (
       data: { workout: toWorkoutResponse(workout) },
     });
   } catch (error) {
-    console.error("Update workout failed:", error);
+    logger.error("Update workout failed:", error);
     res.status(500).json({ success: false, message: "Unable to update workout" });
   }
 };
@@ -303,7 +304,7 @@ export const deleteWorkout = async (
 
     res.status(200).json({ success: true, message: "Workout deleted successfully" });
   } catch (error) {
-    console.error("Delete workout failed:", error);
+    logger.error("Delete workout failed:", error);
     res.status(500).json({ success: false, message: "Unable to delete workout" });
   }
 };
