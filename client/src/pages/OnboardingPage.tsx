@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import Button from "../components/ui/Button";
@@ -7,43 +8,22 @@ import { useAuth } from "../context/AuthContext";
 import { updateProfile } from "../services/user.service";
 import { getErrorMessage } from "../services/api";
 
-export default function ProfilePage() {
-  const { user, refreshUser } = useAuth();
+export default function OnboardingPage() {
+  const navigate = useNavigate();
+  const { refreshUser } = useAuth();
 
-  const [name, setName] = useState("");
   const [height, setHeight] = useState("");
   const [weight, setWeight] = useState("");
   const [goal, setGoal] = useState("");
   const [experience, setExperience] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // Pre-populate fields from current user data
-  useEffect(() => {
-    if (user) {
-      setName(user.name);
-      setHeight(user.height?.toString() ?? "");
-      setWeight(user.weight?.toString() ?? "");
-      setGoal(user.goal ?? "");
-      setExperience(user.experience ?? "");
-    }
-  }, [user]);
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSaving(true);
 
-    // Build payload — only include fields that have values
+    // Build payload — only include non-empty fields
     const payload: Record<string, string | number> = {};
-
-    if (name.trim()) {
-      if (name.trim().length < 2 || name.trim().length > 50) {
-        toast.error("Name must be between 2 and 50 characters");
-        setSaving(false);
-        return;
-      }
-      payload.name = name.trim();
-    }
-
     if (height.trim()) {
       const h = Number(height);
       if (!Number.isFinite(h) || h < 50 || h > 300) {
@@ -53,7 +33,6 @@ export default function ProfilePage() {
       }
       payload.height = h;
     }
-
     if (weight.trim()) {
       const w = Number(weight);
       if (!Number.isFinite(w) || w < 20 || w > 500) {
@@ -63,7 +42,6 @@ export default function ProfilePage() {
       }
       payload.weight = w;
     }
-
     if (goal.trim()) {
       if (goal.trim().length > 100) {
         toast.error("Goal must be at most 100 characters");
@@ -72,7 +50,6 @@ export default function ProfilePage() {
       }
       payload.goal = goal.trim();
     }
-
     if (experience.trim()) {
       if (experience.trim().length > 100) {
         toast.error("Experience must be at most 100 characters");
@@ -83,15 +60,16 @@ export default function ProfilePage() {
     }
 
     if (Object.keys(payload).length === 0) {
-      toast.error("No changes to save");
-      setSaving(false);
+      toast("No fields to save — heading to the dashboard!", { icon: "👋" });
+      navigate("/dashboard");
       return;
     }
 
     try {
       await updateProfile(payload);
       await refreshUser();
-      toast.success("Profile updated successfully!");
+      toast.success("Profile updated!");
+      navigate("/dashboard");
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -102,32 +80,20 @@ export default function ProfilePage() {
   return (
     <div className="mx-auto max-w-lg space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-white" id="profile-heading">
-          Your Profile
+        <h1 className="text-3xl font-bold text-white" id="onboarding-heading">
+          Complete Your Profile
         </h1>
         <p className="mt-2 text-slate-400">
-          Update your personal information and fitness preferences.
+          Tell us about yourself so we can personalize your fitness plan.
+          All fields are optional — you can always update later.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5" id="profile-form">
-        <Input
-          label="Full Name"
-          id="profile-name"
-          placeholder="John Doe"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-
-        <div className="text-sm text-slate-500">
-          Email: <span className="text-slate-300">{user?.email}</span>
-          <span className="ml-2 text-slate-600">(cannot be changed)</span>
-        </div>
-
+      <form onSubmit={handleSubmit} className="space-y-5" id="onboarding-form">
         <Input
           label="Height (cm)"
           type="number"
-          id="profile-height"
+          id="onboarding-height"
           placeholder="e.g. 175"
           min={50}
           max={300}
@@ -138,7 +104,7 @@ export default function ProfilePage() {
         <Input
           label="Weight (kg)"
           type="number"
-          id="profile-weight"
+          id="onboarding-weight"
           placeholder="e.g. 70"
           min={20}
           max={500}
@@ -148,7 +114,7 @@ export default function ProfilePage() {
 
         <Input
           label="Fitness Goal"
-          id="profile-goal"
+          id="onboarding-goal"
           placeholder="e.g. Build muscle, Lose weight"
           maxLength={100}
           value={goal}
@@ -157,17 +123,25 @@ export default function ProfilePage() {
 
         <Input
           label="Experience Level"
-          id="profile-experience"
+          id="onboarding-experience"
           placeholder="e.g. Beginner, Intermediate, Advanced"
           maxLength={100}
           value={experience}
           onChange={(e) => setExperience(e.target.value)}
         />
 
-        <div className="pt-2">
-          <Button type="submit" loading={saving} id="profile-submit">
-            Save Changes
+        <div className="flex gap-4 pt-2">
+          <Button type="submit" loading={saving} id="onboarding-submit">
+            Save & Continue
           </Button>
+          <button
+            type="button"
+            onClick={() => navigate("/dashboard")}
+            className="rounded-lg border border-slate-700 px-6 py-3 font-semibold text-slate-300 transition hover:border-slate-500"
+            id="onboarding-skip"
+          >
+            Skip
+          </button>
         </div>
       </form>
     </div>
