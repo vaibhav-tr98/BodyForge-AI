@@ -37,6 +37,14 @@ export default function DashboardPage() {
         )}
 
         <Link
+          to="/workouts"
+          id="workouts-link"
+          className="rounded-lg bg-cyan-600 px-6 py-3 font-semibold text-white transition hover:bg-cyan-700"
+        >
+          My Workouts
+        </Link>
+
+        <Link
           to="/profile"
           id="profile-link"
           className="rounded-lg border border-slate-700 px-6 py-3 font-semibold text-slate-300 transition hover:border-cyan-500 hover:text-cyan-400"

@@ -39,6 +39,12 @@ export default function ProtectedLayout() {
               Dashboard
             </a>
             <a
+              href="/workouts"
+              className="text-sm font-medium text-slate-300 transition hover:text-cyan-400"
+            >
+              Workouts
+            </a>
+            <a
               href="/profile"
               className="text-sm font-medium text-slate-300 transition hover:text-cyan-400"
             >

@@ -13,6 +13,11 @@ import OnboardingPage from "../pages/OnboardingPage";
 import ProfilePage from "../pages/ProfilePage";
 import NotFoundPage from "../pages/NotFoundPage";
 
+import WorkoutListPage from "../pages/workouts/WorkoutListPage";
+import WorkoutCreatePage from "../pages/workouts/WorkoutCreatePage";
+import WorkoutDetailPage from "../pages/workouts/WorkoutDetailPage";
+import WorkoutEditPage from "../pages/workouts/WorkoutEditPage";
+
 export const router = createBrowserRouter([
   // ── Public website ──────────────────────────────────────────────────────────
   {
@@ -62,6 +67,22 @@ export const router = createBrowserRouter([
       {
         path: "/profile",
         element: <ProfilePage />,
+      },
+      {
+        path: "/workouts",
+        element: <WorkoutListPage />,
+      },
+      {
+        path: "/workouts/new",
+        element: <WorkoutCreatePage />,
+      },
+      {
+        path: "/workouts/:id",
+        element: <WorkoutDetailPage />,
+      },
+      {
+        path: "/workouts/:id/edit",
+        element: <WorkoutEditPage />,
       },
     ],
   },

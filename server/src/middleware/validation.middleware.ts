@@ -18,7 +18,13 @@ export const validateRequest = (schema: RequestValidationSchema) => {
         req.params = (await schema.params.parseAsync(req.params)) as typeof req.params;
       }
       if (schema.query) {
-        req.query = (await schema.query.parseAsync(req.query)) as typeof req.query;
+        const validatedQuery = await schema.query.parseAsync(req.query);
+        Object.defineProperty(req, "query", {
+          value: validatedQuery,
+          writable: true,
+          enumerable: true,
+          configurable: true,
+        });
       }
       if (schema.body) {
         req.body = await schema.body.parseAsync(req.body);

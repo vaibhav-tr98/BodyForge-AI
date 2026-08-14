@@ -34,3 +34,29 @@ export interface ProfileUpdateData {
   goal?: string;
   experience?: string;
 }
+
+// ── Workouts ────────────────────────────────────────────────────────────────────
+
+export interface Exercise {
+  name: string;
+  sets: number;
+  reps: number;
+  weight?: number;
+}
+
+export interface Workout {
+  id: string;
+  name: string;
+  description?: string;
+  exercises: Exercise[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateWorkoutRequest {
+  name: string;
+  description?: string;
+  exercises: Exercise[];
+}
+
+export type UpdateWorkoutRequest = Partial<CreateWorkoutRequest>;
