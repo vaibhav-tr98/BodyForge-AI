@@ -60,3 +60,33 @@ export interface CreateWorkoutRequest {
 }
 
 export type UpdateWorkoutRequest = Partial<CreateWorkoutRequest>;
+
+// ── Workout Sessions ────────────────────────────────────────────────────────────
+
+export interface SessionSet {
+  setNumber: number;
+  weight: number;
+  reps: number;
+  completed: boolean;
+}
+
+export interface SessionExercise {
+  exerciseName: string;
+  plannedSets: number;
+  plannedReps: number;
+  plannedWeight?: number;
+  sets: SessionSet[];
+}
+
+export interface WorkoutSession {
+  id: string;
+  workout: string | { _id: string; name: string; description?: string };
+  startedAt: string;
+  completedAt?: string | null;
+  status: "active" | "completed";
+  exercises: SessionExercise[];
+}
+
+export interface UpdateWorkoutSessionRequest {
+  exercises: SessionExercise[];
+}

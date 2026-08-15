@@ -1,8 +1,15 @@
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
+import { getActiveWorkout } from "../services/workoutSession.service";
 
 export default function DashboardPage() {
   const { user } = useAuth();
+
+  const { data: activeSession } = useQuery({
+    queryKey: ["activeWorkout"],
+    queryFn: getActiveWorkout,
+  });
 
   return (
     <div className="space-y-8">
@@ -22,6 +29,36 @@ export default function DashboardPage() {
         <StatCard label="Weight" value={user?.weight ? `${user.weight} kg` : "—"} />
         <StatCard label="Goal" value={user?.goal ?? "—"} />
         <StatCard label="Experience" value={user?.experience ?? "—"} />
+      </div>
+
+      {/* ── Today's Workout ──────────────────────────────────────────────── */}
+      <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+        <h2 className="text-xl font-bold text-white mb-4">TODAY'S WORKOUT</h2>
+        {activeSession ? (
+          <div>
+            <p className="mb-4 text-slate-400">
+              You have an active session in progress.
+            </p>
+            <Link
+              to={`/workouts/session/${activeSession.id}`}
+              className="inline-block rounded-lg bg-amber-600 px-6 py-3 font-semibold text-white transition hover:bg-amber-700"
+            >
+              Resume Workout
+            </Link>
+          </div>
+        ) : (
+          <div>
+            <p className="mb-4 text-slate-400">
+              No active workout. Ready to train?
+            </p>
+            <Link
+              to="/workouts"
+              className="inline-block rounded-lg bg-cyan-600 px-6 py-3 font-semibold text-white transition hover:bg-cyan-700"
+            >
+              View Workouts
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* ── Actions ──────────────────────────────────────────────────────── */}

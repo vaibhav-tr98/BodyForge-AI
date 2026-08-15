@@ -17,6 +17,9 @@ import WorkoutListPage from "../pages/workouts/WorkoutListPage";
 import WorkoutCreatePage from "../pages/workouts/WorkoutCreatePage";
 import WorkoutDetailPage from "../pages/workouts/WorkoutDetailPage";
 import WorkoutEditPage from "../pages/workouts/WorkoutEditPage";
+import WorkoutSessionPage from "../pages/workouts/WorkoutSessionPage";
+import WorkoutHistoryPage from "../pages/workouts/WorkoutHistoryPage";
+import WorkoutSessionDetailPage from "../pages/workouts/WorkoutSessionDetailPage";
 
 export const router = createBrowserRouter([
   // ── Public website ──────────────────────────────────────────────────────────
@@ -83,6 +86,18 @@ export const router = createBrowserRouter([
       {
         path: "/workouts/:id/edit",
         element: <WorkoutEditPage />,
+      },
+      {
+        path: "/workouts/session/:id",
+        element: <WorkoutSessionPage />,
+      },
+      {
+        path: "/workouts/history",
+        element: <WorkoutHistoryPage />,
+      },
+      {
+        path: "/workouts/session/:id/detail",
+        element: <WorkoutSessionDetailPage />,
       },
     ],
   },

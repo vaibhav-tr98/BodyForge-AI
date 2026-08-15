@@ -2,15 +2,37 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Edit3 } from "lucide-react";
 import { getWorkoutById } from "../../services/workout.service";
+import { startWorkout, getActiveWorkout } from "../../services/workoutSession.service";
 import Loader from "../../components/ui/Loader";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 
 export default function WorkoutDetailPage() {
   const { id } = useParams<{ id: string }>();
+
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: workout, isLoading, isError } = useQuery({
     queryKey: ["workouts", id],
     queryFn: () => getWorkoutById(id!),
     enabled: !!id,
+  });
+
+  const { data: activeSession } = useQuery({
+    queryKey: ["activeWorkout"],
+    queryFn: getActiveWorkout,
+  });
+
+  const startMutation = useMutation({
+    mutationFn: () => startWorkout(id!),
+    onSuccess: (session) => {
+      queryClient.invalidateQueries({ queryKey: ["activeWorkout"] });
+      navigate(`/workouts/session/${session.id}`);
+    },
+    onError: (error: any) => {
+      alert(error.message || "Failed to start workout");
+    },
   });
 
   if (isLoading) {
@@ -56,10 +78,34 @@ export default function WorkoutDetailPage() {
         {workout.description && (
           <p className="mt-4 text-lg text-slate-400">{workout.description}</p>
         )}
-        <div className="mt-6 flex items-center gap-4 text-sm text-slate-500">
-          <span>Created: {new Date(workout.createdAt).toLocaleDateString()}</span>
-          <span>&bull;</span>
-          <span>{workout.exercises.length} exercises</span>
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4 text-sm text-slate-500">
+            <span>Created: {new Date(workout.createdAt).toLocaleDateString()}</span>
+            <span>&bull;</span>
+            <span>{workout.exercises.length} exercises</span>
+          </div>
+
+          <div className="flex flex-col items-end gap-2">
+            {activeSession ? (
+              <div className="text-right">
+                <p className="mb-2 text-sm text-amber-400">You already have an active workout.</p>
+                <Link
+                  to={`/workouts/session/${activeSession.id}`}
+                  className="inline-block rounded-lg bg-amber-600 px-6 py-2 font-bold text-white transition hover:bg-amber-700"
+                >
+                  Resume Workout
+                </Link>
+              </div>
+            ) : (
+              <button
+                onClick={() => startMutation.mutate()}
+                disabled={startMutation.isPending}
+                className="rounded-lg bg-cyan-600 px-6 py-2 font-bold text-white transition hover:bg-cyan-700 disabled:opacity-50"
+              >
+                {startMutation.isPending ? "Starting..." : "Start Workout"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
