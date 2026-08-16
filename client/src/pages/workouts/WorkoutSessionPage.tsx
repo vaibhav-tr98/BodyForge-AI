@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronLeft, ChevronRight, X, Play, Pause, RotateCcw, Loader2 } from "lucide-react";
 import { getWorkoutSession, updateWorkoutSession, completeWorkoutSession } from "../../services/workoutSession.service";
+import { getExerciseRecommendation } from "../../services/progression.service";
 import Loader from "../../components/ui/Loader";
 import type { SessionSet, WorkoutSession } from "../../types";
 
@@ -140,6 +141,14 @@ export default function WorkoutSessionPage() {
     currentExercise.sets = activeSets;
   }
 
+  const { data: progression, isLoading: isProgressionLoading } = useQuery({
+    queryKey: ["progression", currentExercise.exerciseName, currentExercise.plannedSets, currentExercise.plannedReps],
+    queryFn: () => getExerciseRecommendation(currentExercise.exerciseName, currentExercise.plannedSets, currentExercise.plannedReps),
+    enabled: !!currentExercise.exerciseName,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 1, // Don't retry endlessly if it fails, so it doesn't block
+  });
+
   const handleUpdateSet = (setIdx: number, field: keyof SessionSet, value: number | boolean) => {
     let finalValue = value;
     if (typeof value === "number") {
@@ -254,6 +263,52 @@ export default function WorkoutSessionPage() {
           <p>Complete your sets before moving on.</p>
         </div>
       </div>
+
+      {/* Progression Section */}
+      {isProgressionLoading ? (
+        <div className="flex justify-center p-4">
+          <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
+        </div>
+      ) : progression?.recommendation ? (
+        <div className="space-y-4">
+          <div className="rounded-xl border border-cyan-900/50 bg-cyan-950/20 p-5">
+            <div className="mb-2 flex items-center justify-center gap-2 text-sm font-bold tracking-wider text-cyan-400">
+              <span>🎯 TODAY'S TARGET</span>
+            </div>
+            <div className="text-center text-2xl font-bold text-white">
+              {progression.recommendation.weight > 0 ? `${progression.recommendation.weight} kg` : 'Bodyweight'}
+            </div>
+            <div className="text-center text-slate-300">
+              {progression.recommendation.sets} sets × {progression.recommendation.minReps}–{progression.recommendation.maxReps} reps
+            </div>
+            
+            <div className="mt-4 border-t border-cyan-900/30 pt-4">
+              <div className="text-center text-xs font-bold tracking-wider text-slate-500 mb-1">WHY?</div>
+              <p className="text-center text-sm text-slate-300 leading-relaxed max-w-xs mx-auto">
+                {progression.reason}
+              </p>
+            </div>
+          </div>
+          
+          {progression.latestPerformance && (
+            <div className="rounded-xl bg-slate-900/50 p-4 border border-slate-800">
+              <div className="text-center text-xs font-bold tracking-wider text-slate-500 mb-2">LAST SESSION</div>
+              <div className="text-center font-medium text-slate-300">
+                <span className="text-white font-bold mr-2">
+                  {progression.latestPerformance.weight > 0 ? `${progression.latestPerformance.weight} kg` : 'Bodyweight'}
+                </span>
+                <span className="text-slate-400">
+                  {progression.latestPerformance.totalReps} total reps ({progression.latestPerformance.setsCompleted} sets)
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : progression?.reason ? (
+        <div className="rounded-xl bg-slate-900/50 p-4 border border-slate-800 text-center text-sm text-slate-400">
+          {progression.reason}
+        </div>
+      ) : null}
 
       {/* Sets Tracker */}
       <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">

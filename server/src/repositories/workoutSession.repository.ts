@@ -60,6 +60,20 @@ class WorkoutSessionRepository {
       { new: true }
     );
   }
+
+  async findCompletedSessionsByExercise(
+    userId: string,
+    exerciseName: string,
+    limit: number = 5
+  ): Promise<IWorkoutSession[]> {
+    return await WorkoutSession.find({
+      user: userId,
+      status: "completed",
+      "exercises.exerciseName": { $regex: new RegExp(`^${exerciseName.trim()}$`, "i") }
+    })
+      .sort({ startedAt: -1 })
+      .limit(limit);
+  }
 }
 
 export const workoutSessionRepository = new WorkoutSessionRepository();

@@ -90,3 +90,29 @@ export interface WorkoutSession {
 export interface UpdateWorkoutSessionRequest {
   exercises: SessionExercise[];
 }
+
+// ── Progression ─────────────────────────────────────────────────────────────────
+
+export interface ProgressionRecommendation {
+  weight: number;
+  sets: number;
+  minReps: number;
+  maxReps: number;
+}
+
+export interface LatestPerformance {
+  weight: number;
+  setsCompleted: number;
+  totalReps: number;
+}
+
+export type RecommendationConfidence = "low" | "medium" | "high";
+
+export interface ProgressionResponse {
+  exerciseName: string;
+  recommendation: ProgressionRecommendation | null;
+  reason: string;
+  confidence: RecommendationConfidence;
+  basedOnSessions: number;
+  latestPerformance: LatestPerformance | null;
+}
