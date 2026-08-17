@@ -74,6 +74,145 @@ class WorkoutSessionRepository {
       .sort({ startedAt: -1 })
       .limit(limit);
   }
+
+  async getDashboardAggregations(userId: string, weekStart: Date): Promise<{
+    totalWorkouts: number;
+    workoutsThisWeek: number;
+    totalVolume: number;
+    totalExercises: number;
+  }> {
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    const result = await WorkoutSession.aggregate([
+      {
+        $match: {
+          user: userObjectId,
+          status: "completed",
+        },
+      },
+      {
+        $facet: {
+          workoutCounts: [
+            {
+              $group: {
+                _id: null,
+                totalWorkouts: { $sum: 1 },
+                workoutsThisWeek: {
+                  $sum: {
+                    $cond: [{ $gte: ["$completedAt", weekStart] }, 1, 0],
+                  },
+                },
+              },
+            },
+          ],
+          volumeAndExercises: [
+            { $unwind: "$exercises" },
+            {
+              $group: {
+                _id: "$_id",
+                exercisesInSession: { $addToSet: "$exercises.exerciseName" },
+                sessionVolume: {
+                  $sum: {
+                    $reduce: {
+                      input: {
+                        $filter: {
+                          input: "$exercises.sets",
+                          as: "set",
+                          cond: { $eq: ["$$set.completed", true] },
+                        },
+                      },
+                      initialValue: 0,
+                      in: { $add: ["$$value", { $multiply: ["$$this.weight", "$$this.reps"] }] },
+                    },
+                  },
+                },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                totalVolume: { $sum: "$sessionVolume" },
+                totalExercises: { $sum: { $size: "$exercisesInSession" } },
+              },
+            },
+          ],
+        },
+      },
+    ]);
+
+    const counts = result[0]?.workoutCounts[0] || { totalWorkouts: 0, workoutsThisWeek: 0 };
+    const stats = result[0]?.volumeAndExercises[0] || { totalVolume: 0, totalExercises: 0 };
+
+    return {
+      totalWorkouts: counts.totalWorkouts,
+      workoutsThisWeek: counts.workoutsThisWeek,
+      totalVolume: stats.totalVolume,
+      totalExercises: stats.totalExercises,
+    };
+  }
+
+  async getUserWorkoutDates(userId: string): Promise<Date[]> {
+    const sessions = await WorkoutSession.find(
+      { user: userId, status: "completed" },
+      { completedAt: 1 }
+    ).sort({ completedAt: -1 });
+
+    return sessions
+      .map((s) => s.completedAt)
+      .filter((date): date is Date => date != null);
+  }
+
+  async getRecentCompletedSessions(userId: string, limit: number): Promise<any[]> {
+    return await WorkoutSession.aggregate([
+      {
+        $match: {
+          user: new mongoose.Types.ObjectId(userId),
+          status: "completed",
+        },
+      },
+      { $sort: { completedAt: -1 } },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: "workouts",
+          localField: "workout",
+          foreignField: "_id",
+          as: "workoutData",
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          workoutName: { $arrayElemAt: ["$workoutData.name", 0] },
+          completedAt: 1,
+          exerciseCount: { $size: "$exercises" },
+          totalVolume: {
+            $sum: {
+              $map: {
+                input: "$exercises",
+                as: "exercise",
+                in: {
+                  $sum: {
+                    $map: {
+                      input: {
+                        $filter: {
+                          input: "$$exercise.sets",
+                          as: "set",
+                          cond: { $eq: ["$$set.completed", true] },
+                        },
+                      },
+                      as: "set",
+                      in: { $multiply: ["$$set.weight", "$$set.reps"] },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    ]);
+  }
 }
 
 export const workoutSessionRepository = new WorkoutSessionRepository();

@@ -108,6 +108,16 @@ export default function WorkoutSessionPage() {
     },
   });
 
+  const currentExerciseSafe = localSession?.exercises[currentExerciseIndex];
+
+  const { data: progression, isLoading: isProgressionLoading } = useQuery({
+    queryKey: ["progression", currentExerciseSafe?.exerciseName, currentExerciseSafe?.plannedSets, currentExerciseSafe?.plannedReps],
+    queryFn: () => getExerciseRecommendation(currentExerciseSafe!.exerciseName, currentExerciseSafe!.plannedSets, currentExerciseSafe!.plannedReps),
+    enabled: !!currentExerciseSafe?.exerciseName,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 1, // Don't retry endlessly if it fails, so it doesn't block
+  });
+
   if (isLoading || !localSession) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
@@ -140,14 +150,6 @@ export default function WorkoutSessionPage() {
   if (currentExercise.sets.length === 0) {
     currentExercise.sets = activeSets;
   }
-
-  const { data: progression, isLoading: isProgressionLoading } = useQuery({
-    queryKey: ["progression", currentExercise.exerciseName, currentExercise.plannedSets, currentExercise.plannedReps],
-    queryFn: () => getExerciseRecommendation(currentExercise.exerciseName, currentExercise.plannedSets, currentExercise.plannedReps),
-    enabled: !!currentExercise.exerciseName,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    retry: 1, // Don't retry endlessly if it fails, so it doesn't block
-  });
 
   const handleUpdateSet = (setIdx: number, field: keyof SessionSet, value: number | boolean) => {
     let finalValue = value;

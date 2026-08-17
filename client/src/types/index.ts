@@ -116,3 +116,42 @@ export interface ProgressionResponse {
   basedOnSessions: number;
   latestPerformance: LatestPerformance | null;
 }
+
+// ── Analytics ───────────────────────────────────────────────────────────────────
+
+export interface AnalyticsSummary {
+  totalWorkouts: number;
+  workoutsThisWeek: number;
+  currentStreak: number;
+  totalVolume: number;
+  totalExercises: number;
+}
+
+export interface RecentWorkout {
+  id: string;
+  workoutName: string | null;
+  completedAt: string; // ISO date string from API
+  exerciseCount: number;
+  totalVolume: number;
+}
+
+export interface DashboardAnalytics {
+  summary: AnalyticsSummary;
+  recentWorkouts: RecentWorkout[];
+  progressionRecommendation: ProgressionResponse | null;
+}
+
+export interface ExerciseProgressPoint {
+  date: string; // ISO date string from API
+  weight: number;
+  totalReps: number;
+  volume: number;
+}
+
+export interface ExerciseProgress {
+  exerciseName: string;
+  bestWeight: number;
+  bestReps: number;
+  totalVolume: number;
+  sessions: ExerciseProgressPoint[];
+}
