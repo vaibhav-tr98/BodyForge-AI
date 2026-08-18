@@ -213,6 +213,71 @@ class WorkoutSessionRepository {
       },
     ]);
   }
+
+  async getPersonalRecords(userId: string): Promise<any[]> {
+    return await WorkoutSession.aggregate([
+      {
+        $match: {
+          user: new mongoose.Types.ObjectId(userId),
+          status: "completed",
+        },
+      },
+      { $sort: { completedAt: 1 } }, // Ascending to keep history chronological
+      { $unwind: "$exercises" },
+      {
+        $project: {
+          exerciseName: { $trim: { input: "$exercises.exerciseName" } },
+          completedAt: 1,
+          completedSets: {
+            $filter: {
+              input: "$exercises.sets",
+              as: "set",
+              cond: { $eq: ["$$set.completed", true] },
+            },
+          },
+        },
+      },
+      {
+        $match: {
+          "completedSets.0": { $exists: true },
+        },
+      },
+      {
+        $addFields: {
+          maxWeightInSession: { $max: "$completedSets.weight" },
+          maxRepsInSession: { $max: "$completedSets.reps" },
+          sessionVolume: {
+            $sum: {
+              $map: {
+                input: "$completedSets",
+                as: "set",
+                in: { $multiply: ["$$set.weight", "$$set.reps"] },
+              },
+            },
+          },
+        },
+      },
+      {
+        $group: {
+          _id: { $toLower: "$exerciseName" },
+          originalExerciseName: { $last: "$exerciseName" },
+          heaviestWeight: { $max: "$maxWeightInSession" },
+          bestReps: { $max: "$maxRepsInSession" },
+          bestSessionVolume: { $max: "$sessionVolume" },
+          totalSessions: { $sum: 1 },
+          lastPerformedAt: { $last: "$completedAt" },
+          history: {
+            $push: {
+              weight: "$maxWeightInSession",
+              reps: "$maxRepsInSession",
+              volume: "$sessionVolume",
+              date: "$completedAt",
+            },
+          },
+        },
+      },
+    ]);
+  }
 }
 
 export const workoutSessionRepository = new WorkoutSessionRepository();

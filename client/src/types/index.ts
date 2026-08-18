@@ -155,3 +155,38 @@ export interface ExerciseProgress {
   totalVolume: number;
   sessions: ExerciseProgressPoint[];
 }
+
+export interface PersonalRecord {
+  exerciseName: string;
+  heaviestWeight: number;
+  bestReps: number;
+  bestSessionVolume: number;
+  firstRecordedWeight: number | null;
+  weightImprovementPercent: number | null;
+  lastPerformedAt: string;
+  totalSessions: number;
+}
+
+export interface TrainingInsight {
+  type: "strongest" | "improvement" | "most_trained" | "newest_pr";
+  title: string;
+  exerciseName: string;
+  value: string;
+}
+
+export interface PRAndInsightsResponse {
+  personalRecords: PersonalRecord[];
+  insights: TrainingInsight[];
+}
+
+export interface PRResult {
+  type: "weight" | "reps" | "volume";
+  exerciseName: string;
+  value: number;
+  previousValue: number;
+}
+
+export interface CompleteSessionResponse {
+  session: WorkoutSession;
+  newPersonalRecords?: PRResult[];
+}

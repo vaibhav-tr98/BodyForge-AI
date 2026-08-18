@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronLeft, ChevronRight, X, Play, Pause, RotateCcw, Loader2 } from "lucide-react";
+import { toast } from "react-hot-toast";
 import { getWorkoutSession, updateWorkoutSession, completeWorkoutSession } from "../../services/workoutSession.service";
 import { getExerciseRecommendation } from "../../services/progression.service";
 import Loader from "../../components/ui/Loader";
@@ -100,10 +101,29 @@ export default function WorkoutSessionPage() {
 
   const completeMutation = useMutation({
     mutationFn: () => completeWorkoutSession(id!),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
       queryClient.invalidateQueries({ queryKey: ["workoutSession", id] });
       queryClient.invalidateQueries({ queryKey: ["activeWorkout"] });
+      
+      if (data.newPersonalRecords && data.newPersonalRecords.length > 0) {
+        data.newPersonalRecords.forEach(pr => {
+          const prType = pr.type === "weight" ? "Weight" : pr.type === "reps" ? "Reps" : "Volume";
+          const unit = pr.type === "weight" || pr.type === "volume" ? "kg" : "reps";
+          toast.success(
+            <div>
+              <p className="font-bold text-lg">🏆 NEW PERSONAL RECORD</p>
+              <p className="font-medium mt-1">{pr.exerciseName}</p>
+              <p className="text-sm mt-1">{prType}: {pr.value} {unit}</p>
+              <p className="text-xs opacity-80">Previous best: {pr.previousValue} {unit}</p>
+            </div>,
+            { duration: 6000 }
+          );
+        });
+      } else {
+        toast.success("Workout completed successfully!");
+      }
+      
       navigate("/workouts/history");
     },
   });

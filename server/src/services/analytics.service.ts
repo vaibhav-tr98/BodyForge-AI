@@ -38,6 +38,36 @@ export interface ExerciseProgress {
   sessions: ExerciseProgressPoint[];
 }
 
+export interface PersonalRecord {
+  exerciseName: string;
+  heaviestWeight: number;
+  bestReps: number;
+  bestSessionVolume: number;
+  firstRecordedWeight: number | null;
+  weightImprovementPercent: number | null;
+  lastPerformedAt: Date;
+  totalSessions: number;
+}
+
+export interface TrainingInsight {
+  type: "strongest" | "improvement" | "most_trained" | "newest_pr";
+  title: string;
+  exerciseName: string;
+  value: string;
+}
+
+export interface PRAndInsightsResponse {
+  personalRecords: PersonalRecord[];
+  insights: TrainingInsight[];
+}
+
+export interface PRResult {
+  type: "weight" | "reps" | "volume";
+  exerciseName: string;
+  value: number;
+  previousValue: number;
+}
+
 export class AnalyticsService {
   private calculateStreak(dates: Date[]): number {
     if (dates.length === 0) return 0;
@@ -140,6 +170,167 @@ export class AnalyticsService {
       recentWorkouts,
       progressionRecommendation,
     };
+  }
+
+  public async getPersonalRecordsAndInsights(userId: string): Promise<PRAndInsightsResponse> {
+    const rawData = await workoutSessionRepository.getPersonalRecords(userId);
+
+    const personalRecords: PersonalRecord[] = [];
+    const insights: TrainingInsight[] = [];
+
+    let strongestExercise: PersonalRecord | null = null;
+    let biggestImprovement: PersonalRecord | null = null;
+    let mostTrained: PersonalRecord | null = null;
+
+    let newestPrEvent: { exerciseName: string; type: string; value: number; previous: number; date: Date } | null = null;
+
+    for (const raw of rawData) {
+      const isBodyweight = raw.history.every((h: any) => h.weight === 0);
+      let firstRecordedWeight: number | null = null;
+      let weightImprovementPercent: number | null = null;
+
+      if (!isBodyweight) {
+        const firstWeighted = raw.history.find((h: any) => h.weight > 0);
+        if (firstWeighted) {
+          firstRecordedWeight = firstWeighted.weight;
+          if (firstRecordedWeight !== null && firstRecordedWeight > 0 && raw.heaviestWeight > firstRecordedWeight) {
+            weightImprovementPercent = ((raw.heaviestWeight - firstRecordedWeight) / firstRecordedWeight) * 100;
+          } else {
+            weightImprovementPercent = 0;
+          }
+        }
+      }
+
+      const pr: PersonalRecord = {
+        exerciseName: raw.originalExerciseName,
+        heaviestWeight: raw.heaviestWeight,
+        bestReps: raw.bestReps,
+        bestSessionVolume: raw.bestSessionVolume,
+        firstRecordedWeight,
+        weightImprovementPercent,
+        lastPerformedAt: raw.lastPerformedAt,
+        totalSessions: raw.totalSessions,
+      };
+
+      personalRecords.push(pr);
+
+      // Track insights
+      if (!isBodyweight) {
+        if (!strongestExercise || pr.heaviestWeight > strongestExercise.heaviestWeight) {
+          strongestExercise = pr;
+        }
+        if (pr.weightImprovementPercent !== null) {
+          if (!biggestImprovement || (biggestImprovement.weightImprovementPercent !== null && pr.weightImprovementPercent > biggestImprovement.weightImprovementPercent)) {
+            biggestImprovement = pr;
+          }
+        }
+      }
+
+      if (!mostTrained || pr.totalSessions > mostTrained.totalSessions) {
+        mostTrained = pr;
+      }
+
+      // Detect if the latest session was a PR
+      if (raw.history.length > 1) {
+        const lastSession = raw.history[raw.history.length - 1];
+        const previousHistory = raw.history.slice(0, raw.history.length - 1);
+
+        const prevMaxWeight = Math.max(...previousHistory.map((h: any) => h.weight));
+        const prevMaxReps = Math.max(...previousHistory.map((h: any) => h.reps));
+        const prevMaxVol = Math.max(...previousHistory.map((h: any) => h.volume));
+
+        let currentPrEvent = null;
+
+        if (!isBodyweight && lastSession.weight > prevMaxWeight) {
+          currentPrEvent = { type: "Heaviest Weight", value: lastSession.weight, previous: prevMaxWeight, date: lastSession.date };
+        } else if (lastSession.reps > prevMaxReps) {
+          currentPrEvent = { type: "Best Reps", value: lastSession.reps, previous: prevMaxReps, date: lastSession.date };
+        } else if (lastSession.volume > prevMaxVol) {
+          currentPrEvent = { type: "Best Volume", value: lastSession.volume, previous: prevMaxVol, date: lastSession.date };
+        }
+
+        if (currentPrEvent) {
+          if (!newestPrEvent || new Date(currentPrEvent.date) > new Date(newestPrEvent.date)) {
+            newestPrEvent = { exerciseName: pr.exerciseName, ...currentPrEvent };
+          }
+        }
+      } else if (raw.history.length === 1) {
+          // First time doing the exercise could technically be a PR, but usually we only notify if it exceeds a PREVIOUS best.
+          // We will ignore first-session PRs for the insight.
+      }
+    }
+
+    if (strongestExercise) {
+      insights.push({
+        type: "strongest",
+        title: "🔥 Strongest Exercise",
+        exerciseName: strongestExercise.exerciseName,
+        value: `${strongestExercise.heaviestWeight} kg`,
+      });
+    }
+
+    if (biggestImprovement && biggestImprovement.weightImprovementPercent !== null && biggestImprovement.weightImprovementPercent > 0) {
+      insights.push({
+        type: "improvement",
+        title: "📈 Biggest Improvement",
+        exerciseName: biggestImprovement.exerciseName,
+        value: `+${biggestImprovement.weightImprovementPercent.toFixed(1)}%`,
+      });
+    }
+
+    if (mostTrained) {
+      insights.push({
+        type: "most_trained",
+        title: "💪 Most Trained",
+        exerciseName: mostTrained.exerciseName,
+        value: `${mostTrained.totalSessions} sessions`,
+      });
+    }
+
+    if (newestPrEvent) {
+      insights.push({
+        type: "newest_pr",
+        title: "🏆 New Personal Record",
+        exerciseName: newestPrEvent.exerciseName,
+        value: `${newestPrEvent.type}: ${newestPrEvent.value} (was ${newestPrEvent.previous})`,
+      });
+    }
+
+    return { personalRecords, insights };
+  }
+
+  public async getRecentPRsForSession(userId: string, sessionId: string): Promise<PRResult[]> {
+     const rawData = await workoutSessionRepository.getPersonalRecords(userId);
+     const session = await workoutSessionRepository.findByIdAndUser(sessionId, userId);
+     if (!session || !session.completedAt) return [];
+
+     const sessionTime = new Date(session.completedAt).getTime();
+     const results: PRResult[] = [];
+
+     for (const raw of rawData) {
+       const isBodyweight = raw.history.every((h: any) => h.weight === 0);
+       // Find the session in history matching this exact session time
+       const historyIndex = raw.history.findIndex((h: any) => new Date(h.date).getTime() === sessionTime);
+       
+       if (historyIndex > 0) {
+         const current = raw.history[historyIndex];
+         const previousHistory = raw.history.slice(0, historyIndex);
+
+         const prevMaxWeight = Math.max(...previousHistory.map((h: any) => h.weight));
+         const prevMaxReps = Math.max(...previousHistory.map((h: any) => h.reps));
+         const prevMaxVol = Math.max(...previousHistory.map((h: any) => h.volume));
+
+         if (!isBodyweight && current.weight > prevMaxWeight) {
+           results.push({ type: "weight", exerciseName: raw.originalExerciseName, value: current.weight, previousValue: prevMaxWeight });
+         } else if (current.reps > prevMaxReps) {
+           results.push({ type: "reps", exerciseName: raw.originalExerciseName, value: current.reps, previousValue: prevMaxReps });
+         } else if (current.volume > prevMaxVol) {
+           results.push({ type: "volume", exerciseName: raw.originalExerciseName, value: current.volume, previousValue: prevMaxVol });
+         }
+       }
+     }
+     
+     return results;
   }
 
   public async getExerciseProgress(userId: string, exerciseName: string): Promise<ExerciseProgress> {

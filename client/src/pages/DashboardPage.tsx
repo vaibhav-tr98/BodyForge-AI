@@ -7,7 +7,7 @@ import { analyticsService } from "../services/analytics.service";
 import { getExercises } from "../services/exercise.service";
 import Loader from "../components/ui/Loader";
 import ExerciseProgressChart from "../components/common/ExerciseProgressChart";
-import { Flame, Dumbbell, Zap, Activity, Target, Search } from "lucide-react";
+import { Flame, Dumbbell, Zap, Activity, Target, Search, Trophy, TrendingUp } from "lucide-react";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -22,6 +22,12 @@ export default function DashboardPage() {
     queryKey: ["analytics", "dashboard"],
     queryFn: () => analyticsService.getDashboardAnalytics(),
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  const { data: prData } = useQuery({
+    queryKey: ["analytics", "personal-records"],
+    queryFn: () => analyticsService.getPersonalRecords(),
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: exerciseList } = useQuery({
@@ -226,6 +232,70 @@ export default function DashboardPage() {
             </section>
           </div>
 
+          {/* ── Training Insights & PRs ────────────────────────────────────── */}
+          {prData && (prData.personalRecords.length > 0 || prData.insights.length > 0) && (
+            <div className="grid gap-6 lg:grid-cols-2 pt-4">
+              {/* Training Insights */}
+              <section>
+                <h2 className="mb-4 text-xl font-bold text-white flex items-center gap-2">
+                  <TrendingUp className="text-cyan-500" size={20} />
+                  TRAINING INSIGHTS
+                </h2>
+                <div className="space-y-3">
+                  {prData.insights.map((insight, idx) => (
+                    <div key={idx} className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+                      <p className="text-sm font-semibold text-cyan-500 mb-1">{insight.title}</p>
+                      <div className="flex justify-between items-center">
+                        <span className="text-white font-medium">{insight.exerciseName}</span>
+                        <span className="text-slate-300 font-bold">{insight.value}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {prData.insights.length === 0 && (
+                    <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 text-center">
+                      <p className="text-slate-400">No training insights yet.</p>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Personal Records */}
+              <section>
+                <h2 className="mb-4 text-xl font-bold text-white flex items-center gap-2">
+                  <Trophy className="text-amber-500" size={20} />
+                  PERSONAL RECORDS
+                </h2>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {prData.personalRecords.slice(0, 4).map((pr, idx) => (
+                    <div key={idx} className="rounded-2xl border border-slate-800 bg-slate-900 p-5 flex flex-col justify-between">
+                      <p className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-3 truncate">
+                        {pr.exerciseName}
+                      </p>
+                      <div className="space-y-2">
+                        {pr.heaviestWeight > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-xs text-slate-500 flex items-center gap-1"><Dumbbell size={12}/> Heaviest</span>
+                            <span className="text-sm font-semibold text-white">{pr.heaviestWeight} kg</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span className="text-xs text-slate-500 flex items-center gap-1"><Activity size={12}/> Best Reps</span>
+                          <span className="text-sm font-semibold text-white">{pr.bestReps}</span>
+                        </div>
+                        {pr.weightImprovementPercent !== null && pr.weightImprovementPercent > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-xs text-slate-500 flex items-center gap-1"><TrendingUp size={12}/> Improve</span>
+                            <span className="text-sm font-bold text-green-400">+{pr.weightImprovementPercent.toFixed(1)}%</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
+          )}
+
           {/* ── Exercise Progress ────────────────────────────────────────────── */}
           {summary && summary.totalWorkouts > 0 && (
             <section className="pt-4">
@@ -264,18 +334,47 @@ export default function DashboardPage() {
                       <div className="space-y-6">
                         <div className="grid gap-4 sm:grid-cols-3">
                           <div className="rounded-xl bg-slate-950 p-4 border border-slate-800">
-                            <p className="text-xs text-slate-500 uppercase tracking-wider">Best Weight</p>
-                            <p className="text-2xl font-bold text-white mt-1">{exerciseProgress.bestWeight} kg</p>
+                            <p className="text-xs text-slate-500 uppercase tracking-wider flex items-center gap-1"><Dumbbell size={12}/> Heaviest Weight</p>
+                            <p className="text-2xl font-bold text-white mt-1">
+                              {exerciseProgress.bestWeight > 0 ? `${exerciseProgress.bestWeight} kg` : "-"}
+                            </p>
                           </div>
                           <div className="rounded-xl bg-slate-950 p-4 border border-slate-800">
-                            <p className="text-xs text-slate-500 uppercase tracking-wider">Best Reps</p>
+                            <p className="text-xs text-slate-500 uppercase tracking-wider flex items-center gap-1"><Activity size={12}/> Best Reps</p>
                             <p className="text-2xl font-bold text-white mt-1">{exerciseProgress.bestReps}</p>
                           </div>
                           <div className="rounded-xl bg-slate-950 p-4 border border-slate-800">
-                            <p className="text-xs text-slate-500 uppercase tracking-wider">Total Volume</p>
-                            <p className="text-2xl font-bold text-cyan-400 mt-1">{exerciseProgress.totalVolume.toLocaleString()} kg</p>
+                            <p className="text-xs text-slate-500 uppercase tracking-wider flex items-center gap-1"><Zap size={12}/> Best Session Volume</p>
+                            <p className="text-2xl font-bold text-cyan-400 mt-1">
+                              {prData?.personalRecords.find(p => p.exerciseName === selectedExercise)?.bestSessionVolume?.toLocaleString() || exerciseProgress.totalVolume.toLocaleString()} kg
+                            </p>
                           </div>
                         </div>
+
+                        {prData?.personalRecords.find(p => p.exerciseName === selectedExercise) && (
+                          <div className="rounded-xl bg-slate-950 p-4 border border-slate-800 flex flex-wrap gap-6 items-center">
+                            {prData.personalRecords.find(p => p.exerciseName === selectedExercise)?.firstRecordedWeight !== null && (
+                              <div>
+                                <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">First Recorded</p>
+                                <p className="font-semibold text-white">{prData.personalRecords.find(p => p.exerciseName === selectedExercise)?.firstRecordedWeight} kg</p>
+                              </div>
+                            )}
+                            {prData.personalRecords.find(p => p.exerciseName === selectedExercise)?.weightImprovementPercent !== null && (
+                              <div>
+                                <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Improvement</p>
+                                <p className="font-bold text-green-400">+{prData.personalRecords.find(p => p.exerciseName === selectedExercise)?.weightImprovementPercent?.toFixed(1)}%</p>
+                              </div>
+                            )}
+                            <div>
+                              <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Total Sessions</p>
+                              <p className="font-semibold text-white">{prData.personalRecords.find(p => p.exerciseName === selectedExercise)?.totalSessions}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Last Performed</p>
+                              <p className="font-semibold text-white">{new Date(prData.personalRecords.find(p => p.exerciseName === selectedExercise)?.lastPerformedAt || "").toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                        )}
                         
                         <div className="pt-4 border-t border-slate-800">
                           <h3 className="text-sm font-semibold text-white mb-4 uppercase tracking-wider">Weight Progression</h3>

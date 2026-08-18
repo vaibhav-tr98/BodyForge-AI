@@ -101,4 +101,67 @@ describe("AnalyticsService", () => {
       expect(result.progressionRecommendation).toBeNull();
     });
   });
+
+  describe("getPersonalRecordsAndInsights", () => {
+    it("should return empty insights and records if no history", async () => {
+      (workoutSessionRepository as any).getPersonalRecords = jest.fn().mockResolvedValue([]);
+      
+      const result = await analyticsService.getPersonalRecordsAndInsights("testUser");
+      
+      expect(result.personalRecords).toHaveLength(0);
+      expect(result.insights).toHaveLength(0);
+    });
+
+    it("should detect PR correctly and compute insights", async () => {
+      const mockRawData = [
+        {
+          _id: "bench press",
+          originalExerciseName: "Bench Press",
+          heaviestWeight: 30,
+          bestReps: 12,
+          bestSessionVolume: 600,
+          totalSessions: 2,
+          lastPerformedAt: new Date("2024-01-02"),
+          history: [
+            { weight: 25, reps: 10, volume: 500, date: new Date("2024-01-01") },
+            { weight: 30, reps: 8, volume: 600, date: new Date("2024-01-02") }
+          ]
+        },
+        {
+          _id: "pull ups",
+          originalExerciseName: "Pull Ups",
+          heaviestWeight: 0,
+          bestReps: 15,
+          bestSessionVolume: 0,
+          totalSessions: 1,
+          lastPerformedAt: new Date("2024-01-01"),
+          history: [
+            { weight: 0, reps: 15, volume: 0, date: new Date("2024-01-01") }
+          ]
+        }
+      ];
+
+      (workoutSessionRepository as any).getPersonalRecords = jest.fn().mockResolvedValue(mockRawData);
+
+      const result = await analyticsService.getPersonalRecordsAndInsights("testUser");
+
+      expect(result.personalRecords).toHaveLength(2);
+      
+      const bench = result.personalRecords.find((p: any) => p.exerciseName === "Bench Press");
+      expect(bench?.firstRecordedWeight).toBe(25);
+      expect(bench?.weightImprovementPercent).toBe(20);
+
+      const pullups = result.personalRecords.find((p: any) => p.exerciseName === "Pull Ups");
+      expect(pullups?.firstRecordedWeight).toBeNull();
+      expect(pullups?.weightImprovementPercent).toBeNull();
+
+      expect(result.insights).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ type: "strongest", exerciseName: "Bench Press" }),
+          expect.objectContaining({ type: "improvement", exerciseName: "Bench Press", value: "+20.0%" }),
+          expect.objectContaining({ type: "newest_pr", exerciseName: "Bench Press" })
+        ])
+      );
+    });
+  });
 });

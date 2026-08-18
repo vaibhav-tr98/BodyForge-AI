@@ -10,6 +10,8 @@ const router = Router();
 router.use(authenticate);
 
 router.get("/dashboard", analyticsController.getDashboard);
+router.get("/personal-records", analyticsController.getPersonalRecords);
+router.get("/personal-records/:exerciseName", validateParams(getExerciseProgressSchema), analyticsController.getPersonalRecordByExercise);
 router.get("/exercise/:exerciseName", validateParams(getExerciseProgressSchema), analyticsController.getExercise);
 
 export default router;

@@ -69,12 +69,12 @@ export async function updateWorkoutSession(
   return data.data.session;
 }
 
-export async function completeWorkoutSession(id: string): Promise<WorkoutSession> {
-  const { data } = await api.post<ApiResponse<{ session: WorkoutSession }>>(
+export async function completeWorkoutSession(id: string): Promise<import("../types").CompleteSessionResponse> {
+  const { data } = await api.post<ApiResponse<import("../types").CompleteSessionResponse>>(
     `/api/workout-sessions/${id}/complete`
   );
   if (!data.data) {
     throw new Error(data.message ?? "Failed to complete workout session");
   }
-  return data.data.session;
+  return data.data;
 }

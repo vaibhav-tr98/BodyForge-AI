@@ -17,6 +17,22 @@ class AnalyticsService {
     }
     return response.data.data;
   }
+
+  public async getPersonalRecords(): Promise<import("../types").PRAndInsightsResponse> {
+    const response = await api.get<ApiResponse<import("../types").PRAndInsightsResponse>>("/analytics/personal-records");
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.message || "Failed to fetch personal records");
+    }
+    return response.data.data;
+  }
+
+  public async getExercisePersonalRecord(exerciseName: string): Promise<import("../types").PersonalRecord> {
+    const response = await api.get<ApiResponse<import("../types").PersonalRecord>>(`/analytics/personal-records/${encodeURIComponent(exerciseName)}`);
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.message || "Failed to fetch exercise personal record");
+    }
+    return response.data.data;
+  }
 }
 
 export const analyticsService = new AnalyticsService();
