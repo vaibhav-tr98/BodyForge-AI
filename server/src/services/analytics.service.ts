@@ -1,5 +1,49 @@
 import { workoutSessionRepository } from "../repositories/workoutSession.repository";
 import { progressionService, ProgressionResponse } from "./progression.service";
+import WorkoutSession from "../models/WorkoutSession";
+import Exercise from "../models/Exercise";
+
+
+
+const MUSCLE_GROUP_MAP: Record<string, string> = {
+  abdominals: "Core",
+  hamstrings: "Legs",
+  adductors: "Legs",
+  quadriceps: "Legs",
+  biceps: "Biceps",
+  shoulders: "Shoulders",
+  chest: "Chest",
+  "middle back": "Back",
+  glutes: "Legs",
+  lats: "Back",
+  "lower back": "Back",
+  triceps: "Triceps",
+  traps: "Back",
+  forearms: "Forearms",
+  neck: "Neck",
+  abductors: "Legs",
+  calves: "Legs"
+};
+
+export interface MuscleReadiness {
+  muscle: string;
+  readinessScore: number;
+  status: "ready" | "moderate" | "light" | "recent";
+  lastTrainedAt: string | null;
+  daysSinceLastTrained: number | null;
+  sessionsLast7Days: number;
+  sessionsLast14Days: number;
+}
+
+export interface TrainingReadiness {
+  overallScore: number;
+  status: "ready" | "moderate" | "light" | "recent";
+  recommendation: {
+    muscleGroups: string[];
+    reason: string;
+  };
+  muscleGroups: MuscleReadiness[];
+}
 
 export interface AnalyticsSummary {
   totalWorkouts: number;
@@ -149,12 +193,17 @@ export class AnalyticsService {
       if (latestSession && latestSession.exercises.length > 0) {
         const lastExercise = latestSession.exercises[latestSession.exercises.length - 1];
         if (lastExercise) {
-          progressionRecommendation = await progressionService.getRecommendation(
-            userId,
-            lastExercise.exerciseName,
-            lastExercise.plannedSets,
-            lastExercise.plannedReps
-          );
+          try {
+            progressionRecommendation = await progressionService.getRecommendation(
+              userId,
+              lastExercise.exerciseName,
+              lastExercise.plannedSets,
+              lastExercise.plannedReps
+            );
+          } catch (error) {
+            console.error("Failed to generate progression recommendation:", error);
+            // Non-fatal error, continue without recommendation
+          }
         }
       }
     }
@@ -185,12 +234,12 @@ export class AnalyticsService {
     let newestPrEvent: { exerciseName: string; type: string; value: number; previous: number; date: Date } | null = null;
 
     for (const raw of rawData) {
-      const isBodyweight = raw.history.every((h: any) => h.weight === 0);
+      const isBodyweight = raw.history.every((h: { weight: number; reps: number; volume: number; date: Date }) => h.weight === 0);
       let firstRecordedWeight: number | null = null;
       let weightImprovementPercent: number | null = null;
 
       if (!isBodyweight) {
-        const firstWeighted = raw.history.find((h: any) => h.weight > 0);
+        const firstWeighted = raw.history.find((h: { weight: number; reps: number; volume: number; date: Date }) => h.weight > 0);
         if (firstWeighted) {
           firstRecordedWeight = firstWeighted.weight;
           if (firstRecordedWeight !== null && firstRecordedWeight > 0 && raw.heaviestWeight > firstRecordedWeight) {
@@ -235,9 +284,9 @@ export class AnalyticsService {
         const lastSession = raw.history[raw.history.length - 1];
         const previousHistory = raw.history.slice(0, raw.history.length - 1);
 
-        const prevMaxWeight = Math.max(...previousHistory.map((h: any) => h.weight));
-        const prevMaxReps = Math.max(...previousHistory.map((h: any) => h.reps));
-        const prevMaxVol = Math.max(...previousHistory.map((h: any) => h.volume));
+        const prevMaxWeight = Math.max(...previousHistory.map((h: { weight: number; reps: number; volume: number; date: Date }) => h.weight));
+        const prevMaxReps = Math.max(...previousHistory.map((h: { weight: number; reps: number; volume: number; date: Date }) => h.reps));
+        const prevMaxVol = Math.max(...previousHistory.map((h: { weight: number; reps: number; volume: number; date: Date }) => h.volume));
 
         let currentPrEvent = null;
 
@@ -308,17 +357,17 @@ export class AnalyticsService {
      const results: PRResult[] = [];
 
      for (const raw of rawData) {
-       const isBodyweight = raw.history.every((h: any) => h.weight === 0);
+       const isBodyweight = raw.history.every((h: { weight: number; reps: number; volume: number; date: Date }) => h.weight === 0);
        // Find the session in history matching this exact session time
-       const historyIndex = raw.history.findIndex((h: any) => new Date(h.date).getTime() === sessionTime);
+       const historyIndex = raw.history.findIndex((h: { weight: number; reps: number; volume: number; date: Date }) => new Date(h.date).getTime() === sessionTime);
        
        if (historyIndex > 0) {
          const current = raw.history[historyIndex];
          const previousHistory = raw.history.slice(0, historyIndex);
 
-         const prevMaxWeight = Math.max(...previousHistory.map((h: any) => h.weight));
-         const prevMaxReps = Math.max(...previousHistory.map((h: any) => h.reps));
-         const prevMaxVol = Math.max(...previousHistory.map((h: any) => h.volume));
+         const prevMaxWeight = Math.max(...previousHistory.map((h: { weight: number; reps: number; volume: number; date: Date }) => h.weight));
+         const prevMaxReps = Math.max(...previousHistory.map((h: { weight: number; reps: number; volume: number; date: Date }) => h.reps));
+         const prevMaxVol = Math.max(...previousHistory.map((h: { weight: number; reps: number; volume: number; date: Date }) => h.volume));
 
          if (!isBodyweight && current.weight > prevMaxWeight) {
            results.push({ type: "weight", exerciseName: raw.originalExerciseName, value: current.weight, previousValue: prevMaxWeight });
@@ -391,6 +440,192 @@ export class AnalyticsService {
       bestReps,
       totalVolume,
       sessions: progressPoints,
+    };
+  }
+
+  public async getTrainingReadiness(userId: string): Promise<TrainingReadiness | null> {
+    const now = new Date();
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const sessions = await WorkoutSession.find({
+      user: userId,
+      status: "completed",
+      completedAt: { $gte: fourteenDaysAgo }
+    }).lean();
+
+    if (sessions.length === 0) {
+       return null;
+    }
+
+    const uniqueExerciseNames = new Set<string>();
+    for (const session of sessions) {
+      for (const ex of session.exercises) {
+        uniqueExerciseNames.add(ex.exerciseName.toLowerCase());
+      }
+    }
+
+    const exerciseDocs = await Exercise.find({
+       name: { $in: Array.from(uniqueExerciseNames).map(n => new RegExp(`^${n}$`, "i")) }
+    }).lean();
+
+    const exMap = new Map<string, { primary: string[], secondary: string[] }>();
+    for (const doc of exerciseDocs) {
+       const primaryMuscles = doc.primaryMuscles ?? [];
+       const secondaryMuscles = doc.secondaryMuscles ?? [];
+       exMap.set(doc.name.toLowerCase(), {
+         primary: primaryMuscles.map(m => MUSCLE_GROUP_MAP[m.toLowerCase()] || (m.charAt(0).toUpperCase() + m.slice(1))),
+         secondary: secondaryMuscles.map(m => MUSCLE_GROUP_MAP[m.toLowerCase()] || (m.charAt(0).toUpperCase() + m.slice(1)))
+       });
+    }
+
+    const muscleStats: Record<string, {
+      lastTrainedAt: Date | null;
+      sessionsLast7Days: Set<string>;
+      sessionsLast14Days: Set<string>;
+      loadScore: number;
+    }> = {};
+
+    const STANDARD_MUSCLES = ["Chest", "Back", "Legs", "Shoulders", "Biceps", "Triceps", "Core"];
+    for (const m of STANDARD_MUSCLES) {
+      muscleStats[m] = {
+        lastTrainedAt: null,
+        sessionsLast7Days: new Set(),
+        sessionsLast14Days: new Set(),
+        loadScore: 0
+      };
+    }
+
+    for (const session of sessions) {
+      if (!session.completedAt) continue;
+      const sessionDate = new Date(session.completedAt);
+      const isLast7 = sessionDate >= sevenDaysAgo;
+      const sessionId = session._id.toString();
+
+      const hitMusclesThisSession = new Map<string, { isPrimary: boolean, sets: number }>();
+
+      for (const ex of session.exercises) {
+        const exInfo = exMap.get(ex.exerciseName.toLowerCase());
+        if (!exInfo) continue;
+
+        const completedSets = ex.sets.filter((s: { completed: boolean }) => s.completed).length;
+        if (completedSets === 0) continue;
+
+        for (const m of exInfo.primary) {
+          if (!hitMusclesThisSession.has(m) || hitMusclesThisSession.get(m)!.isPrimary === false) {
+            hitMusclesThisSession.set(m, { isPrimary: true, sets: completedSets });
+          } else {
+            hitMusclesThisSession.get(m)!.sets += completedSets;
+          }
+        }
+
+        for (const m of exInfo.secondary) {
+          if (!hitMusclesThisSession.has(m)) {
+            hitMusclesThisSession.set(m, { isPrimary: false, sets: completedSets });
+          } else if (hitMusclesThisSession.get(m)!.isPrimary === false) {
+            hitMusclesThisSession.get(m)!.sets += completedSets;
+          }
+        }
+      }
+
+      for (const [muscle, data] of hitMusclesThisSession.entries()) {
+        if (!muscleStats[muscle]) {
+          muscleStats[muscle] = {
+            lastTrainedAt: null,
+            sessionsLast7Days: new Set(),
+            sessionsLast14Days: new Set(),
+            loadScore: 0
+          };
+        }
+
+        const stat = muscleStats[muscle];
+        if (!stat.lastTrainedAt || sessionDate > stat.lastTrainedAt) {
+          stat.lastTrainedAt = sessionDate;
+        }
+
+        stat.sessionsLast14Days.add(sessionId);
+        if (isLast7) {
+          stat.sessionsLast7Days.add(sessionId);
+        }
+
+        const daysAgo = Math.max(0, Math.floor((now.getTime() - sessionDate.getTime()) / 86400000));
+        let recencyMultiplier = 0;
+        if (daysAgo === 0) recencyMultiplier = 100;
+        else if (daysAgo === 1) recencyMultiplier = 70;
+        else if (daysAgo === 2) recencyMultiplier = 40;
+        else if (daysAgo === 3) recencyMultiplier = 20;
+        else if (daysAgo === 4) recencyMultiplier = 10;
+        else recencyMultiplier = 0;
+
+        const muscleWeight = data.isPrimary ? 1.0 : 0.5;
+        const volumeWeight = Math.min(2.0, Math.max(0.5, data.sets / 4.0));
+
+        stat.loadScore += recencyMultiplier * muscleWeight * volumeWeight;
+      }
+    }
+
+    const readinessList: MuscleReadiness[] = [];
+    for (const [muscle, stat] of Object.entries(muscleStats)) {
+      const score = Math.max(0, 100 - Math.round(stat.loadScore));
+      let status: "ready" | "moderate" | "light" | "recent";
+      if (score >= 80) status = "ready";
+      else if (score >= 60) status = "moderate";
+      else if (score >= 40) status = "light";
+      else status = "recent";
+
+      const daysSince = stat.lastTrainedAt 
+        ? Math.max(0, Math.floor((now.getTime() - stat.lastTrainedAt.getTime()) / 86400000))
+        : null;
+
+      readinessList.push({
+        muscle,
+        readinessScore: score,
+        status: status as "ready" | "moderate" | "light" | "recent",
+        lastTrainedAt: stat.lastTrainedAt ? stat.lastTrainedAt.toISOString() : null,
+        daysSinceLastTrained: daysSince,
+        sessionsLast7Days: stat.sessionsLast7Days.size,
+        sessionsLast14Days: stat.sessionsLast14Days.size
+      });
+    }
+
+    if (readinessList.length === 0) return null;
+
+    let totalScore = 0;
+    readinessList.forEach(r => totalScore += r.readinessScore);
+    const overallScore = Math.round(totalScore / readinessList.length);
+
+    let overallStatus: "ready" | "moderate" | "light" | "recent";
+    if (overallScore >= 80) overallStatus = "ready";
+    else if (overallScore >= 60) overallStatus = "moderate";
+    else if (overallScore >= 40) overallStatus = "light";
+    else overallStatus = "recent";
+
+    const readyMuscles = readinessList.filter(r => r.status === "ready");
+    const recommendation = {
+      muscleGroups: [] as string[],
+      reason: ""
+    };
+
+    if (readyMuscles.length === 0) {
+      recommendation.reason = "Most muscle groups were trained recently. Consider a rest day or a lighter session.";
+    } else {
+      readyMuscles.sort((a, b) => {
+        if (b.readinessScore !== a.readinessScore) return b.readinessScore - a.readinessScore;
+        const daysA = a.daysSinceLastTrained === null ? 999 : a.daysSinceLastTrained;
+        const daysB = b.daysSinceLastTrained === null ? 999 : b.daysSinceLastTrained;
+        return daysB - daysA;
+      });
+      
+      const selected = readyMuscles.slice(0, 2).map(r => r.muscle);
+      recommendation.muscleGroups = selected;
+      recommendation.reason = `Based on your recent training, ${selected.join(" and ").toLowerCase()} have had more time since their last recorded session.`;
+    }
+
+    return {
+      overallScore,
+      status: overallStatus,
+      recommendation,
+      muscleGroups: readinessList.sort((a, b) => a.muscle.localeCompare(b.muscle))
     };
   }
 }

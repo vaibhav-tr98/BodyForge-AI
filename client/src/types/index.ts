@@ -190,3 +190,25 @@ export interface CompleteSessionResponse {
   session: WorkoutSession;
   newPersonalRecords?: PRResult[];
 }
+
+export type TrainingReadinessStatus = "ready" | "moderate" | "light" | "recent";
+
+export interface MuscleReadiness {
+  muscle: string;
+  readinessScore: number;
+  status: TrainingReadinessStatus;
+  lastTrainedAt: string | null;
+  daysSinceLastTrained: number | null;
+  sessionsLast7Days: number;
+  sessionsLast14Days: number;
+}
+
+export interface TrainingReadiness {
+  overallScore: number;
+  status: TrainingReadinessStatus;
+  recommendation: {
+    muscleGroups: string[];
+    reason: string;
+  };
+  muscleGroups: MuscleReadiness[];
+}

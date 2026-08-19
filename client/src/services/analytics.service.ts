@@ -33,6 +33,14 @@ class AnalyticsService {
     }
     return response.data.data;
   }
+
+  public async getTrainingReadiness(): Promise<import("../types").TrainingReadiness | null> {
+    const response = await api.get<ApiResponse<import("../types").TrainingReadiness | null>>("/analytics/readiness");
+    if (!response.data.success) {
+      throw new Error(response.data.message || "Failed to fetch training readiness");
+    }
+    return response.data.data || null;
+  }
 }
 
 export const analyticsService = new AnalyticsService();

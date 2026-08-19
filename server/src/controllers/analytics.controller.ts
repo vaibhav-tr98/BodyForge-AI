@@ -66,6 +66,20 @@ class AnalyticsController {
       next(error);
     }
   };
+
+  public getTrainingReadiness = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.authenticatedUserId;
+      if (!userId) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+      }
+      const data = await analyticsService.getTrainingReadiness(userId);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 export const analyticsController = new AnalyticsController();

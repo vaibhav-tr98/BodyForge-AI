@@ -59,6 +59,17 @@ class ProgressionService {
     plannedSets: number,
     plannedReps: number
   ): Promise<ProgressionResponse> {
+    if (!exerciseName || typeof exerciseName !== 'string') {
+      return {
+        exerciseName: exerciseName || "Unknown",
+        recommendation: null,
+        reason: "Invalid exercise data.",
+        confidence: "low",
+        basedOnSessions: 0,
+        latestPerformance: null,
+      };
+    }
+
     const normalizedName = exerciseName.trim().toLowerCase();
     
     // 1. Fetch relevant completed sessions
@@ -79,7 +90,7 @@ class ProgressionService {
     const exerciseHistory = sessions
       .map((session) => {
         return session.exercises.find(
-          (ex) => ex.exerciseName.trim().toLowerCase() === normalizedName
+          (ex) => ex && ex.exerciseName && typeof ex.exerciseName === 'string' && ex.exerciseName.trim().toLowerCase() === normalizedName
         );
       })
       .filter((ex): ex is IWorkoutSessionExercise => ex !== undefined);

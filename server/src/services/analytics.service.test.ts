@@ -165,3 +165,186 @@ describe("AnalyticsService", () => {
     });
   });
 });
+
+jest.mock("../models/WorkoutSession", () => {
+  return {
+    __esModule: true,
+    default: {
+      find: jest.fn(),
+    }
+  };
+});
+
+jest.mock("../models/Exercise", () => {
+  return {
+    __esModule: true,
+    default: {
+      find: jest.fn(),
+    }
+  };
+});
+
+import WorkoutSession from "../models/WorkoutSession";
+import Exercise from "../models/Exercise";
+
+describe("AnalyticsService - getTrainingReadiness", () => {
+  let analyticsService: any;
+  const originalDate = Date;
+
+  beforeEach(() => {
+    const { AnalyticsService } = require("./analytics.service");
+    analyticsService = new AnalyticsService();
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    global.Date = originalDate;
+  });
+
+  const mockNow = new Date("2024-10-15T12:00:00Z");
+
+  const mockDateClass = () => {
+    class MockDate extends Date {
+      constructor(...args: any[]) {
+        if (args.length === 0) {
+          super(mockNow.getTime());
+        } else {
+          super(...args as [any]);
+        }
+      }
+      static now() {
+        return mockNow.getTime();
+      }
+    }
+    global.Date = MockDate as any;
+  };
+
+  it("should return null for new user with no history (Insufficient history)", async () => {
+    (WorkoutSession.find as jest.Mock).mockReturnValue({
+      lean: jest.fn().mockResolvedValue([])
+    });
+
+    const result = await analyticsService.getTrainingReadiness("testUser");
+    expect(result).toBeNull();
+  });
+
+  it("should return 'ready' for a single older completed workout", async () => {
+    mockDateClass();
+    
+    (WorkoutSession.find as jest.Mock).mockReturnValue({
+      lean: jest.fn().mockResolvedValue([
+        {
+          _id: "s1",
+          status: "completed",
+          completedAt: new Date("2024-10-01T12:00:00Z"), // 14 days ago (borderline)
+          exercises: [
+            { exerciseName: "Bench Press", sets: [{ completed: true }] }
+          ]
+        }
+      ])
+    });
+
+    (Exercise.find as jest.Mock).mockReturnValue({
+      lean: jest.fn().mockResolvedValue([
+        { name: "Bench Press", primaryMuscles: ["chest"], secondaryMuscles: ["triceps"] }
+      ])
+    });
+
+    const result = await analyticsService.getTrainingReadiness("testUser");
+    expect(result.status).toBe("ready");
+    expect(result.muscleGroups.find((m: any) => m.muscle === "Chest").status).toBe("ready");
+    expect(result.muscleGroups.find((m: any) => m.muscle === "Chest").readinessScore).toBe(100);
+  });
+
+  it("should return 'recent' for a workout completed today (Recent workout affects readiness)", async () => {
+    mockDateClass();
+    
+    (WorkoutSession.find as jest.Mock).mockReturnValue({
+      lean: jest.fn().mockResolvedValue([
+        {
+          _id: "s1",
+          status: "completed",
+          completedAt: new Date("2024-10-15T10:00:00Z"), // Today
+          exercises: [
+            { exerciseName: "Squat", sets: [{ completed: true }, { completed: true }, { completed: true }, { completed: true }] }
+          ]
+        }
+      ])
+    });
+
+    (Exercise.find as jest.Mock).mockReturnValue({
+      lean: jest.fn().mockResolvedValue([
+        { name: "Squat", primaryMuscles: ["quadriceps"], secondaryMuscles: ["glutes"] }
+      ])
+    });
+
+    const result = await analyticsService.getTrainingReadiness("testUser");
+    
+    const legs = result.muscleGroups.find((m: any) => m.muscle === "Legs");
+    expect(legs.readinessScore).toBeLessThan(40);
+    expect(legs.status).toBe("recent");
+  });
+
+  it("should properly aggregate duplicate primary/secondary muscles and multiple sessions", async () => {
+    mockDateClass();
+    
+    (WorkoutSession.find as jest.Mock).mockReturnValue({
+      lean: jest.fn().mockResolvedValue([
+        {
+          _id: "s1",
+          status: "completed",
+          completedAt: new Date("2024-10-14T10:00:00Z"), // 1 day ago
+          exercises: [
+            { exerciseName: "Deadlift", sets: [{ completed: true }, { completed: true }] },
+            { exerciseName: "Hamstring Curl", sets: [{ completed: true }, { completed: true }] }
+          ]
+        },
+        {
+          _id: "s2",
+          status: "completed",
+          completedAt: new Date("2024-10-13T10:00:00Z"), // 2 days ago
+          exercises: [
+            { exerciseName: "Deadlift", sets: [{ completed: true }, { completed: true }] }
+          ]
+        }
+      ])
+    });
+
+    (Exercise.find as jest.Mock).mockReturnValue({
+      lean: jest.fn().mockResolvedValue([
+        { name: "Deadlift", primaryMuscles: ["hamstrings"], secondaryMuscles: ["glutes", "lower back"] },
+        { name: "Hamstring Curl", primaryMuscles: ["hamstrings"], secondaryMuscles: [] }
+      ])
+    });
+
+    const result = await analyticsService.getTrainingReadiness("testUser");
+    const legs = result.muscleGroups.find((m: any) => m.muscle === "Legs");
+    // Duplicate muscles map to Legs: hamstrings and glutes both map to Legs. Primary overrides secondary.
+    // 2 sessions = increased load
+    expect(legs.sessionsLast7Days).toBe(2);
+  });
+
+  it("should handle unknown exercises without crashing", async () => {
+    mockDateClass();
+    
+    (WorkoutSession.find as jest.Mock).mockReturnValue({
+      lean: jest.fn().mockResolvedValue([
+        {
+          _id: "s1",
+          status: "completed",
+          completedAt: new Date("2024-10-15T10:00:00Z"),
+          exercises: [
+            { exerciseName: "Unknown Custom Lift", sets: [{ completed: true }] }
+          ]
+        }
+      ])
+    });
+
+    (Exercise.find as jest.Mock).mockReturnValue({
+      lean: jest.fn().mockResolvedValue([])
+    });
+
+    const result = await analyticsService.getTrainingReadiness("testUser");
+    expect(result).not.toBeNull();
+  });
+});

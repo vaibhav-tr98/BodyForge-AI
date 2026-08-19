@@ -13,7 +13,16 @@ import { errorMiddleware } from "./middleware/error.middleware";
 const app = express();
 
 // Middleware
-app.use(cors({ origin: env.clientUrl }));
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow any localhost port or the explicitly configured client URL
+    if (!origin || /^https?:\/\/localhost:\d+$/.test(origin) || origin === env.clientUrl) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+}));
 app.use(express.json());
 
 // Routes
