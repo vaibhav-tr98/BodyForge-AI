@@ -65,7 +65,8 @@ export default function TrainingReadinessSection() {
     "ready": "READY TO TRAIN",
     "moderate": "MODERATE",
     "light": "LIGHT / CONSIDER REDUCING LOAD",
-    "recent": "RECENTLY TRAINED"
+    "recent": "RECENTLY TRAINED",
+    "no_history": "READY TO TRAIN"
   };
 
   return (
@@ -95,9 +96,11 @@ export default function TrainingReadinessSection() {
                 </>
               ) : (
                 <>
-                  <p className="text-xl font-semibold text-slate-300 mt-4 mb-1">
-                    REST / LIGHT DAY
-                  </p>
+                  {readiness.status === "no_history" || readiness.overallScore >= 80 ? (
+                    <p className="text-xl font-semibold text-slate-300 mt-4 mb-1">ANY MUSCLE GROUP</p>
+                  ) : (
+                    <p className="text-xl font-semibold text-slate-300 mt-4 mb-1">REST / LIGHT DAY</p>
+                  )}
                   <p className="text-slate-400 text-sm">
                     {readiness.recommendation.reason}
                   </p>
@@ -131,10 +134,10 @@ export default function TrainingReadinessSection() {
                     </div>
                   </div>
                   <p className="text-sm text-slate-400 font-medium mb-1">
-                    {m.status === 'ready' ? 'Ready' : m.status === 'moderate' ? 'Moderate' : m.status === 'light' ? 'Light' : 'Recently trained'}
+                    {m.status === 'ready' ? 'Ready' : m.status === 'moderate' ? 'Moderate' : m.status === 'light' ? 'Light' : m.status === 'no_history' ? 'Untracked' : 'Recently trained'}
                   </p>
                   <p className="text-xs text-slate-500 flex items-center gap-1">
-                    {m.status === 'ready' ? '?' : '?'} {m.daysSinceLastTrained === null ? "14+ days since last session" : m.daysSinceLastTrained === 0 ? "Trained today" : m.daysSinceLastTrained === 1 ? "Trained yesterday" : m.daysSinceLastTrained + " days since last session"}
+                    {m.status === 'ready' ? '?' : m.status === 'no_history' ? '?' : '?'} {m.daysSinceLastTrained === null ? "No recorded history" : m.daysSinceLastTrained === 0 ? "Trained today" : m.daysSinceLastTrained === 1 ? "Trained yesterday" : m.daysSinceLastTrained + " days since last session"}
                   </p>
                 </div>
               ))}
@@ -145,3 +148,8 @@ export default function TrainingReadinessSection() {
     </section>
   );
 }
+
+
+
+
+

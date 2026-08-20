@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { getTodayRecommendation } from "../services/workout.service";
 import { getActiveWorkout } from "../services/workoutSession.service";
 import { analyticsService } from "../services/analytics.service";
 import { getExercises } from "../services/exercise.service";
@@ -35,6 +36,12 @@ export default function DashboardPage() {
     queryKey: ["exercises"],
     queryFn: () => getExercises({ limit: 100 }),
     staleTime: 24 * 60 * 60 * 1000,
+  });
+
+      const { data: recommendationData } = useQuery({
+    queryKey: ["workout", "recommendation", "today"],
+    queryFn: getTodayRecommendation,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: exerciseProgress, isLoading: loadingProgress } = useQuery({
@@ -121,43 +128,60 @@ export default function DashboardPage() {
           <div className="grid gap-6 lg:grid-cols-2">
             {/* ── Today's Workout & Progression ────────────────────────────────── */}
             <div className="space-y-6">
-              <section>
-                <h2 className="mb-4 text-xl font-bold text-white flex items-center gap-2">
-                  <Target className="text-cyan-500" size={20} />
-                  TODAY'S WORKOUT
-                </h2>
-                <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-                  {activeSession ? (
-                    <div>
-                      <p className="text-lg font-medium text-white mb-2">
-                        {typeof activeSession.workout === 'string' ? "Active Session" : activeSession.workout.name}
-                      </p>
-                      <p className="mb-6 text-slate-400 text-sm">
-                        You have a session in progress.
-                      </p>
-                      <Link
-                        to={`/workouts/session/${activeSession.id}`}
-                        className="inline-block rounded-lg bg-amber-600 px-6 py-3 font-semibold text-white transition hover:bg-amber-700"
-                      >
-                        Resume Workout
-                      </Link>
-                    </div>
-                  ) : (
-                    <div>
-                      <p className="text-lg font-medium text-white mb-2">Ready to train?</p>
-                      <p className="mb-6 text-slate-400 text-sm">
-                        Select a workout plan to begin your next session.
-                      </p>
-                      <Link
-                        to="/workouts"
-                        className="inline-block rounded-lg bg-cyan-600 px-6 py-3 font-semibold text-white transition hover:bg-cyan-700 w-full text-center"
-                      >
-                        View Workouts
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </section>
+                              <section>
+                  <h2 className="mb-4 text-xl font-bold text-white flex items-center gap-2">
+                    <Target className="text-cyan-500" size={20} />
+                    TODAY'S WORKOUT
+                  </h2>
+                  <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+                    {activeSession ? (
+                      <div>
+                        <p className="text-lg font-medium text-white mb-2">
+                          {typeof activeSession.workout === 'string' ? "Active Session" : activeSession.workout.name}
+                        </p>
+                        <p className="mb-6 text-slate-400 text-sm">
+                          Workout in progress
+                        </p>
+                        <Link
+                          to={`/workouts/session/${activeSession.id}`}
+                          className="inline-block rounded-lg bg-amber-600 px-6 py-3 font-semibold text-white transition hover:bg-amber-700"
+                        >
+                          Resume Workout
+                        </Link>
+                      </div>
+                    ) : recommendationData?.recommendation ? (
+                      <div>
+                        <p className="text-lg font-medium text-white mb-2">
+                          {recommendationData.recommendation.workoutName}
+                        </p>
+                        <p className="mb-6 text-slate-400 text-sm">
+                          {recommendationData.recommendation.reason}
+                        </p>
+                        <Link
+                          to={`/workouts/${recommendationData.recommendation.workoutId}`}
+                          className="inline-block rounded-lg bg-cyan-600 px-6 py-3 font-semibold text-white transition hover:bg-cyan-700 w-full text-center"
+                        >
+                          View Workout
+                        </Link>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-lg font-medium text-white mb-2">
+                          {summary && summary.totalWorkouts === 0 ? "Start your first workout to begin building your BodyForge training history." : "Ready to train?"}
+                        </p>
+                        <p className="mb-6 text-slate-400 text-sm">
+                          {summary && summary.totalWorkouts === 0 ? "" : recommendationData?.reason || "Select a workout plan to begin your next session."}
+                        </p>
+                        <Link
+                          to="/workouts"
+                          className="inline-block rounded-lg bg-cyan-600 px-6 py-3 font-semibold text-white transition hover:bg-cyan-700 w-full text-center"
+                        >
+                          View Workouts
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                </section>
 
               {recommendation && (
                 <section>
@@ -429,3 +453,4 @@ function getGreetingTime(): string {
   if (hour < 18) return "afternoon";
   return "evening";
 }
+

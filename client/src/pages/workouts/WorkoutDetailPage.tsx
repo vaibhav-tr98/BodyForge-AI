@@ -1,17 +1,24 @@
-import { useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Edit3 } from "lucide-react";
-import { getWorkoutById } from "../../services/workout.service";
+import { getWorkoutById, getTodayRecommendation } from "../../services/workout.service";
 import { startWorkout, getActiveWorkout } from "../../services/workoutSession.service";
 import Loader from "../../components/ui/Loader";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import ProgressionTargetPreview from "./components/ProgressionTargetPreview";
 
 export default function WorkoutDetailPage() {
   const { id } = useParams<{ id: string }>();
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const { data: recommendationData } = useQuery({
+    queryKey: ["workout", "recommendation", "today"],
+    queryFn: getTodayRecommendation,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const isRecommended = recommendationData?.recommendation?.workoutId === id;
 
   const { data: workout, isLoading, isError } = useQuery({
     queryKey: ["workouts", id],
@@ -53,7 +60,7 @@ export default function WorkoutDetailPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
-      {/* ── Navigation & Actions ───────────────────────────────────────────── */}
+      {/* 🌟 Navigation & Actions ──────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <Link
           to="/workouts"
@@ -72,7 +79,23 @@ export default function WorkoutDetailPage() {
         </Link>
       </div>
 
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      {isRecommended && recommendationData?.recommendation && (
+        <div className="rounded-2xl border border-cyan-900/30 bg-gradient-to-br from-slate-900 to-cyan-950/20 p-6 mb-8 mt-8">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="bg-cyan-500/20 text-cyan-400 text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">
+              Today's Workout
+            </div>
+            <div className="text-cyan-500 text-sm font-semibold ml-auto flex items-center gap-2">
+              <span>Readiness</span>
+              <span className="bg-cyan-950 px-2 py-1 rounded text-white">{recommendationData.recommendation.readinessScore} / 100</span>
+            </div>
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">Why this workout?</h2>
+          <p className="text-slate-300">{recommendationData.recommendation.reason}</p>
+        </div>
+      )}
+
+      {/* 🌟 Header ──────────────────────────────────────────────────────────── */}
       <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8">
         <h1 className="text-3xl font-bold text-white">{workout.name}</h1>
         {workout.description && (
@@ -116,34 +139,43 @@ export default function WorkoutDetailPage() {
           {workout.exercises.map((exercise, index) => (
             <div
               key={index}
-              className="flex flex-col gap-4 rounded-xl border border-slate-800 bg-slate-900/50 p-6 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col rounded-xl border border-slate-800 bg-slate-900/50 p-6"
             >
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cyan-950 font-bold text-cyan-400">
-                  {index + 1}
-                </div>
-                <h3 className="text-lg font-semibold text-white">
-                  {exercise.name}
-                </h3>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-6 sm:justify-end">
-                <div className="text-center">
-                  <div className="text-sm text-slate-400">Sets</div>
-                  <div className="font-semibold text-white">{exercise.sets}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-sm text-slate-400">Reps</div>
-                  <div className="font-semibold text-white">{exercise.reps}</div>
-                </div>
-                {exercise.weight !== undefined && (
-                  <div className="text-center">
-                    <div className="text-sm text-slate-400">Weight</div>
-                    <div className="font-semibold text-white">
-                      {exercise.weight} kg
-                    </div>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cyan-950 font-bold text-cyan-400">
+                    {index + 1}
                   </div>
-                )}
+                  <h3 className="text-lg font-semibold text-white">
+                    {exercise.name}
+                  </h3>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-6 sm:justify-end">
+                  <div className="text-center">
+                    <div className="text-sm text-slate-400">Sets</div>
+                    <div className="font-semibold text-white">{exercise.sets}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-sm text-slate-400">Reps</div>
+                    <div className="font-semibold text-white">{exercise.reps}</div>
+                  </div>
+                  {exercise.weight !== undefined && (
+                    <div className="text-center">
+                      <div className="text-sm text-slate-400">Weight</div>
+                      <div className="font-semibold text-white">
+                        {exercise.weight} kg
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="w-full mt-4">
+                <ProgressionTargetPreview 
+                  exerciseName={exercise.name} 
+                  plannedSets={exercise.sets} 
+                  plannedReps={exercise.reps} 
+                />
               </div>
             </div>
           ))}

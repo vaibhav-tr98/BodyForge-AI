@@ -191,7 +191,7 @@ export interface CompleteSessionResponse {
   newPersonalRecords?: PRResult[];
 }
 
-export type TrainingReadinessStatus = "ready" | "moderate" | "light" | "recent";
+export type TrainingReadinessStatus = "ready" | "moderate" | "light" | "recent" | "no_history";
 
 export interface MuscleReadiness {
   muscle: string;
@@ -212,3 +212,17 @@ export interface TrainingReadiness {
   };
   muscleGroups: MuscleReadiness[];
 }
+
+export interface TodayWorkoutRecommendation {
+  workoutId: string;
+  workoutName: string;
+  reason: string;
+  readinessScore: number;
+  confidence: "high" | "medium" | "low";
+}
+
+export interface WorkoutRecommendationResponse {
+  recommendation: TodayWorkoutRecommendation | null;
+  reason?: string;
+}
+

@@ -6,6 +6,16 @@ import type {
   Workout,
 } from "../types";
 
+import type { WorkoutRecommendationResponse } from "../types";
+
+export async function getTodayRecommendation(): Promise<WorkoutRecommendationResponse> {
+  const { data } = await api.get<ApiResponse<WorkoutRecommendationResponse>>("/api/workouts/recommendation/today");
+  if (!data.success || !data.data) {
+    throw new Error(data.message ?? "Failed to retrieve workout recommendation");
+  }
+  return data.data;
+}
+
 export async function getWorkouts(): Promise<Workout[]> {
   const { data } = await api.get<ApiResponse<{ workouts: Workout[] }>>(
     "/api/workouts",

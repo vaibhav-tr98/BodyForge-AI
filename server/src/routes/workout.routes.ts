@@ -4,6 +4,7 @@ import {
   deleteWorkout,
   getWorkoutById,
   getWorkouts,
+  getTodayRecommendation,
   updateWorkout,
 } from "../controllers/workout.controller";
 import { authenticate } from "../middleware/auth.middleware";
@@ -22,6 +23,7 @@ const router = Router();
 
 router.post("/", authenticate, validateBody(createWorkoutSchema), createWorkout);
 router.get("/", authenticate, getWorkouts);
+router.get("/recommendation/today", authenticate, getTodayRecommendation);
 router.get("/:id", authenticate, validateParams(workoutIdParamSchema), getWorkoutById);
 router.patch(
   "/:id",

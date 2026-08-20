@@ -28,6 +28,25 @@ export const createWorkout = async (req: Request, res: Response, next: NextFunct
   }
 };
 
+import { workoutRecommendationService } from "../services/workoutRecommendation.service";
+
+export const getTodayRecommendation = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const userId = getAuthenticatedUserId(req, res);
+  if (!userId) return;
+
+  try {
+    const data = await workoutRecommendationService.getTodayRecommendation(userId);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    if (error instanceof AppError) {
+      next(error);
+      return;
+    }
+    logger.error("Get today recommendation failed:", error);
+    res.status(500).json({ success: false, message: "Unable to get recommendation" });
+  }
+};
+
 export const getWorkouts = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const userId = getAuthenticatedUserId(req, res);
   if (!userId) return;

@@ -6,7 +6,7 @@ import logger from "../utils/logger";
 
 
 
-const MUSCLE_GROUP_MAP: Record<string, string> = {
+export const MUSCLE_GROUP_MAP: Record<string, string> = {
   abdominals: "Core",
   hamstrings: "Legs",
   adductors: "Legs",
@@ -29,7 +29,7 @@ const MUSCLE_GROUP_MAP: Record<string, string> = {
 export interface MuscleReadiness {
   muscle: string;
   readinessScore: number;
-  status: "ready" | "moderate" | "light" | "recent";
+  status: "ready" | "moderate" | "light" | "recent" | "no_history";
   lastTrainedAt: string | null;
   daysSinceLastTrained: number | null;
   sessionsLast7Days: number;
@@ -38,7 +38,7 @@ export interface MuscleReadiness {
 
 export interface TrainingReadiness {
   overallScore: number;
-  status: "ready" | "moderate" | "light" | "recent";
+  status: "ready" | "moderate" | "light" | "recent" | "no_history";
   recommendation: {
     muscleGroups: string[];
     reason: string;
@@ -455,13 +455,8 @@ export class AnalyticsService {
 
     const sessions = await WorkoutSession.find({
       user: userId,
-      status: "completed",
-      completedAt: { $gte: fourteenDaysAgo }
-    }).lean();
-
-    if (sessions.length === 0) {
-       return null;
-    }
+      status: "completed"
+    }).sort({ completedAt: 1 }).lean();
 
     const uniqueExerciseNames = new Set<string>();
     for (const session of sessions) {
@@ -505,6 +500,7 @@ export class AnalyticsService {
       if (!session.completedAt) continue;
       const sessionDate = new Date(session.completedAt);
       const isLast7 = sessionDate >= sevenDaysAgo;
+      const isLast14 = sessionDate >= fourteenDaysAgo;
       const sessionId = session._id.toString();
 
       const hitMusclesThisSession = new Map<string, { isPrimary: boolean, sets: number }>();
@@ -548,7 +544,7 @@ export class AnalyticsService {
           stat.lastTrainedAt = sessionDate;
         }
 
-        stat.sessionsLast14Days.add(sessionId);
+        if (isLast14) stat.sessionsLast14Days.add(sessionId);
         if (isLast7) {
           stat.sessionsLast7Days.add(sessionId);
         }
@@ -572,8 +568,9 @@ export class AnalyticsService {
     const readinessList: MuscleReadiness[] = [];
     for (const [muscle, stat] of Object.entries(muscleStats)) {
       const score = Math.max(0, 100 - Math.round(stat.loadScore));
-      let status: "ready" | "moderate" | "light" | "recent";
-      if (score >= 80) status = "ready";
+      let status: "ready" | "moderate" | "light" | "recent" | "no_history";
+      if (!stat.lastTrainedAt) status = "no_history";
+      else if (score >= 80) status = "ready";
       else if (score >= 60) status = "moderate";
       else if (score >= 40) status = "light";
       else status = "recent";
@@ -585,7 +582,7 @@ export class AnalyticsService {
       readinessList.push({
         muscle,
         readinessScore: score,
-        status: status as "ready" | "moderate" | "light" | "recent",
+        status: status as "ready" | "moderate" | "light" | "recent" | "no_history",
         lastTrainedAt: stat.lastTrainedAt ? stat.lastTrainedAt.toISOString() : null,
         daysSinceLastTrained: daysSince,
         sessionsLast7Days: stat.sessionsLast7Days.size,
@@ -599,19 +596,24 @@ export class AnalyticsService {
     readinessList.forEach(r => totalScore += r.readinessScore);
     const overallScore = Math.round(totalScore / readinessList.length);
 
-    let overallStatus: "ready" | "moderate" | "light" | "recent";
-    if (overallScore >= 80) overallStatus = "ready";
+    let overallStatus: "ready" | "moderate" | "light" | "recent" | "no_history";
+    const allNoHistory = readinessList.every(r => r.status === "no_history");
+    if (allNoHistory) overallStatus = "no_history";
+    else if (overallScore >= 80) overallStatus = "ready";
     else if (overallScore >= 60) overallStatus = "moderate";
     else if (overallScore >= 40) overallStatus = "light";
     else overallStatus = "recent";
 
     const readyMuscles = readinessList.filter(r => r.status === "ready");
+    const musclesWithHistory = readinessList.filter(r => r.status !== "no_history");
     const recommendation = {
       muscleGroups: [] as string[],
       reason: ""
     };
 
-    if (readyMuscles.length === 0) {
+    if (musclesWithHistory.length === 0) {
+      recommendation.reason = "Build more training history to establish your readiness baseline.";
+    } else if (readyMuscles.length === 0) {
       recommendation.reason = "Most muscle groups were trained recently. Consider a rest day or a lighter session.";
     } else {
       readyMuscles.sort((a, b) => {
@@ -637,3 +639,10 @@ export class AnalyticsService {
 
 export const analyticsService = new AnalyticsService();
 export default analyticsService;
+
+
+
+
+
+
+
