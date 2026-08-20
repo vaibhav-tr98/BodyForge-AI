@@ -2,6 +2,7 @@ import { workoutSessionRepository } from "../repositories/workoutSession.reposit
 import { progressionService, ProgressionResponse } from "./progression.service";
 import WorkoutSession from "../models/WorkoutSession";
 import Exercise from "../models/Exercise";
+import logger from "../utils/logger";
 
 
 
@@ -201,7 +202,11 @@ export class AnalyticsService {
               lastExercise.plannedReps
             );
           } catch (error) {
-            console.error("Failed to generate progression recommendation:", error);
+            logger.warn("Failed to generate progression recommendation", {
+              userId,
+              exerciseName: lastExercise.exerciseName,
+              error: error instanceof Error ? error.message : String(error)
+            });
             // Non-fatal error, continue without recommendation
           }
         }

@@ -235,7 +235,7 @@ export default function DashboardPage() {
           </div>
 
           {/* ── Training Insights & PRs ────────────────────────────────────── */}
-          {prData && (prData.personalRecords.length > 0 || prData.insights.length > 0) && (
+          {prData && (
             <div className="grid gap-6 lg:grid-cols-2 pt-4">
               {/* Training Insights */}
               <section>
@@ -244,18 +244,19 @@ export default function DashboardPage() {
                   TRAINING INSIGHTS
                 </h2>
                 <div className="space-y-3">
-                  {prData.insights.map((insight, idx) => (
-                    <div key={idx} className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-                      <p className="text-sm font-semibold text-cyan-500 mb-1">{insight.title}</p>
-                      <div className="flex justify-between items-center">
-                        <span className="text-white font-medium">{insight.exerciseName}</span>
-                        <span className="text-slate-300 font-bold">{insight.value}</span>
+                  {prData.insights.length > 0 ? (
+                    prData.insights.map((insight, idx) => (
+                      <div key={idx} className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+                        <p className="text-sm font-semibold text-cyan-500 mb-1">{insight.title}</p>
+                        <div className="flex justify-between items-center">
+                          <span className="text-white font-medium">{insight.exerciseName}</span>
+                          <span className="text-slate-300 font-bold">{insight.value}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                  {prData.insights.length === 0 && (
+                    ))
+                  ) : (
                     <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 text-center">
-                      <p className="text-slate-400">No training insights yet.</p>
+                      <p className="text-slate-400">Complete a few workouts to unlock training insights.</p>
                     </div>
                   )}
                 </div>
@@ -267,33 +268,40 @@ export default function DashboardPage() {
                   <Trophy className="text-amber-500" size={20} />
                   PERSONAL RECORDS
                 </h2>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {prData.personalRecords.slice(0, 4).map((pr, idx) => (
-                    <div key={idx} className="rounded-2xl border border-slate-800 bg-slate-900 p-5 flex flex-col justify-between">
-                      <p className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-3 truncate">
-                        {pr.exerciseName}
-                      </p>
-                      <div className="space-y-2">
-                        {pr.heaviestWeight > 0 && (
+                {prData.personalRecords.length > 0 ? (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {prData.personalRecords.slice(0, 4).map((pr, idx) => (
+                      <div key={idx} className="rounded-2xl border border-slate-800 bg-slate-900 p-5 flex flex-col justify-between">
+                        <p className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-3 truncate">
+                          {pr.exerciseName}
+                        </p>
+                        <div className="space-y-2">
+                          {pr.heaviestWeight > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-xs text-slate-500 flex items-center gap-1"><Dumbbell size={12}/> Heaviest</span>
+                              <span className="text-sm font-semibold text-white">{pr.heaviestWeight} kg</span>
+                            </div>
+                          )}
                           <div className="flex justify-between">
-                            <span className="text-xs text-slate-500 flex items-center gap-1"><Dumbbell size={12}/> Heaviest</span>
-                            <span className="text-sm font-semibold text-white">{pr.heaviestWeight} kg</span>
+                            <span className="text-xs text-slate-500 flex items-center gap-1"><Activity size={12}/> Best Reps</span>
+                            <span className="text-sm font-semibold text-white">{pr.bestReps}</span>
                           </div>
-                        )}
-                        <div className="flex justify-between">
-                          <span className="text-xs text-slate-500 flex items-center gap-1"><Activity size={12}/> Best Reps</span>
-                          <span className="text-sm font-semibold text-white">{pr.bestReps}</span>
+                          {pr.weightImprovementPercent !== null && pr.weightImprovementPercent > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-xs text-slate-500 flex items-center gap-1"><TrendingUp size={12}/> Improve</span>
+                              <span className="text-sm font-bold text-green-400">+{pr.weightImprovementPercent.toFixed(1)}%</span>
+                            </div>
+                          )}
                         </div>
-                        {pr.weightImprovementPercent !== null && pr.weightImprovementPercent > 0 && (
-                          <div className="flex justify-between">
-                            <span className="text-xs text-slate-500 flex items-center gap-1"><TrendingUp size={12}/> Improve</span>
-                            <span className="text-sm font-bold text-green-400">+{pr.weightImprovementPercent.toFixed(1)}%</span>
-                          </div>
-                        )}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 text-center h-full flex flex-col items-center justify-center min-h-[160px]">
+                    <p className="text-lg font-medium text-white mb-2">No personal records yet.</p>
+                    <p className="text-slate-400">Complete a workout to start setting records.</p>
+                  </div>
+                )}
               </section>
             </div>
           )}
