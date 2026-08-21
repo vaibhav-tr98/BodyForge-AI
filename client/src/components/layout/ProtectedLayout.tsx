@@ -51,6 +51,12 @@ export default function ProtectedLayout() {
               History
             </a>
             <a
+              href="/nutrition"
+              className="text-sm font-medium text-slate-300 transition hover:text-cyan-400"
+            >
+              Nutrition
+            </a>
+            <a
               href="/profile"
               className="text-sm font-medium text-slate-300 transition hover:text-cyan-400"
             >

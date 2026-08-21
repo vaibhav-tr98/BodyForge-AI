@@ -8,6 +8,7 @@ import exerciseRoutes from "./routes/exercise.routes";
 import workoutSessionRoutes from "./routes/workoutSession.routes";
 import progressionRoutes from "./routes/progression.routes";
 import analyticsRoutes from "./routes/analytics.routes";
+import nutritionRoutes from "./routes/nutrition.routes";
 import { errorMiddleware } from "./middleware/error.middleware";
 
 const app = express();
@@ -33,6 +34,7 @@ app.use("/api/exercises", exerciseRoutes);
 app.use("/api/workout-sessions", workoutSessionRoutes);
 app.use("/api/progression", progressionRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/nutrition", nutritionRoutes);
 
 // Health Check Route
 app.get("/health", (req, res) => {

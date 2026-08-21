@@ -12,6 +12,7 @@ import DashboardPage from "../pages/DashboardPage";
 import OnboardingPage from "../pages/OnboardingPage";
 import ProfilePage from "../pages/ProfilePage";
 import NotFoundPage from "../pages/NotFoundPage";
+import NutritionPage from "../pages/NutritionPage";
 
 import WorkoutListPage from "../pages/workouts/WorkoutListPage";
 import WorkoutCreatePage from "../pages/workouts/WorkoutCreatePage";
@@ -70,6 +71,10 @@ export const router = createBrowserRouter([
       {
         path: "/profile",
         element: <ProfilePage />,
+      },
+      {
+        path: "/nutrition",
+        element: <NutritionPage />,
       },
       {
         path: "/workouts",

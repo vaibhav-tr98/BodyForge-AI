@@ -226,3 +226,41 @@ export interface WorkoutRecommendationResponse {
   reason?: string;
 }
 
+// -- Nutrition -------------------------------------------------------------------
+
+export interface NutritionEntry {
+  _id: string;
+  user: string;
+  date: string;
+  foodName: string;
+  quantity: number;
+  unit: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateNutritionEntryRequest {
+  date: string;
+  foodName: string;
+  quantity: number;
+  unit: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+export type UpdateNutritionEntryRequest = Partial<CreateNutritionEntryRequest>;
+
+export interface NutritionSummary {
+  date: string;
+  totalCalories: number;
+  totalProtein: number;
+  totalCarbs: number;
+  totalFat: number;
+  entryCount: number;
+}
