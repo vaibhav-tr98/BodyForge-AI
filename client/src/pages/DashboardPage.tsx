@@ -9,6 +9,7 @@ import { getExercises } from "../services/exercise.service";
 import Loader from "../components/ui/Loader";
 import ExerciseProgressChart from "../components/common/ExerciseProgressChart";
 import TrainingReadinessSection from "../components/dashboard/TrainingReadinessSection";
+import NutritionTodaySection from "../components/dashboard/NutritionTodaySection";
 import { Flame, Dumbbell, Zap, Activity, Target, Search, Trophy, TrendingUp } from "lucide-react";
 
 export default function DashboardPage() {
@@ -81,6 +82,7 @@ export default function DashboardPage() {
       ) : (
         <>
           <TrainingReadinessSection />
+          <NutritionTodaySection />
           {/* ── Your Progress ─────────────────────────────────────────────────── */}
           <section>
             <h2 className="mb-4 text-xl font-bold text-white flex items-center gap-2">

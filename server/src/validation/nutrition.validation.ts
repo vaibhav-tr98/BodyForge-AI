@@ -3,12 +3,8 @@ import { z } from "zod";
 export const nutritionEntrySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format. Expected YYYY-MM-DD"),
   foodName: z.string().min(1).max(100),
-  quantity: z.number().min(0),
+  quantity: z.number().positive(),
   unit: z.string().min(1).max(20),
-  calories: z.number().min(0),
-  protein: z.number().min(0),
-  carbs: z.number().min(0),
-  fat: z.number().min(0),
 });
 
 export const createNutritionEntrySchema = {

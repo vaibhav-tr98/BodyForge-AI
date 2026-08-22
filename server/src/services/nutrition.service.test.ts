@@ -1,6 +1,8 @@
-import { nutritionService } from "./nutrition.service";
+﻿import { nutritionService } from "./nutrition.service";
 import { nutritionRepository } from "../repositories/nutrition.repository";
 import { AppError } from "../errors/AppError";
+import { userRepository } from "../repositories/user.repository";
+import { workoutRecommendationService } from "./workoutRecommendation.service"; import { foodService } from "./food.service";
 
 jest.mock("../repositories/nutrition.repository", () => ({
   nutritionRepository: {
@@ -10,6 +12,18 @@ jest.mock("../repositories/nutrition.repository", () => ({
     updateOne: jest.fn(),
     deleteOne: jest.fn(),
   },
+}));
+
+jest.mock("../repositories/user.repository", () => ({
+  userRepository: {
+    findById: jest.fn(),
+  }
+}));
+
+jest.mock("./food.service", () => ({ foodService: { calculateMacros: jest.fn().mockReturnValue({ calories: 165, protein: 31, carbs: 0, fat: 3.6 }) } })); jest.mock("./workoutRecommendation.service", () => ({
+  workoutRecommendationService: {
+    getTodayRecommendation: jest.fn(),
+  }
 }));
 
 describe("NutritionService", () => {
@@ -23,14 +37,14 @@ describe("NutritionService", () => {
 
   describe("addEntry", () => {
     it("should create a nutrition entry", async () => {
-      const mockData = { foodName: "Apple", calories: 95, protein: 0.5, carbs: 25, fat: 0.3, quantity: 1, unit: "medium", date: mockDate };
+      const mockData = { foodName: "Chicken Breast", quantity: 100, unit: "g", date: mockDate };
       const mockCreated = { _id: mockEntryId, user: mockUserId, ...mockData };
       
       (nutritionRepository.create as jest.Mock).mockResolvedValue(mockCreated);
       
       const result = await nutritionService.addEntry(mockUserId, mockData);
       
-      expect(nutritionRepository.create).toHaveBeenCalledWith({ ...mockData, user: mockUserId });
+      expect(nutritionRepository.create).toHaveBeenCalledWith(expect.objectContaining({ foodName: "Chicken Breast", user: mockUserId, calories: 165 }));
       expect(result).toEqual(mockCreated);
     });
   });
@@ -108,6 +122,52 @@ describe("NutritionService", () => {
       (nutritionRepository.findById as jest.Mock).mockResolvedValue(mockEntry);
       
       await expect(nutritionService.deleteEntry(mockUserId, mockEntryId)).rejects.toThrow(AppError);
+    });
+  });
+
+  describe("getTodayOverview", () => {
+    it("should return target_reached status and workout details if available, with valid targets", async () => {
+      const mockEntries = [
+        { calories: 2400, protein: 160, carbs: 150, fat: 50 },
+      ];
+      
+      (nutritionRepository.find as jest.Mock).mockResolvedValue(mockEntries);
+      (userRepository.findById as jest.Mock).mockResolvedValue({ weight: 80 });
+      (workoutRecommendationService.getTodayRecommendation as jest.Mock).mockResolvedValue({ 
+        recommendation: { workoutName: "Push Day" } 
+      });
+      
+      const result = await nutritionService.getTodayOverview(mockUserId, mockDate);
+      
+      expect(result.targets?.calories).toBe(2400); // 80 * 30
+      expect(result.targets?.protein).toBe(160); // 80 * 2
+      
+      expect(result.status.calories).toBe("target_reached");
+      expect(result.status.protein).toBe("target_reached");
+      
+      expect(result.workout.hasWorkout).toBe(true);
+      expect(result.workout.workoutName).toBe("Push Day");
+    });
+
+    it("should return null targets if user weight is not provided", async () => {
+      const mockEntries = [
+        { calories: 1500, protein: 100, carbs: 150, fat: 50 },
+      ];
+      
+      (nutritionRepository.find as jest.Mock).mockResolvedValue(mockEntries);
+      (userRepository.findById as jest.Mock).mockResolvedValue({ weight: undefined });
+      (workoutRecommendationService.getTodayRecommendation as jest.Mock).mockResolvedValue({ recommendation: null });
+      
+      const result = await nutritionService.getTodayOverview(mockUserId, mockDate);
+      
+      expect(result.targets).toBeNull();
+      expect(result.progress).toBeNull();
+      
+      expect(result.status.calories).toBe("no_target");
+      expect(result.status.protein).toBe("no_target");
+      
+      expect(result.workout.hasWorkout).toBe(false);
+      expect(result.workout.workoutName).toBeUndefined();
     });
   });
 });

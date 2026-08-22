@@ -1,4 +1,4 @@
-// ── User ────────────────────────────────────────────────────────────────────────
+﻿// ── User ────────────────────────────────────────────────────────────────────────
 
 export interface User {
   id: string;
@@ -228,6 +228,31 @@ export interface WorkoutRecommendationResponse {
 
 // -- Nutrition -------------------------------------------------------------------
 
+export interface CreateNutritionEntryRequest {
+  date: string;
+  foodName: string;
+  quantity: number;
+  unit: string;
+}
+
+export interface UpdateNutritionEntryRequest {
+  date?: string;
+  foodName?: string;
+  quantity?: number;
+  unit?: string;
+}
+
+export interface NutritionFood {
+  name: string;
+  aliases?: string[];
+  baseQuantity: number;
+  baseUnit: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
 export interface NutritionEntry {
   _id: string;
   user: string;
@@ -243,18 +268,7 @@ export interface NutritionEntry {
   updatedAt: string;
 }
 
-export interface CreateNutritionEntryRequest {
-  date: string;
-  foodName: string;
-  quantity: number;
-  unit: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-}
 
-export type UpdateNutritionEntryRequest = Partial<CreateNutritionEntryRequest>;
 
 export interface NutritionSummary {
   date: string;
@@ -263,4 +277,30 @@ export interface NutritionSummary {
   totalCarbs: number;
   totalFat: number;
   entryCount: number;
+}
+
+export interface NutritionOverview {
+  date: string;
+  nutrition: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  targets: {
+    calories: number;
+    protein: number;
+  } | null;
+  progress: {
+    caloriesPercent: number;
+    proteinPercent: number;
+  } | null;
+  workout: {
+    hasWorkout: boolean;
+    workoutName?: string;
+  };
+  status: {
+    calories: "below_target" | "on_track" | "target_reached" | "no_target";
+    protein: "below_target" | "on_track" | "target_reached" | "no_target";
+  };
 }

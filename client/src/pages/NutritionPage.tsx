@@ -1,27 +1,32 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Edit2, PieChart } from "lucide-react";
-import { getNutritionEntries, getNutritionSummary, createNutritionEntry, updateNutritionEntry, deleteNutritionEntry } from "../services/nutrition.service";
+import { Plus, Trash2, Edit2, PieChart, Search, Info } from "lucide-react";
+import { 
+  getNutritionEntries, 
+  getNutritionSummary, 
+  createNutritionEntry, 
+  updateNutritionEntry, 
+  deleteNutritionEntry,
+  searchFoods 
+} from "../services/nutrition.service";
 import Loader from "../components/ui/Loader";
-import type { NutritionEntry } from "../types";
+import type { NutritionEntry, NutritionFood } from "../types";
 
 export default function NutritionPage() {
-  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<NutritionEntry | null>(null);
 
   // Form state
-  const [foodName, setFoodName] = useState("");
-  const [quantity, setQuantity] = useState(1);
-  const [unit, setUnit] = useState("serving");
-  const [calories, setCalories] = useState(0);
-  const [protein, setProtein] = useState(0);
-  const [carbs, setCarbs] = useState(0);
-  const [fat, setFat] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFood, setSelectedFood] = useState<NutritionFood | null>(null);
+  const [quantity, setQuantity] = useState(100);
+  const [unit, setUnit] = useState("g");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
-  const { data: entries, isLoading: loadingEntries, isError: errorEntries } = useQuery({
+  const { data: entries, isLoading: loadingEntries } = useQuery({
     queryKey: ["nutrition", "entries", date],
     queryFn: () => getNutritionEntries(date),
   });
@@ -31,11 +36,19 @@ export default function NutritionPage() {
     queryFn: () => getNutritionSummary(date),
   });
 
+  // Food Search
+  const { data: foodResults } = useQuery({
+    queryKey: ["nutrition", "foods", "search", searchQuery],
+    queryFn: () => searchFoods(searchQuery),
+    enabled: searchQuery.length > 0 && isDropdownOpen,
+  });
+
   const addMutation = useMutation({
     mutationFn: createNutritionEntry,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nutrition", "entries", date] });
       queryClient.invalidateQueries({ queryKey: ["nutrition", "summary", date] });
+      queryClient.invalidateQueries({ queryKey: ["nutrition", "today-overview"] });
       resetForm();
     },
   });
@@ -45,6 +58,7 @@ export default function NutritionPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nutrition", "entries", date] });
       queryClient.invalidateQueries({ queryKey: ["nutrition", "summary", date] });
+      queryClient.invalidateQueries({ queryKey: ["nutrition", "today-overview"] });
       resetForm();
     },
   });
@@ -54,44 +68,45 @@ export default function NutritionPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nutrition", "entries", date] });
       queryClient.invalidateQueries({ queryKey: ["nutrition", "summary", date] });
+      queryClient.invalidateQueries({ queryKey: ["nutrition", "today-overview"] });
     },
   });
 
   const resetForm = () => {
-    setFoodName("");
-    setQuantity(1);
-    setUnit("serving");
-    setCalories(0);
-    setProtein(0);
-    setCarbs(0);
-    setFat(0);
+    setSearchQuery("");
+    setSelectedFood(null);
+    setQuantity(100);
+    setUnit("g");
     setEditingEntry(null);
     setIsFormOpen(false);
+    setIsDropdownOpen(false);
   };
 
   const handleEdit = (entry: NutritionEntry) => {
     setEditingEntry(entry);
-    setFoodName(entry.foodName);
+    setSearchQuery(entry.foodName);
+    setSelectedFood(null); // Force refetch/search if they want to change it
     setQuantity(entry.quantity);
     setUnit(entry.unit);
-    setCalories(entry.calories);
-    setProtein(entry.protein);
-    setCarbs(entry.carbs);
-    setFat(entry.fat);
     setIsFormOpen(true);
+    setIsDropdownOpen(false);
+  };
+
+  const handleSelectFood = (food: NutritionFood) => {
+    setSelectedFood(food);
+    setSearchQuery(food.name);
+    setUnit(food.baseUnit);
+    setQuantity(food.baseQuantity);
+    setIsDropdownOpen(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const data = {
       date,
-      foodName,
+      foodName: searchQuery,
       quantity,
       unit,
-      calories,
-      protein,
-      carbs,
-      fat,
     };
     
     if (editingEntry) {
@@ -104,16 +119,46 @@ export default function NutritionPage() {
   const changeDate = (offset: number) => {
     const d = new Date(date);
     d.setDate(d.getDate() + offset);
-    setDate(d.toISOString().split('T')[0]);
+    setDate(d.toISOString().split("T")[0]);
   };
 
-  if (errorEntries) {
-    return (
-      <div className="rounded-xl border border-red-900 bg-red-950/20 p-6 text-center">
-        <p className="text-red-400">Error loading nutrition data.</p>
-      </div>
-    );
+  // Local Macro Preview Calculation
+  let preview: any = null;
+  if (selectedFood && quantity > 0) {
+    const nUnit = unit.toLowerCase();
+    const nBase = selectedFood.baseUnit.toLowerCase();
+    let multiplier = 0;
+    if (nUnit === nBase || (nUnit === "pieces" && nBase === "piece") || (nUnit === "piece" && nBase === "pieces") || (nUnit === "serving" && nBase === "servings") || (nUnit === "servings" && nBase === "serving")) {
+      multiplier = quantity / selectedFood.baseQuantity;
+    } else if (nUnit === "kg" && nBase === "g") {
+      multiplier = (quantity * 1000) / selectedFood.baseQuantity;
+    } else if (nUnit === "g" && nBase === "kg") {
+      multiplier = (quantity / 1000) / selectedFood.baseQuantity;
+    } else if (nUnit === "l" && nBase === "ml") {
+      multiplier = (quantity * 1000) / selectedFood.baseQuantity;
+    } else if (nUnit === "ml" && nBase === "l") {
+      multiplier = (quantity / 1000) / selectedFood.baseQuantity;
+    }
+
+    if (multiplier > 0) {
+      preview = {
+        calories: Math.max(0, Math.round(selectedFood.calories * multiplier)),
+        protein: Math.max(0, Math.round(selectedFood.protein * multiplier)),
+        carbs: Math.max(0, Math.round(selectedFood.carbs * multiplier)),
+        fat: Math.max(0, Math.round(selectedFood.fat * multiplier)),
+      };
+    }
   }
+
+  const StatCard = ({ label, value, unit, color }: any) => (
+    <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col">
+      <span className="text-slate-400 text-sm font-medium mb-1">{label}</span>
+      <div className="flex items-baseline gap-1">
+        <span className={`text-2xl font-bold ${color}`}>{value}</span>
+        <span className="text-sm text-slate-500">{unit}</span>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-8">
@@ -129,7 +174,7 @@ export default function NutritionPage() {
         <div className="flex items-center gap-4 bg-slate-900 rounded-lg p-2 border border-slate-800">
           <button onClick={() => changeDate(-1)} className="px-3 py-1 text-slate-400 hover:text-white">&lt;</button>
           <span className="text-white font-medium min-w-[100px] text-center">
-            {date === new Date().toISOString().split('T')[0] ? "Today" : new Date(date).toLocaleDateString()}
+            {date === new Date().toISOString().split("T")[0] ? "Today" : new Date(date).toLocaleDateString()}
           </span>
           <button onClick={() => changeDate(1)} className="px-3 py-1 text-slate-400 hover:text-white">&gt;</button>
         </div>
@@ -164,46 +209,123 @@ export default function NutritionPage() {
         {isFormOpen && (
           <form onSubmit={handleSubmit} className="mb-8 bg-slate-950 p-6 rounded-xl border border-slate-800">
             <h3 className="text-lg font-bold text-white mb-4">{editingEntry ? "Edit Entry" : "Add New Entry"}</h3>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-4">
-              <div className="sm:col-span-2">
-                <label className="block text-sm text-slate-400 mb-1">Food Name</label>
-                <input required type="text" value={foodName} onChange={e => setFoodName(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. Chicken Breast" />
+            
+            <div className="grid gap-4 sm:grid-cols-12 mb-6">
+              {/* Food Search */}
+              <div className="sm:col-span-6 relative">
+                <label className="block text-sm text-slate-400 mb-1">Search Food</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search size={16} className="text-slate-500" />
+                  </div>
+                  <input 
+                    required 
+                    type="text" 
+                    value={searchQuery} 
+                    onChange={e => {
+                      setSearchQuery(e.target.value);
+                      setIsDropdownOpen(true);
+                      setSelectedFood(null);
+                    }} 
+                    onFocus={() => setIsDropdownOpen(true)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-white focus:outline-none focus:border-cyan-500" 
+                    placeholder="Search database..." 
+                  />
+                </div>
+                
+                {/* Dropdown Results */}
+                {isDropdownOpen && searchQuery.length > 0 && foodResults && (
+                  <div className="absolute z-10 mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg shadow-lg overflow-hidden">
+                    {foodResults.length > 0 ? (
+                      <ul className="max-h-60 overflow-y-auto">
+                        {foodResults.map((food, i) => (
+                          <li 
+                            key={i} 
+                            onClick={() => handleSelectFood(food)}
+                            className="px-4 py-2 hover:bg-slate-700 cursor-pointer text-white border-b border-slate-700/50 last:border-0"
+                          >
+                            <div className="font-medium">{food.name}</div>
+                            <div className="text-xs text-slate-400">
+                              {food.calories} kcal / {food.baseQuantity}{food.baseUnit}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="px-4 py-3 text-sm text-slate-400">No foods found. Check spelling.</div>
+                    )}
+                  </div>
+                )}
               </div>
-              <div>
+
+              {/* Quantity */}
+              <div className="sm:col-span-3">
                 <label className="block text-sm text-slate-400 mb-1">Quantity</label>
-                <input required type="number" min="0" step="0.1" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyan-500" />
+                <input 
+                  required 
+                  type="number" 
+                  min="0.1" 
+                  step="0.1" 
+                  value={quantity} 
+                  onChange={e => setQuantity(Number(e.target.value))} 
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyan-500" 
+                />
               </div>
-              <div>
+
+              {/* Unit */}
+              <div className="sm:col-span-3">
                 <label className="block text-sm text-slate-400 mb-1">Unit</label>
-                <input required type="text" value={unit} onChange={e => setUnit(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyan-500" placeholder="e.g. g, oz, serving" />
+                <input 
+                  required 
+                  type="text" 
+                  value={unit} 
+                  onChange={e => setUnit(e.target.value)} 
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyan-500" 
+                  placeholder="e.g. g, piece" 
+                />
               </div>
             </div>
             
-            <div className="grid gap-4 sm:grid-cols-4 mb-6">
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">Calories (kcal)</label>
-                <input required type="number" min="0" value={calories} onChange={e => setCalories(Number(e.target.value))} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyan-500" />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">Protein (g)</label>
-                <input required type="number" min="0" step="0.1" value={protein} onChange={e => setProtein(Number(e.target.value))} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyan-500" />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">Carbs (g)</label>
-                <input required type="number" min="0" step="0.1" value={carbs} onChange={e => setCarbs(Number(e.target.value))} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyan-500" />
-              </div>
-              <div>
-                <label className="block text-sm text-slate-400 mb-1">Fat (g)</label>
-                <input required type="number" min="0" step="0.1" value={fat} onChange={e => setFat(Number(e.target.value))} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyan-500" />
-              </div>
+            {/* Calculated Macros Preview */}
+            <div className="bg-slate-900 rounded-lg p-4 border border-slate-800 mb-6">
+              <h4 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <Info size={14} /> Calculated Nutrition Preview
+              </h4>
+              {preview ? (
+                <div className="grid grid-cols-4 gap-4 text-center">
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Calories</p>
+                    <p className="text-lg font-bold text-amber-500">~{preview.calories}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Protein</p>
+                    <p className="text-lg font-bold text-cyan-500">~{preview.protein}g</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Carbs</p>
+                    <p className="text-lg font-bold text-blue-500">~{preview.carbs}g</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Fat</p>
+                    <p className="text-lg font-bold text-orange-500">~{preview.fat}g</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-slate-500 italic text-center py-2">
+                  Select a food from the database and enter a valid unit to see macros.
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3 justify-end">
               <button type="button" onClick={resetForm} className="px-4 py-2 text-slate-300 hover:text-white font-medium">Cancel</button>
-              <button disabled={addMutation.isPending || updateMutation.isPending} type="submit" className="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 rounded-lg font-medium transition disabled:opacity-50">
-                {editingEntry ? "Save Changes" : "Save Entry"}
+              <button disabled={addMutation.isPending || updateMutation.isPending || (addMutation.isError || updateMutation.isError)} type="submit" className="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 rounded-lg font-medium transition disabled:opacity-50">
+                {(addMutation.isPending || updateMutation.isPending) ? "Saving..." : (editingEntry ? "Save Changes" : "Save Entry")}
               </button>
             </div>
+            {(addMutation.isError || updateMutation.isError) && (
+              <p className="text-red-400 text-sm mt-3 text-right">Error saving entry. Verify food name and unit.</p>
+            )}
           </form>
         )}
 
@@ -260,18 +382,6 @@ export default function NutritionPage() {
             )}
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ label, value, unit, color }: { label: string; value: number; unit: string; color: string }) {
-  return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-      <p className="text-sm font-medium text-slate-400 mb-2">{label}</p>
-      <div className="flex items-baseline gap-1">
-        <span className={`text-3xl font-bold ${color}`}>{Math.round(value)}</span>
-        <span className="text-slate-500 text-sm">{unit}</span>
       </div>
     </div>
   );

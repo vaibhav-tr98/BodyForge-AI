@@ -1,4 +1,4 @@
-import { workoutRepository } from "../repositories/workout.repository";
+ï»¿import { workoutRepository } from "../repositories/workout.repository";
 import { analyticsService, MUSCLE_GROUP_MAP } from "./analytics.service";
 import Exercise from "../models/Exercise";
 import logger from "../utils/logger";
@@ -17,7 +17,7 @@ export interface WorkoutRecommendationResponse {
 }
 
 class WorkoutRecommendationService {
-  public async getTodayRecommendation(userId: string): Promise<WorkoutRecommendationResponse> {
+  public async getTodayRecommendation(userId: string, date?: string): Promise<WorkoutRecommendationResponse> {
     try {
       const workouts = await workoutRepository.findByUserId(userId);
       if (workouts.length === 0) {
@@ -30,7 +30,7 @@ class WorkoutRecommendationService {
       const readiness = await analyticsService.getTrainingReadiness(userId);
 
       if (!readiness) {
-        // Rule 1 – No workout history
+        // Rule 1 ï¿½ No workout history
         return {
           recommendation: {
             workoutId: workouts[0]._id.toString(),

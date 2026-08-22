@@ -1,6 +1,7 @@
-import { Request, Response, NextFunction } from "express";
+﻿import { Request, Response, NextFunction } from "express";
 import { nutritionService } from "../services/nutrition.service";
 import { AppError } from "../errors/AppError";
+import { foodService } from "../services/food.service";
 
 const getAuthenticatedUserId = (req: Request, res: Response): string | undefined => {
   if (!(req as any).authenticatedUserId) {
@@ -11,6 +12,20 @@ const getAuthenticatedUserId = (req: Request, res: Response): string | undefined
 };
 
 class NutritionController {
+  public searchFoods = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const query = req.query.q as string || "";
+      const foods = await foodService.searchFoods(query);
+      
+      res.status(200).json({
+        success: true,
+        data: foods,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   public addEntry = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const userId = getAuthenticatedUserId(req, res);
@@ -99,6 +114,27 @@ class NutritionController {
       res.status(200).json({
         success: true,
         data: summary,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public getTodayOverview = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = getAuthenticatedUserId(req, res);
+      if (!userId) return;
+      
+      const dateStr = req.query.date as string;
+      if (!dateStr || typeof dateStr !== 'string') {
+        throw new AppError("Date query parameter is required (YYYY-MM-DD)", 400);
+      }
+      
+      const overview = await nutritionService.getTodayOverview(userId, dateStr);
+      
+      res.status(200).json({
+        success: true,
+        data: overview,
       });
     } catch (error) {
       next(error);
