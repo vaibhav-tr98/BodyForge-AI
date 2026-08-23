@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { analyticsService } from "../services/analytics.service";
+import { insightService } from "../services/insight.service";
 
 class AnalyticsController {
   public getDashboard = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -75,6 +76,26 @@ class AnalyticsController {
         return;
       }
       const data = await analyticsService.getTrainingReadiness(userId);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public getInsight = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.authenticatedUserId;
+      if (!userId) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+      }
+      const date = req.query.date as string;
+      if (!date) {
+        res.status(400).json({ success: false, message: "Date is required" });
+        return;
+      }
+      
+      const data = await insightService.getInsight(userId, date);
       res.status(200).json({ success: true, data });
     } catch (error) {
       next(error);

@@ -41,6 +41,13 @@ class AnalyticsService {
     }
     return response.data.data || null;
   }
+  public async getInsight(date: string): Promise<import("../types/insight.types").BodyForgeInsightDTO> {
+    const response = await api.get<ApiResponse<import("../types/insight.types").BodyForgeInsightDTO>>(`/api/analytics/insight?date=${encodeURIComponent(date)}`);
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.message || "Failed to fetch bodyforge insight");
+    }
+    return response.data.data;
+  }
 }
 
 export const analyticsService = new AnalyticsService();

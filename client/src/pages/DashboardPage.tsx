@@ -10,6 +10,7 @@ import Loader from "../components/ui/Loader";
 import ExerciseProgressChart from "../components/common/ExerciseProgressChart";
 import TrainingReadinessSection from "../components/dashboard/TrainingReadinessSection";
 import NutritionTodaySection from "../components/dashboard/NutritionTodaySection";
+import { BodyForgeInsightSection } from "../components/dashboard/BodyForgeInsightSection";
 import { Flame, Dumbbell, Zap, Activity, Target, Search, Trophy, TrendingUp } from "lucide-react";
 
 export default function DashboardPage() {
@@ -82,6 +83,7 @@ export default function DashboardPage() {
       ) : (
         <>
           <TrainingReadinessSection />
+          <BodyForgeInsightSection />
           <NutritionTodaySection />
           {/* ── Your Progress ─────────────────────────────────────────────────── */}
           <section>
