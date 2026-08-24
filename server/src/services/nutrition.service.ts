@@ -1,10 +1,11 @@
-﻿import { nutritionRepository } from "../repositories/nutrition.repository";
+import { nutritionRepository } from "../repositories/nutrition.repository";
 import { INutritionEntry } from "../models/NutritionEntry";
 import { AppError } from "../errors/AppError";
 import { workoutRecommendationService } from "./workoutRecommendation.service";
 import { userRepository } from "../repositories/user.repository";
 
 import { foodService } from "./food.service";
+import { nutritionTargetService } from "./nutritionTarget.service";
 
 class NutritionService {
   async addEntry(userId: string, data: Partial<INutritionEntry>): Promise<INutritionEntry> {
@@ -109,20 +110,12 @@ class NutritionService {
     
     const user = await userRepository.findById(userId);
     
-    let targetCalories = 0;
-    let targetProtein = 0;
-    let targets = null;
+    const targets = user ? nutritionTargetService.calculateTargets(user as any) : null;
+    let targetCalories = targets ? targets.calories : 0;
+    let targetProtein = targets ? targets.protein : 0;
+
     let progress = null;
-    
-    if (user && user.weight) {
-      targetCalories = Math.round(user.weight * 30);
-      targetProtein = Math.round(user.weight * 2);
-      
-      targets = {
-        calories: targetCalories,
-        protein: targetProtein,
-      };
-      
+    if (targets) {
       progress = {
         caloriesPercent: targetCalories > 0 ? Math.min(100, Math.round((summary.totalCalories / targetCalories) * 100)) : 0,
         proteinPercent: targetProtein > 0 ? Math.min(100, Math.round((summary.totalProtein / targetProtein) * 100)) : 0,

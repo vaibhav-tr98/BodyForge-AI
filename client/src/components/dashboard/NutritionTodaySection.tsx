@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { Utensils, CheckCircle, AlertTriangle, Info } from "lucide-react";
 import { getTodayOverview } from "../../services/nutrition.service";
 
@@ -59,7 +60,8 @@ export default function NutritionTodaySection() {
           NUTRITION TODAY
         </h2>
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 text-center">
-          <p className="text-slate-400">Nutrition targets are not set yet.</p>
+          <p className="text-slate-400">Complete your profile to set personalized nutrition targets.</p>
+          <Link to="/profile" className="mt-4 inline-block text-cyan-500 hover:text-cyan-400 font-medium">Complete Profile</Link>
         </div>
       </section>
     );
@@ -176,9 +178,14 @@ export default function NutritionTodaySection() {
                 <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Nutrition Status</p>
                 <div className="space-y-1">
                   {!targets ? (
-                    <div className="flex items-center gap-1.5 text-sm text-slate-400">
-                      <Info size={14} />
-                      <span>Nutrition targets are not set yet.</span>
+                    <div className="flex flex-col gap-1.5 text-sm text-slate-400">
+                      <div className="flex items-center gap-1.5">
+                        <Info size={14} />
+                        <span>Complete your profile to set personalized nutrition targets.</span>
+                      </div>
+                      <Link to="/profile" className="text-cyan-500 hover:text-cyan-400 font-medium ml-5">
+                        Complete Profile
+                      </Link>
                     </div>
                   ) : !hasNutritionLogs ? (
                     <div className="flex items-center gap-1.5 text-sm text-slate-400">

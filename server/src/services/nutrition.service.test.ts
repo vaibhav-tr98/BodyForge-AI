@@ -1,4 +1,4 @@
-﻿import { nutritionService } from "./nutrition.service";
+import { nutritionService } from "./nutrition.service";
 import { nutritionRepository } from "../repositories/nutrition.repository";
 import { AppError } from "../errors/AppError";
 import { userRepository } from "../repositories/user.repository";
@@ -20,9 +20,15 @@ jest.mock("../repositories/user.repository", () => ({
   }
 }));
 
-jest.mock("./food.service", () => ({ foodService: { calculateMacros: jest.fn().mockReturnValue({ calories: 165, protein: 31, carbs: 0, fat: 3.6 }) } })); jest.mock("./workoutRecommendation.service", () => ({
+jest.mock("./food.service", () => ({ foodService: { calculateMacros: jest.fn().mockReturnValue({ calories: 165, protein: 31, carbs: 0, fat: 3.6 }) } }));
+jest.mock("./workoutRecommendation.service", () => ({
   workoutRecommendationService: {
     getTodayRecommendation: jest.fn(),
+  }
+}));
+jest.mock("./nutritionTarget.service", () => ({
+  nutritionTargetService: {
+    calculateTargets: jest.fn(),
   }
 }));
 
@@ -131,16 +137,22 @@ describe("NutritionService", () => {
         { calories: 2400, protein: 160, carbs: 150, fat: 50 },
       ];
       
+      const { nutritionTargetService } = require("./nutritionTarget.service");
+      
       (nutritionRepository.find as jest.Mock).mockResolvedValue(mockEntries);
-      (userRepository.findById as jest.Mock).mockResolvedValue({ weight: 80 });
+      (userRepository.findById as jest.Mock).mockResolvedValue({ _id: mockUserId });
+      (nutritionTargetService.calculateTargets as jest.Mock).mockReturnValue({
+        calories: 2400,
+        protein: 160,
+      });
       (workoutRecommendationService.getTodayRecommendation as jest.Mock).mockResolvedValue({ 
         recommendation: { workoutName: "Push Day" } 
       });
       
       const result = await nutritionService.getTodayOverview(mockUserId, mockDate);
       
-      expect(result.targets?.calories).toBe(2400); // 80 * 30
-      expect(result.targets?.protein).toBe(160); // 80 * 2
+      expect(result.targets?.calories).toBe(2400);
+      expect(result.targets?.protein).toBe(160);
       
       expect(result.status.calories).toBe("target_reached");
       expect(result.status.protein).toBe("target_reached");
@@ -149,13 +161,16 @@ describe("NutritionService", () => {
       expect(result.workout.workoutName).toBe("Push Day");
     });
 
-    it("should return null targets if user weight is not provided", async () => {
+    it("should return null targets if profile is incomplete", async () => {
       const mockEntries = [
         { calories: 1500, protein: 100, carbs: 150, fat: 50 },
       ];
       
+      const { nutritionTargetService } = require("./nutritionTarget.service");
+      
       (nutritionRepository.find as jest.Mock).mockResolvedValue(mockEntries);
-      (userRepository.findById as jest.Mock).mockResolvedValue({ weight: undefined });
+      (userRepository.findById as jest.Mock).mockResolvedValue({ _id: mockUserId });
+      (nutritionTargetService.calculateTargets as jest.Mock).mockReturnValue(null);
       (workoutRecommendationService.getTodayRecommendation as jest.Mock).mockResolvedValue({ recommendation: null });
       
       const result = await nutritionService.getTodayOverview(mockUserId, mockDate);
