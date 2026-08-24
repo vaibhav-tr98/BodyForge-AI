@@ -8,6 +8,10 @@ export interface IUser extends Document {
   weight?: number;
   goal?: string;
   experience?: string;
+  age?: number;
+  gender?: string;
+  activityLevel?: string;
+  fitnessGoal?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -57,6 +61,27 @@ const userSchema = new Schema<IUser>(
     experience: {
       type: String,
       trim: true,
+    },
+
+    age: {
+      type: Number,
+      min: 13,
+      max: 120,
+    },
+
+    gender: {
+      type: String,
+      enum: ["male", "female", "other", "prefer_not_to_say"],
+    },
+
+    activityLevel: {
+      type: String,
+      enum: ["sedentary", "lightly_active", "moderately_active", "very_active", "extremely_active"],
+    },
+
+    fitnessGoal: {
+      type: String,
+      enum: ["lose_fat", "maintain", "build_muscle", "improve_fitness"],
     },
   },
   {

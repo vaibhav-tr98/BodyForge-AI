@@ -1,4 +1,4 @@
-﻿// ── User ────────────────────────────────────────────────────────────────────────
+// ── User ────────────────────────────────────────────────────────────────────────
 
 export interface User {
   id: string;
@@ -8,6 +8,10 @@ export interface User {
   weight?: number;
   goal?: string;
   experience?: string;
+  age?: number;
+  gender?: string;
+  activityLevel?: string;
+  fitnessGoal?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -33,6 +37,10 @@ export interface ProfileUpdateData {
   weight?: number;
   goal?: string;
   experience?: string;
+  age?: number;
+  gender?: string;
+  activityLevel?: string;
+  fitnessGoal?: string;
 }
 
 // ── Workouts ────────────────────────────────────────────────────────────────────

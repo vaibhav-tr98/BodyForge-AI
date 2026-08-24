@@ -32,6 +32,27 @@ export const updateProfileSchema = z
         message: "Experience must be between 1 and 100 characters",
       })
       .optional(),
+    age: z
+      .number({ message: "Age must be a valid integer between 13 and 120" })
+      .int({ message: "Age must be an integer" })
+      .min(13, { message: "Age must be at least 13" })
+      .max(120, { message: "Age must be at most 120" })
+      .optional(),
+    gender: z
+      .enum(["male", "female", "other", "prefer_not_to_say"], {
+        message: "Gender must be male, female, other, or prefer_not_to_say",
+      })
+      .optional(),
+    activityLevel: z
+      .enum(["sedentary", "lightly_active", "moderately_active", "very_active", "extremely_active"], {
+        message: "Invalid activity level",
+      })
+      .optional(),
+    fitnessGoal: z
+      .enum(["lose_fat", "maintain", "build_muscle", "improve_fitness"], {
+        message: "Invalid fitness goal",
+      })
+      .optional(),
   })
   .strict();
 

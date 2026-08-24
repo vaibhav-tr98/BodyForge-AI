@@ -10,6 +10,10 @@ export interface SafeUser {
   weight?: number;
   goal?: string;
   experience?: string;
+  age?: number;
+  gender?: string;
+  activityLevel?: string;
+  fitnessGoal?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,6 +26,10 @@ const toSafeUser = (user: IUser): SafeUser => ({
   weight: user.weight,
   goal: user.goal,
   experience: user.experience,
+  age: user.age,
+  gender: user.gender,
+  activityLevel: user.activityLevel,
+  fitnessGoal: user.fitnessGoal,
   createdAt: user.createdAt,
   updatedAt: user.updatedAt,
 });

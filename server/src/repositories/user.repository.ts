@@ -1,6 +1,6 @@
 import User, { IUser } from "../models/User";
 
-type ProfileField = "name" | "height" | "weight" | "goal" | "experience";
+type ProfileField = "name" | "height" | "weight" | "goal" | "experience" | "age" | "gender" | "activityLevel" | "fitnessGoal";
 export type ProfileUpdate = Partial<Pick<IUser, ProfileField>>;
 
 class UserRepository {
