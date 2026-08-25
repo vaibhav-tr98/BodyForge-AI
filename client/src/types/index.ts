@@ -312,3 +312,39 @@ export interface NutritionOverview {
     protein: "below_target" | "on_track" | "target_reached" | "no_target";
   };
 }
+
+// -- Progress --------------------------------------------------------------------
+
+export interface ProgressEntry {
+  _id: string;
+  user: string;
+  date: string;
+  weight: number;
+  bodyFatPercentage?: number;
+  waist?: number;
+  chest?: number;
+  arm?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateProgressEntryRequest {
+  date: string;
+  weight: number;
+  bodyFatPercentage?: number;
+  waist?: number;
+  chest?: number;
+  arm?: number;
+}
+
+export type UpdateProgressEntryRequest = Partial<CreateProgressEntryRequest>;
+
+export interface ProgressSummary {
+  currentWeight: number | null;
+  startingWeight: number | null;
+  weightChange: number | null;
+  weightChangePercentage: number | null;
+  trend: "gaining" | "losing" | "stable" | "no_history";
+  latestEntry: ProgressEntry | null;
+  totalEntries: number;
+}

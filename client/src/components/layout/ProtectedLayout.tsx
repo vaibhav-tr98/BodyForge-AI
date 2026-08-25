@@ -57,6 +57,12 @@ export default function ProtectedLayout() {
               Nutrition
             </a>
             <a
+              href="/progress"
+              className="text-sm font-medium text-slate-300 transition hover:text-cyan-400"
+            >
+              Progress
+            </a>
+            <a
               href="/profile"
               className="text-sm font-medium text-slate-300 transition hover:text-cyan-400"
             >
