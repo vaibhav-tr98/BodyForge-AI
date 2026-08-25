@@ -64,6 +64,14 @@ class AnalyticsService {
     }
     return response.data.data;
   }
+
+  public async getNutritionAnalysis(date: string): Promise<import("../types/nutritionAnalysis.types").NutritionAnalysisDTO> {
+    const response = await api.get<ApiResponse<import("../types/nutritionAnalysis.types").NutritionAnalysisDTO>>(`/api/analytics/nutrition-analysis?date=${encodeURIComponent(date)}`);
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.message || "Failed to fetch nutrition analysis");
+    }
+    return response.data.data;
+  }
 }
 
 export const analyticsService = new AnalyticsService();

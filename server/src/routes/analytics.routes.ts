@@ -17,4 +17,5 @@ router.get("/exercise/:exerciseName", validateParams(getExerciseProgressSchema),
 router.get("/insight", analyticsController.getInsight);
 router.get("/progress-insight", analyticsController.getProgressInsight);
 router.get("/progress-analysis", analyticsController.getProgressAnalysis);
+router.get("/nutrition-analysis", analyticsController.getNutritionAnalysis);
 export default router;
