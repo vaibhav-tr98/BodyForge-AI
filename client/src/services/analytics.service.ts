@@ -56,6 +56,14 @@ class AnalyticsService {
     }
     return response.data.data;
   }
+
+  public async getProgressAnalysis(date: string): Promise<import("../types/progressAnalysis.types").ProgressAnalysisDTO> {
+    const response = await api.get<ApiResponse<import("../types/progressAnalysis.types").ProgressAnalysisDTO>>(`/api/analytics/progress-analysis?date=${encodeURIComponent(date)}`);
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.message || "Failed to fetch progress analysis");
+    }
+    return response.data.data;
+  }
 }
 
 export const analyticsService = new AnalyticsService();
