@@ -15,5 +15,5 @@ router.get("/personal-records", analyticsController.getPersonalRecords);
 router.get("/personal-records/:exerciseName", validateParams(getExerciseProgressSchema), analyticsController.getPersonalRecordByExercise);
 router.get("/exercise/:exerciseName", validateParams(getExerciseProgressSchema), analyticsController.getExercise);
 router.get("/insight", analyticsController.getInsight);
-
+router.get("/progress-insight", analyticsController.getProgressInsight);
 export default router;

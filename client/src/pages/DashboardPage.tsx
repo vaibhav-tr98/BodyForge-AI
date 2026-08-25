@@ -12,6 +12,7 @@ import TrainingReadinessSection from "../components/dashboard/TrainingReadinessS
 import NutritionTodaySection from "../components/dashboard/NutritionTodaySection";
 import { BodyForgeInsightSection } from "../components/dashboard/BodyForgeInsightSection";
 import ProgressSnapshotSection from "../components/dashboard/ProgressSnapshotSection";
+import { ProgressInsightSection } from "../components/dashboard/ProgressInsightSection";
 import { Flame, Dumbbell, Zap, Activity, Target, Search, Trophy, TrendingUp } from "lucide-react";
 
 export default function DashboardPage() {
@@ -89,6 +90,7 @@ export default function DashboardPage() {
             <NutritionTodaySection />
             <ProgressSnapshotSection />
           </div>
+          <ProgressInsightSection />
           {/* ── Your Progress ─────────────────────────────────────────────────── */}
           <section>
             <h2 className="mb-4 text-xl font-bold text-white flex items-center gap-2">

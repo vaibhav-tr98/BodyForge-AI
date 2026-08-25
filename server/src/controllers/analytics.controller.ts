@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import { analyticsService } from "../services/analytics.service";
 import { insightService } from "../services/insight.service";
 
+import { progressInsightService } from "../services/progressInsight.service";
+
 class AnalyticsController {
   public getDashboard = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -96,6 +98,30 @@ class AnalyticsController {
       }
       
       const data = await insightService.getInsight(userId, date);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public getProgressInsight = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.authenticatedUserId;
+      if (!userId) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+      }
+      
+      // Date is part of requirements to be validated, though the insight service doesn't need it 
+      // as it gets chronologically the last 2 entries. The requirement says:
+      // Add: GET /api/analytics/progress-insight?date=YYYY-MM-DD
+      const date = req.query.date as string;
+      if (!date) {
+        res.status(400).json({ success: false, message: "Date is required" });
+        return;
+      }
+
+      const data = await progressInsightService.getProgressInsight(userId);
       res.status(200).json({ success: true, data });
     } catch (error) {
       next(error);

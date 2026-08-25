@@ -48,6 +48,14 @@ class AnalyticsService {
     }
     return response.data.data;
   }
+
+  public async getProgressInsight(date: string): Promise<import("../types/progressInsight.types").ProgressInsightDTO> {
+    const response = await api.get<ApiResponse<import("../types/progressInsight.types").ProgressInsightDTO>>(`/api/analytics/progress-insight?date=${encodeURIComponent(date)}`);
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.message || "Failed to fetch progress insight");
+    }
+    return response.data.data;
+  }
 }
 
 export const analyticsService = new AnalyticsService();
