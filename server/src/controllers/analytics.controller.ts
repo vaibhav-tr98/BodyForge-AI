@@ -4,6 +4,7 @@ import { insightService } from "../services/insight.service";
 import { progressInsightService } from "../services/progressInsight.service";
 import { progressAnalysisService } from "../services/progressAnalysis.service";
 import { nutritionAnalysisService } from "../services/nutritionAnalysis.service";
+import { workoutAnalysisService } from "../services/workoutAnalysis.service";
 
 class AnalyticsController {
   public getDashboard = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -164,6 +165,27 @@ class AnalyticsController {
       }
 
       const data = await nutritionAnalysisService.getNutritionAnalysis(userId, date);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public getWorkoutAnalysis = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.authenticatedUserId;
+      if (!userId) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+      }
+
+      const date = req.query.date as string;
+      if (!date) {
+        res.status(400).json({ success: false, message: "Date is required" });
+        return;
+      }
+
+      const data = await workoutAnalysisService.getWorkoutAnalysis(userId, date);
       res.status(200).json({ success: true, data });
     } catch (error) {
       next(error);

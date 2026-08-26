@@ -72,6 +72,14 @@ class AnalyticsService {
     }
     return response.data.data;
   }
+
+  public async getWorkoutAnalysis(date: string): Promise<import("../types/workoutAnalysis.types").WorkoutAnalysisDTO> {
+    const response = await api.get<ApiResponse<import("../types/workoutAnalysis.types").WorkoutAnalysisDTO>>(`/api/analytics/workout-analysis?date=${encodeURIComponent(date)}`);
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.message || "Failed to fetch workout analysis");
+    }
+    return response.data.data;
+  }
 }
 
 export const analyticsService = new AnalyticsService();

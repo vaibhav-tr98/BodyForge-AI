@@ -2,6 +2,8 @@ import { ProgressAnalysisContext, ProgressAnalysisDTO } from "../types/progressA
 import { buildProgressAnalysisPrompt } from "./prompts/progressAnalysis.prompt";
 import { NutritionAnalysisContext, NutritionAnalysisDTO } from "../types/nutritionAnalysis.types";
 import { buildNutritionAnalysisPrompt } from "./prompts/nutritionAnalysis.prompt";
+import { WorkoutAnalysisContext, WorkoutAnalysisDTO } from "../types/workoutAnalysis.types";
+import { buildWorkoutAnalysisPrompt } from "./prompts/workoutAnalysis.prompt";
 
 export const AIProvider = {
   async generateStructuredAnalysis(context: ProgressAnalysisContext): Promise<ProgressAnalysisDTO> {
@@ -118,6 +120,63 @@ export const AIProvider = {
     }
 
     return validationResult.data as NutritionAnalysisDTO;
+  },
+
+  async generateWorkoutAnalysis(context: WorkoutAnalysisContext): Promise<WorkoutAnalysisDTO> {
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
+    }
+    
+    const { GoogleGenAI } = await eval('import("@google/genai")');
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+    const { systemInstruction, userPrompt } = buildWorkoutAnalysisPrompt(context);
+    const model = process.env.AI_MODEL || "gemini-2.5-flash";
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: userPrompt,
+      config: {
+        systemInstruction,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            summary: { type: "STRING" },
+            positives: { type: "ARRAY", items: { type: "STRING" } },
+            attention: { type: "ARRAY", items: { type: "STRING" } },
+            nextAction: { type: "STRING" }
+          },
+          required: ["summary", "positives", "attention", "nextAction"]
+        }
+      }
+    });
+
+    if (!response.text) {
+      throw new Error("AI returned an empty response.");
+    }
+
+    let parsedResponse: any;
+    try {
+      parsedResponse = JSON.parse(response.text);
+    } catch (error) {
+      throw new Error("Failed to parse AI response as JSON.");
+    }
+
+    const { z } = require("zod");
+    const schema = z.object({
+      summary: z.string(),
+      positives: z.array(z.string()),
+      attention: z.array(z.string()),
+      nextAction: z.string(),
+    });
+
+    const validationResult = schema.safeParse(parsedResponse);
+    if (!validationResult.success) {
+      throw new Error("AI output validation failed.");
+    }
+
+    return validationResult.data as WorkoutAnalysisDTO;
   }
 };
 
