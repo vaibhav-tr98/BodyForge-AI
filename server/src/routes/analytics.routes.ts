@@ -20,4 +20,5 @@ router.get("/progress-analysis", analyticsController.getProgressAnalysis);
 router.get("/nutrition-analysis", analyticsController.getNutritionAnalysis);
 router.get("/workout-analysis", analyticsController.getWorkoutAnalysis);
 router.get("/readiness-analysis", analyticsController.getReadinessAnalysis);
+router.get("/daily-summary", analyticsController.getDailySummary);
 export default router;

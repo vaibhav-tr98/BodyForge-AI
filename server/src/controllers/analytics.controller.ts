@@ -6,6 +6,7 @@ import { progressAnalysisService } from "../services/progressAnalysis.service";
 import { nutritionAnalysisService } from "../services/nutritionAnalysis.service";
 import { workoutAnalysisService } from "../services/workoutAnalysis.service";
 import { readinessAnalysisService } from "../services/readinessAnalysis.service";
+import { dailySummaryService } from "../services/dailySummary.service";
 import logger from "../utils/logger";
 
 class AnalyticsController {
@@ -204,6 +205,32 @@ class AnalyticsController {
         res.status(503).json({ message: error.message });
       } else {
         logger.error("Failed to generate readiness analysis", { error });
+        next(error);
+      }
+    }
+  };
+
+  public getDailySummary = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.authenticatedUserId;
+      if (!userId) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+      }
+
+      const date = req.query.date as string;
+      if (!date) {
+        res.status(400).json({ success: false, message: "Date is required" });
+        return;
+      }
+
+      const data = await dailySummaryService.getDailySummary(userId, date);
+      res.status(200).json({ success: true, data });
+    } catch (error: any) {
+      if (error.message === "AI analysis is temporarily unavailable.") {
+        res.status(503).json({ message: error.message });
+      } else {
+        logger.error("Failed to generate daily summary", { error });
         next(error);
       }
     }

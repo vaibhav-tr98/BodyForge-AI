@@ -8,6 +8,7 @@ import { analyticsService } from "../services/analytics.service";
 import { getExercises } from "../services/exercise.service";
 import Loader from "../components/ui/Loader";
 import ExerciseProgressChart from "../components/common/ExerciseProgressChart";
+import { BodyForgeDailySummarySection } from "../components/dashboard/BodyForgeDailySummarySection";
 import TrainingReadinessSection from "../components/dashboard/TrainingReadinessSection";
 import { ReadinessAnalysisSection } from "../components/dashboard/ReadinessAnalysisSection";
 import NutritionTodaySection from "../components/dashboard/NutritionTodaySection";
@@ -88,6 +89,7 @@ export default function DashboardPage() {
         </div>
       ) : (
         <>
+          <BodyForgeDailySummarySection />
           <TrainingReadinessSection />
           <ReadinessAnalysisSection />
           <BodyForgeInsightSection />

@@ -80,6 +80,13 @@ class AnalyticsService {
     }
     return response.data.data;
   }
+  public async getDailySummary(date: string): Promise<import("../types/dailySummary.types").DailySummaryDTO> {
+    const response = await api.get<ApiResponse<import("../types/dailySummary.types").DailySummaryDTO>>(`/api/analytics/daily-summary?date=${encodeURIComponent(date)}`);
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.message || "Failed to fetch daily summary");
+    }
+    return response.data.data;
+  }
 }
 
 export const analyticsService = new AnalyticsService();
