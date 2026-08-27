@@ -9,6 +9,7 @@ import { getExercises } from "../services/exercise.service";
 import Loader from "../components/ui/Loader";
 import ExerciseProgressChart from "../components/common/ExerciseProgressChart";
 import TrainingReadinessSection from "../components/dashboard/TrainingReadinessSection";
+import { ReadinessAnalysisSection } from "../components/dashboard/ReadinessAnalysisSection";
 import NutritionTodaySection from "../components/dashboard/NutritionTodaySection";
 import { BodyForgeInsightSection } from "../components/dashboard/BodyForgeInsightSection";
 import ProgressSnapshotSection from "../components/dashboard/ProgressSnapshotSection";
@@ -88,6 +89,7 @@ export default function DashboardPage() {
       ) : (
         <>
           <TrainingReadinessSection />
+          <ReadinessAnalysisSection />
           <BodyForgeInsightSection />
           <WorkoutAnalysisSection />
           <div className="grid gap-6 lg:grid-cols-2">

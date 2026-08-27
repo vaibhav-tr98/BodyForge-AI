@@ -5,6 +5,8 @@ import { progressInsightService } from "../services/progressInsight.service";
 import { progressAnalysisService } from "../services/progressAnalysis.service";
 import { nutritionAnalysisService } from "../services/nutritionAnalysis.service";
 import { workoutAnalysisService } from "../services/workoutAnalysis.service";
+import { readinessAnalysisService } from "../services/readinessAnalysis.service";
+import logger from "../utils/logger";
 
 class AnalyticsController {
   public getDashboard = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -189,6 +191,21 @@ class AnalyticsController {
       res.status(200).json({ success: true, data });
     } catch (error) {
       next(error);
+    }
+  };
+
+  public getReadinessAnalysis = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.authenticatedUserId!;
+      const analysis = await readinessAnalysisService.getReadinessAnalysis(userId);
+      res.status(200).json(analysis);
+    } catch (error: any) {
+      if (error.message === "AI analysis is temporarily unavailable.") {
+        res.status(503).json({ message: error.message });
+      } else {
+        logger.error("Failed to generate readiness analysis", { error });
+        next(error);
+      }
     }
   };
 }

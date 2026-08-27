@@ -19,4 +19,5 @@ router.get("/progress-insight", analyticsController.getProgressInsight);
 router.get("/progress-analysis", analyticsController.getProgressAnalysis);
 router.get("/nutrition-analysis", analyticsController.getNutritionAnalysis);
 router.get("/workout-analysis", analyticsController.getWorkoutAnalysis);
+router.get("/readiness-analysis", analyticsController.getReadinessAnalysis);
 export default router;
