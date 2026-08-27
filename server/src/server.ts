@@ -3,13 +3,41 @@ import connectDB from "./config/db";
 import { env } from "./config/env";
 import logger from "./utils/logger";
 
+import mongoose from "mongoose";
+
 const startServer = async (): Promise<void> => {
   try {
     await connectDB(env.mongoUri);
 
-    app.listen(env.port, () => {
+    const server = app.listen(env.port, () => {
       logger.info(`Server running on http://localhost:${env.port}`);
     });
+
+    // Graceful shutdown
+    const shutdown = async (signal: string) => {
+      logger.info(`Received ${signal}. Shutting down gracefully...`);
+      server.close(async () => {
+        logger.info("HTTP server closed.");
+        try {
+          await mongoose.connection.close();
+          logger.info("MongoDB connection closed.");
+          process.exit(0);
+        } catch (err) {
+          logger.error("Error closing MongoDB connection:", err);
+          process.exit(1);
+        }
+      });
+      
+      // Force shutdown after 10 seconds
+      setTimeout(() => {
+        logger.error("Could not close connections in time, forcefully shutting down");
+        process.exit(1);
+      }, 10000);
+    };
+
+    process.on("SIGINT", () => shutdown("SIGINT"));
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
+
   } catch (error) {
     logger.error("Failed to start server:", error);
     process.exit(1);

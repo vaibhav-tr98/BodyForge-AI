@@ -8,19 +8,20 @@ import { ReadinessAnalysisContext, ReadinessAnalysisDTO } from "../types/readine
 import { buildReadinessAnalysisPrompt } from "./prompts/readinessAnalysis.prompt";
 import { DailySummaryContext, DailySummaryDTO } from "../types/dailySummary.types";
 import { buildDailySummaryPrompt } from "./prompts/dailySummary.prompt";
+import { env } from "../config/env";
 
 export const AIProvider = {
   async generateStructuredAnalysis(context: ProgressAnalysisContext): Promise<ProgressAnalysisDTO> {
-    if (!process.env.GEMINI_API_KEY) {
+    if (!env.geminiApiKey) {
       throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
     }
     
     // Dynamic import to support ESM package in CommonJS project
     const { GoogleGenAI } = await eval('import("@google/genai")');
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
 
     const { systemInstruction, userPrompt } = buildProgressAnalysisPrompt(context);
-    const model = process.env.AI_MODEL || "gemini-2.5-flash";
+    const model = env.aiModel;
 
     const response = await ai.models.generateContent({
       model,
@@ -69,16 +70,16 @@ export const AIProvider = {
   },
 
   async generateNutritionAnalysis(context: NutritionAnalysisContext): Promise<NutritionAnalysisDTO> {
-    if (!process.env.GEMINI_API_KEY) {
+    if (!env.geminiApiKey) {
       throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
     }
     
     // Dynamic import to support ESM package in CommonJS project
     const { GoogleGenAI } = await eval('import("@google/genai")');
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
 
     const { systemInstruction, userPrompt } = buildNutritionAnalysisPrompt(context);
-    const model = process.env.AI_MODEL || "gemini-2.5-flash";
+    const model = env.aiModel;
 
     const response = await ai.models.generateContent({
       model,
@@ -127,15 +128,15 @@ export const AIProvider = {
   },
 
   async generateWorkoutAnalysis(context: WorkoutAnalysisContext): Promise<WorkoutAnalysisDTO> {
-    if (!process.env.GEMINI_API_KEY) {
+    if (!env.geminiApiKey) {
       throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
     }
     
     const { GoogleGenAI } = await eval('import("@google/genai")');
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
 
     const { systemInstruction, userPrompt } = buildWorkoutAnalysisPrompt(context);
-    const model = process.env.AI_MODEL || "gemini-2.5-flash";
+    const model = env.aiModel;
 
     const response = await ai.models.generateContent({
       model,
@@ -184,15 +185,15 @@ export const AIProvider = {
   },
 
   async generateReadinessAnalysis(context: ReadinessAnalysisContext): Promise<ReadinessAnalysisDTO> {
-    if (!process.env.GEMINI_API_KEY) {
+    if (!env.geminiApiKey) {
       throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
     }
     
     const { GoogleGenAI } = await eval('import("@google/genai")');
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
 
     const { systemInstruction, userPrompt } = buildReadinessAnalysisPrompt(context);
-    const model = process.env.AI_MODEL || "gemini-2.5-flash";
+    const model = env.aiModel;
 
     const response = await ai.models.generateContent({
       model,
@@ -241,15 +242,15 @@ export const AIProvider = {
   },
 
   async generateDailySummary(context: DailySummaryContext): Promise<DailySummaryDTO> {
-    if (!process.env.GEMINI_API_KEY) {
+    if (!env.geminiApiKey) {
       throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
     }
     
     const { GoogleGenAI } = await eval('import("@google/genai")');
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
 
     const { systemInstruction, userPrompt } = buildDailySummaryPrompt(context);
-    const model = process.env.AI_MODEL || "gemini-2.5-flash";
+    const model = env.aiModel;
 
     const response = await ai.models.generateContent({
       model,

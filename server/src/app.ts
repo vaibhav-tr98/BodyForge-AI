@@ -14,16 +14,30 @@ import { errorMiddleware } from "./middleware/error.middleware";
 const app = express();
 
 // Middleware
+const cleanClientUrl = env.clientUrl.replace(/\/$/, ""); // Remove trailing slash
+
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow any localhost port or the explicitly configured client URL
-    if (!origin || /^https?:\/\/localhost:\d+$/.test(origin) || origin === env.clientUrl) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    // Allow server-to-server / tools without origin
+    if (!origin) {
+      return callback(null, true);
     }
-  }
+    
+    // Allow configured client url (ignoring trailing slash)
+    if (origin === cleanClientUrl || origin + "/" === cleanClientUrl || cleanClientUrl + "/" === origin) {
+      return callback(null, true);
+    }
+    
+    // Allow localhost in development
+    if (env.nodeEnv !== "production" && /^https?:\/\/localhost:\d+$/.test(origin)) {
+      return callback(null, true);
+    }
+    
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true
 }));
+
 app.use(express.json());
 
 // Routes
@@ -39,13 +53,21 @@ app.use("/api/progress", progressRoutes);
 
 // Health Check Route
 app.get("/health", (req, res) => {
-  res.status(200).json({ status: "ok" });
+  res.status(200).json({ success: true, status: "ok" });
 });
 
 app.get("/", (_req: Request, res: Response) => {
   res.status(200).json({
     success: true,
     message: "Welcome to BodyForge AI API",
+  });
+});
+
+// 404 Handler
+app.use("*", (req: Request, res: Response) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found"
   });
 });
 
