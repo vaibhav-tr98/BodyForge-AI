@@ -1,8 +1,9 @@
 import { Router } from "express";
+import { analyticsLimiter } from "../middleware/rateLimit.middleware";
 import { analyticsController } from "../controllers/analytics.controller";
 import { authenticate } from "../middleware/auth.middleware";
-import { validateParams } from "../middleware/validation.middleware";
-import { getExerciseProgressSchema } from "../validation/analytics.validation";
+import { validateParams, validateQuery } from "../middleware/validation.middleware";
+import { getExerciseProgressSchema, dateQuerySchema } from "../validation/analytics.validation";
 
 const router = Router();
 
@@ -14,11 +15,11 @@ router.get("/readiness", analyticsController.getTrainingReadiness);
 router.get("/personal-records", analyticsController.getPersonalRecords);
 router.get("/personal-records/:exerciseName", validateParams(getExerciseProgressSchema), analyticsController.getPersonalRecordByExercise);
 router.get("/exercise/:exerciseName", validateParams(getExerciseProgressSchema), analyticsController.getExercise);
-router.get("/insight", analyticsController.getInsight);
-router.get("/progress-insight", analyticsController.getProgressInsight);
-router.get("/progress-analysis", analyticsController.getProgressAnalysis);
-router.get("/nutrition-analysis", analyticsController.getNutritionAnalysis);
-router.get("/workout-analysis", analyticsController.getWorkoutAnalysis);
-router.get("/readiness-analysis", analyticsController.getReadinessAnalysis);
-router.get("/daily-summary", analyticsController.getDailySummary);
+router.get("/insight", analyticsLimiter, validateQuery(dateQuerySchema), analyticsController.getInsight);
+router.get("/progress-insight", analyticsLimiter, validateQuery(dateQuerySchema), analyticsController.getProgressInsight);
+router.get("/progress-analysis", analyticsLimiter, validateQuery(dateQuerySchema), analyticsController.getProgressAnalysis);
+router.get("/nutrition-analysis", analyticsLimiter, validateQuery(dateQuerySchema), analyticsController.getNutritionAnalysis);
+router.get("/workout-analysis", analyticsLimiter, validateQuery(dateQuerySchema), analyticsController.getWorkoutAnalysis);
+router.get("/readiness-analysis", analyticsLimiter, analyticsController.getReadinessAnalysis);
+router.get("/daily-summary", analyticsLimiter, validateQuery(dateQuerySchema), analyticsController.getDailySummary);
 export default router;

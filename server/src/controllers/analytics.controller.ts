@@ -202,7 +202,7 @@ class AnalyticsController {
       res.status(200).json(analysis);
     } catch (error: any) {
       if (error.message === "AI analysis is temporarily unavailable.") {
-        res.status(503).json({ message: error.message });
+        res.status(503).json({ success: false, message: error.message });
       } else {
         logger.error("Failed to generate readiness analysis", { error });
         next(error);
@@ -228,7 +228,7 @@ class AnalyticsController {
       res.status(200).json({ success: true, data });
     } catch (error: any) {
       if (error.message === "AI analysis is temporarily unavailable.") {
-        res.status(503).json({ message: error.message });
+        res.status(503).json({ success: false, message: error.message });
       } else {
         logger.error("Failed to generate daily summary", { error });
         next(error);

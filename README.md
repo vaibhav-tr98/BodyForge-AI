@@ -169,3 +169,10 @@ http://localhost:5173
 - Created reusable Input and Button components
 - Added Authentication Layout
 - Implemented feature-based auth structure
+## Security and Reliability
+- Helmet is used for setting security-related HTTP headers.
+- Request payload is limited to 1MB.
+- Rate limiting is configured for general API routes, with stricter limits for authentication and AI analytics endpoints.
+- AI analytics endpoints are protected, requiring a valid JWT token and valid query parameters.
+- Error handling is standardized to return \{ success: false, message: ... }\ without leaking stack traces.
+- The \/ready\ endpoint checks Mongoose connection readiness.

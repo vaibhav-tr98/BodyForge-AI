@@ -1,5 +1,7 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
+import helmet from "helmet";
+import { apiLimiter } from "./middleware/rateLimit.middleware";
 import { env } from "./config/env";
 import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
@@ -11,7 +13,11 @@ import analyticsRoutes from "./routes/analytics.routes";
 import nutritionRoutes from "./routes/nutrition.routes";
 import progressRoutes from "./routes/progress.routes";
 import { errorMiddleware } from "./middleware/error.middleware";
+import mongoose from "mongoose";
 const app = express();
+
+// Security headers
+app.use(helmet());
 
 // Middleware
 const cleanClientUrl = env.clientUrl.replace(/\/$/, ""); // Remove trailing slash
@@ -38,7 +44,10 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
+
+// Apply general rate limit to all /api routes
+app.use("/api", apiLimiter);
 
 // Routes
 app.use("/api/auth", authRoutes);
@@ -52,6 +61,14 @@ app.use("/api/nutrition", nutritionRoutes);
 app.use("/api/progress", progressRoutes);
 
 // Health Check Route
+app.get("/ready", (req, res) => {
+  if (mongoose.connection.readyState === 1) {
+    res.status(200).json({ success: true, status: "ready" });
+  } else {
+    res.status(503).json({ success: false, status: "unavailable" });
+  }
+});
+
 app.get("/health", (req, res) => {
   res.status(200).json({ success: true, status: "ok" });
 });
@@ -64,7 +81,7 @@ app.get("/", (_req: Request, res: Response) => {
 });
 
 // 404 Handler
-app.use("*", (req: Request, res: Response) => {
+app.use((req: Request, res: Response) => {
   res.status(404).json({
     success: false,
     message: "Route not found"

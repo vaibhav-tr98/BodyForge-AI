@@ -27,6 +27,11 @@ export const errorMiddleware: ErrorRequestHandler = (err, _req, res, next) => {
     return;
   }
 
+  if (err.type === "entity.too.large") {
+    res.status(413).json({ success: false, message: "Payload Too Large" });
+    return;
+  }
+
   if (err instanceof AppError) {
     res.status(err.statusCode).json({
       success: false,

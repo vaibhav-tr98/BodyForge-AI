@@ -16,6 +16,9 @@ export interface AppEnv {
   geminiApiKey: string;
   aiModel: string;
   nodeEnv: NodeEnv;
+  rateLimitApiMax: number;
+  rateLimitAuthMax: number;
+  rateLimitAnalyticsMax: number;
 }
 
 const getRequiredEnv = (key: RequiredEnvKey): string => {
@@ -51,6 +54,14 @@ const parsePort = (value: string | undefined): number => {
   }
 
   return parsed;
+};
+
+const parseInteger = (value: string | undefined, defaultValue: number): number => {
+  if (!value || !value.trim()) {
+    return defaultValue;
+  }
+  const parsed = Number(value.trim());
+  return Number.isInteger(parsed) ? parsed : defaultValue;
 };
 
 const parseLogLevel = (value: string | undefined): LogLevel => {
@@ -90,4 +101,7 @@ export const env: AppEnv = {
   geminiApiKey: getRequiredEnv("GEMINI_API_KEY"),
   aiModel: getOptionalEnv("AI_MODEL", "gemini-2.5-flash"),
   nodeEnv: parseNodeEnv(process.env.NODE_ENV),
+  rateLimitApiMax: parseInteger(process.env.RATE_LIMIT_API_MAX, 100),
+  rateLimitAuthMax: parseInteger(process.env.RATE_LIMIT_AUTH_MAX, 20),
+  rateLimitAnalyticsMax: parseInteger(process.env.RATE_LIMIT_ANALYTICS_MAX, 30),
 };
