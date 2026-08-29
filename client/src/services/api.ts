@@ -1,4 +1,5 @@
 import axios from "axios";
+import toast from "react-hot-toast";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -17,10 +18,30 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 Unauthorized globally
+// Handle timeouts, cold starts, and 401s globally
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Handle Axios timeout (Render cold start)
+    if (error.code === 'ECONNABORTED' && error.message.includes('timeout') && !originalRequest._retry) {
+      originalRequest._retry = true;
+      toast.loading("Waking up server... this may take up to 60 seconds.", { id: "cold-start-toast" });
+      
+      // Increase timeout for the retry to give Render time to spin up
+      originalRequest.timeout = 60000;
+      
+      try {
+        const response = await api(originalRequest);
+        toast.success("Server is awake!", { id: "cold-start-toast" });
+        return response;
+      } catch (retryError) {
+        toast.dismiss("cold-start-toast");
+        return Promise.reject(retryError);
+      }
+    }
+
     if (error.response?.status === 401) {
       // Avoid infinite redirects if already on login page
       if (window.location.pathname !== "/login" && window.location.pathname !== "/register") {
