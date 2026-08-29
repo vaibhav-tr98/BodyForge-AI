@@ -42,7 +42,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               onTouchCancel={handleRevealEnd}
               aria-label={isRevealed ? "Hide password" : "Show password"}
             >
-              {isRevealed ? <EyeOff size={20} /> : <Eye size={20} />}
+              {isRevealed ? <Eye size={20} /> : <EyeOff size={20} />}
             </button>
           )}
         </div>

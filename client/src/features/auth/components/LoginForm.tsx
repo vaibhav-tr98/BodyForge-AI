@@ -1,4 +1,4 @@
-import React from "react";
+
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,25 +18,20 @@ export default function LoginForm() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [isLoading, setIsLoading] = React.useState(false);
-
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    setIsLoading(true);
     try {
       await login(data.email, data.password);
       navigate("/dashboard");
     } catch (error) {
       toast.error(getErrorMessage(error));
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -62,7 +57,7 @@ export default function LoginForm() {
         {...register("password")}
       />
 
-      <Button type="submit" loading={isLoading} loadingText="Signing In..." id="login-submit">
+      <Button type="submit" loading={isSubmitting} loadingText="Signing In..." id="login-submit">
         Sign In
       </Button>
     </form>
