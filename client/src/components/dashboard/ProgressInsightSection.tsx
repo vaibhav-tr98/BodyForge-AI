@@ -17,10 +17,10 @@ export const ProgressInsightSection: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 animate-pulse">
-        <div className="h-6 bg-gray-700 rounded w-1/3 mb-4"></div>
-        <div className="h-4 bg-gray-700 rounded w-2/3 mb-2"></div>
-        <div className="h-4 bg-gray-700 rounded w-1/2"></div>
+      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 animate-pulse">
+        <div className="h-6 bg-slate-700 rounded w-1/3 mb-4"></div>
+        <div className="h-4 bg-slate-700 rounded w-2/3 mb-2"></div>
+        <div className="h-4 bg-slate-700 rounded w-1/2"></div>
       </div>
     );
   }
@@ -36,9 +36,9 @@ export const ProgressInsightSection: React.FC = () => {
       case 'medium':
         return 'text-blue-400';
       case 'low':
-        return 'text-gray-400';
+        return 'text-slate-400';
       default:
-        return 'text-gray-400';
+        return 'text-slate-400';
     }
   };
 
@@ -49,9 +49,9 @@ export const ProgressInsightSection: React.FC = () => {
       case 'medium':
         return 'border-blue-500/30 bg-blue-900/10';
       case 'low':
-        return 'border-gray-700 bg-gray-800/50';
+        return 'border-slate-700 bg-slate-800/50';
       default:
-        return 'border-gray-700 bg-gray-800';
+        return 'border-slate-700 bg-slate-800';
     }
   };
 
@@ -68,7 +68,7 @@ export const ProgressInsightSection: React.FC = () => {
       case 'body_fat_increase':
         return <TrendingUp className="w-6 h-6 text-orange-400" />;
       case 'weight_stable':
-        return <Minus className="w-6 h-6 text-gray-400" />;
+        return <Minus className="w-6 h-6 text-slate-400" />;
       default:
         return <Activity className="w-6 h-6 text-cyan-400" />;
     }
@@ -78,12 +78,12 @@ export const ProgressInsightSection: React.FC = () => {
     if (previous === null || current === null) return null;
     
     return (
-      <div className="flex items-center space-x-2 bg-gray-800 p-3 rounded-lg border border-gray-700">
-        <Icon className="w-4 h-4 text-gray-400" />
-        <span className="text-gray-400 text-sm">{label}:</span>
+      <div className="flex items-center space-x-2 bg-slate-800 p-3 rounded-lg border border-slate-700">
+        <Icon className="w-4 h-4 text-slate-400" />
+        <span className="text-slate-400 text-sm">{label}:</span>
         <div className="flex items-center font-medium">
-          <span className="text-gray-300">{previous} {unit}</span>
-          <span className="mx-2 text-gray-500">→</span>
+          <span className="text-slate-300">{previous} {unit}</span>
+          <span className="mx-2 text-slate-500">→</span>
           <span className="text-white">{current} {unit}</span>
         </div>
       </div>
@@ -93,7 +93,7 @@ export const ProgressInsightSection: React.FC = () => {
   return (
     <div className={`rounded-xl p-6 border ${getPriorityBorder(insight.priority)} transition-colors duration-300`}>
       <div className="flex items-start space-x-4">
-        <div className="p-2 bg-gray-800 rounded-lg border border-gray-700">
+        <div className="p-2 bg-slate-800 rounded-lg border border-slate-700">
           {getIcon()}
         </div>
         
@@ -101,7 +101,7 @@ export const ProgressInsightSection: React.FC = () => {
           <h3 className={`text-lg font-semibold mb-1 ${getPriorityColor(insight.priority)}`}>
             {insight.title}
           </h3>
-          <p className="text-gray-300 text-sm mb-4 leading-relaxed">
+          <p className="text-slate-300 text-sm mb-4 leading-relaxed">
             {insight.message}
           </p>
 

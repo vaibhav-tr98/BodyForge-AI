@@ -16,6 +16,21 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Handle 401 Unauthorized globally
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Avoid infinite redirects if already on login page
+      if (window.location.pathname !== "/login" && window.location.pathname !== "/register") {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 /**
  * Extract a human-readable error message from an API error.
  * Prefers the backend's `message` field when available.

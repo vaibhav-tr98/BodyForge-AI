@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link } from "react-router-dom";
 import { Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ExerciseSelector } from "./ExerciseSelector";
 
 
@@ -61,6 +61,7 @@ export default function WorkoutForm({
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors },
   } = useForm<WorkoutFormData>({
     resolver: zodResolver(workoutSchema),
@@ -72,6 +73,18 @@ export default function WorkoutForm({
         : [{ name: "", sets: 1, reps: 1, weight: undefined }],
     },
   });
+
+  useEffect(() => {
+    if (initialData) {
+      reset({
+        name: initialData?.name || "",
+        description: initialData?.description || "",
+        exercises: initialData?.exercises?.length
+          ? initialData.exercises
+          : [{ name: "", sets: 1, reps: 1, weight: undefined }],
+      });
+    }
+  }, [initialData, reset]);
 
   const { fields, append, remove } = useFieldArray({
     control,

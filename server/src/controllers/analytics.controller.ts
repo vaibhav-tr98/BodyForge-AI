@@ -1,3 +1,4 @@
+import { workoutGeneratorService } from "../services/workoutGenerator.service";
 import { Request, Response, NextFunction } from "express";
 import { analyticsService } from "../services/analytics.service";
 import { insightService } from "../services/insight.service";
@@ -235,6 +236,27 @@ class AnalyticsController {
       }
     }
   };
+
+  public generateWorkoutPlan = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.authenticatedUserId;
+      if (!userId) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+      }
+
+      const data = await workoutGeneratorService.generateWorkout(userId, req.body);
+      res.status(200).json({ success: true, data });
+    } catch (error: any) {
+      if (error.message === "AI workout generation is temporarily unavailable.") {
+        res.status(503).json({ success: false, message: error.message });
+      } else {
+        logger.error("Failed to generate workout plan", { error });
+        next(error);
+      }
+    }
+  };
+
 }
 
 export const analyticsController = new AnalyticsController();

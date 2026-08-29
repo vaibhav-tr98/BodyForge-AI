@@ -1,178 +1,85 @@
 # BodyForge AI
 
-## Overview
+BodyForge AI is a production-grade, AI-powered fitness application built on the MERN stack. It leverages deterministic fitness calculations alongside Google's Gemini AI to provide personalized workout recommendations, nutrition insights, and intelligent progress analysis.
 
-BodyForge AI is a production-grade AI-powered fitness coaching platform built using the MERN stack and modern AI technologies.
+## Core Features
 
-It helps users:
-- Generate personalized workout plans
-- Receive nutrition recommendations
-- Track fitness progress
-- Chat with an AI fitness coach
-- Analyze body progress over time
+- **Profile & Personalization**: Grounded in deterministic metrics (Age, Gender, Activity Level, Goals).
+- **Nutrition Target Engine**: Calculates Mifflin-St Jeor BMR, TDEE, and personalized macronutrient targets.
+- **Workout Tracking & Generation**: Track exercises, build routines, and generate custom workout plans from scratch using AI.
+- **Progress Tracking**: Record and analyze weight, body fat, and body measurements.
+- **Training Readiness**: Evaluates fatigue, recent workouts, and rest to optimize training volume.
+- **AI Intelligence Layer**: Gemini interprets deterministic context to provide highly personalized Insights, Workout Analysis, Nutrition Analysis, Progress Summaries, and a Unified Daily Summary.
 
----
+## Technology Stack
 
-## Tech Stack
+- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS 4, React Router, React Query, React Hook Form, Zod.
+- **Backend**: Node.js, Express 5, TypeScript, Mongoose, Zod.
+- **Database**: MongoDB Atlas.
+- **AI Provider**: Google Gemini (via `@google/genai`).
+- **Deployment Architecture**:
+  - Frontend: Vercel
+  - Backend: Render
+  - Database: MongoDB Atlas
 
-### Frontend
-- React
-- TypeScript
-- Tailwind CSS
-- React Query
+## Local Development
 
-### Backend
-- Node.js
-- Express.js
-- MongoDB
-- Mongoose
-- JWT Authentication
+### Prerequisites
+- Node.js (v18+)
+- MongoDB connection string
+- Gemini API Key
 
-### AI
-- OpenAI / Gemini
-- Vision Models
-- OCR
-- Embeddings
-- Retrieval-Augmented Generation (RAG)
-
-### Deployment
-- Docker
-- GitHub Actions
-- Vercel
-- Render
-- Cloudinary
-
----
-
-## Project Status
-
-🚧 Day 0 – Product Planning
-
----
-
-## Roadmap
-
-See `docs/ROADMAP.md`
-
----
-
-## License
-
-MIT
-# BodyForge AI 🏋️‍♂️🤖
-
-An AI-powered fitness coach built using the MERN stack and modern AI technologies.
-
-## 🚀 Tech Stack
-
-### Frontend
-- React
-- TypeScript
-- Vite
-- React Router
-- Axios
-- Tailwind CSS
-
-### Backend
-- Node.js
-- Express.js
-- TypeScript
-
-## 📁 Project Structure
-
-BodyForge-AI/
-├── client/
-├── server/
-├── docs/
-├── docker/
-└── .github/
-
-## ✅ Completed Features
-
-### Day 1
-- Project structure initialized
-- React + Vite setup
-- Express + TypeScript setup
-- React Router configured
-- Axios API service configured
-- Frontend successfully connected to backend
-- Development environment verified
-
-## 🔜 Upcoming
-
-### Day 2
-- JWT Authentication
-- User Model
-- Password Hashing
-- Login API
-- Register API
-- Auth Middleware
-
-## 🛠️ Run Locally
-
-### Backend
+### Backend Setup
 
 ```bash
 cd server
 npm install
+# Create .env based on .env.example
 npm run dev
 ```
 
-### Frontend
+Required Server Environment Variables:
+```env
+PORT=5000
+NODE_ENV=development
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
+CLIENT_URL=http://localhost:5173
+GEMINI_API_KEY=your_gemini_api_key
+AI_MODEL=gemini-2.5-flash
+```
+
+### Frontend Setup
 
 ```bash
 cd client
 npm install
+# Create .env based on .env.example
 npm run dev
 ```
 
-Backend:
-```
-http://localhost:5000
+Required Client Environment Variables:
+```env
+VITE_API_URL=http://localhost:5000
 ```
 
-Frontend:
+## Security & Reliability
+
+- **Authentication**: JWT-based stateless authentication with strict route protection.
+- **User Isolation**: All operations inherently scope to `req.authenticatedUserId`.
+- **Validation**: Strict Zod validation on inputs and AI-generated outputs.
+- **Rate Limiting**: Tiered request limiting across generic API, Auth, and AI endpoints.
+- **Payload Limits**: 1MB JSON limits to prevent denial of service.
+- **Graceful Shutdown**: Production SIGTERM handling for MongoDB connections.
+
+## Build for Production
+
+```bash
+# Build backend
+cd server
+npm run build
+
+# Build frontend
+cd client
+npm run build
 ```
-http://localhost:5173
-```
-## Day 2 - Frontend Foundation
-
-### ✅ Completed
-
-- Production folder structure
-- React Router configuration
-- MainLayout
-- Navbar component
-- Footer component
-- Placeholder pages
-- React Query setup
-- Shared UI components
-- Tailwind layout
-## Day 3 – Landing Page
-
-### Completed
-- Responsive landing page
-- Sticky navigation bar
-- Hero section
-- Feature section
-- How It Works section
-- Stats section
-- CTA section
-- Reusable React components
-- Framer Motion animations
-- Improved project structure
-## Day 4
-- Built reusable authentication UI
-- Added Login and Register pages
-- Implemented React Hook Form
-- Added Zod validation
-- Created reusable Input and Button components
-- Added Authentication Layout
-- Implemented feature-based auth structure
-## Security and Reliability
-- Helmet is used for setting security-related HTTP headers.
-- Request payload is limited to 1MB.
-- Rate limiting is configured for general API routes, with stricter limits for authentication and AI analytics endpoints.
-- AI analytics endpoints are protected, requiring a valid JWT token and valid query parameters.
-- Error handling is standardized to return \{ success: false, message: ... }\ without leaking stack traces.
-- The \/ready\ endpoint checks Mongoose connection readiness.

@@ -4,6 +4,7 @@ import { analyticsController } from "../controllers/analytics.controller";
 import { authenticate } from "../middleware/auth.middleware";
 import { validateParams, validateQuery } from "../middleware/validation.middleware";
 import { getExerciseProgressSchema, dateQuerySchema } from "../validation/analytics.validation";
+import { validateWorkoutGeneratorRequest } from "../validation/workoutGenerator.validation";
 
 const router = Router();
 
@@ -22,4 +23,6 @@ router.get("/nutrition-analysis", analyticsLimiter, validateQuery(dateQuerySchem
 router.get("/workout-analysis", analyticsLimiter, validateQuery(dateQuerySchema), analyticsController.getWorkoutAnalysis);
 router.get("/readiness-analysis", analyticsLimiter, analyticsController.getReadinessAnalysis);
 router.get("/daily-summary", analyticsLimiter, validateQuery(dateQuerySchema), analyticsController.getDailySummary);
+router.post("/generate-workout-plan", analyticsLimiter, validateWorkoutGeneratorRequest, analyticsController.generateWorkoutPlan);
+
 export default router;

@@ -1,4 +1,4 @@
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { Navigate, Outlet, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Loader from "../ui/Loader";
 
@@ -20,54 +20,54 @@ export default function ProtectedLayout() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      {/* ── Top navigation ─────────────────────────────────────────────────── */}
+      {/* Top navigation */}
       <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/80 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-          <a
-            href="/dashboard"
+          <Link
+            to="/dashboard"
             className="text-xl font-bold text-cyan-400"
             id="app-logo"
           >
             BodyForge AI
-          </a>
+          </Link>
 
           <nav className="hidden items-center gap-6 sm:flex" id="main-nav">
-            <a
-              href="/dashboard"
+            <Link
+              to="/dashboard"
               className="text-sm font-medium text-slate-300 transition hover:text-cyan-400"
             >
               Dashboard
-            </a>
-            <a
-              href="/workouts"
+            </Link>
+            <Link
+              to="/workouts"
               className="text-sm font-medium text-slate-300 transition hover:text-cyan-400"
             >
               Workouts
-            </a>
-            <a
-              href="/workouts/history"
+            </Link>
+            <Link
+              to="/workouts/history"
               className="text-sm font-medium text-slate-300 transition hover:text-cyan-400"
             >
               History
-            </a>
-            <a
-              href="/nutrition"
+            </Link>
+            <Link
+              to="/nutrition"
               className="text-sm font-medium text-slate-300 transition hover:text-cyan-400"
             >
               Nutrition
-            </a>
-            <a
-              href="/progress"
+            </Link>
+            <Link
+              to="/progress"
               className="text-sm font-medium text-slate-300 transition hover:text-cyan-400"
             >
               Progress
-            </a>
-            <a
-              href="/profile"
+            </Link>
+            <Link
+              to="/profile"
               className="text-sm font-medium text-slate-300 transition hover:text-cyan-400"
             >
               Profile
-            </a>
+            </Link>
           </nav>
 
           <div className="flex items-center gap-4">
@@ -85,7 +85,7 @@ export default function ProtectedLayout() {
         </div>
       </header>
 
-      {/* ── Main content area ──────────────────────────────────────────────── */}
+      {/* Main content area */}
       <main className="mx-auto max-w-7xl px-6 py-8">
         <Outlet />
       </main>
