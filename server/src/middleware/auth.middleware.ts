@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import { env } from "../config/env";
 
 export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
   const authorizationHeader = req.headers.authorization;
@@ -15,14 +16,8 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): v
     return;
   }
 
-  const jwtSecret = process.env.JWT_SECRET;
-  if (!jwtSecret) {
-    res.status(500).json({ success: false, message: "Server authentication configuration error" });
-    return;
-  }
-
   try {
-    const decodedToken = jwt.verify(bearerMatch[1], jwtSecret);
+    const decodedToken = jwt.verify(bearerMatch[1], env.jwtSecret);
 
     if (
       typeof decodedToken === "string" ||
