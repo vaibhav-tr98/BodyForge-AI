@@ -43,6 +43,7 @@ export default function RegisterForm() {
       <AuthInput
         label="Full Name"
         id="register-name"
+        autoComplete="name"
         placeholder="John Doe"
         error={errors.name?.message}
         {...register("name")}
@@ -52,6 +53,7 @@ export default function RegisterForm() {
         label="Email"
         type="email"
         id="register-email"
+        autoComplete="username"
         placeholder="john@example.com"
         error={errors.email?.message}
         {...register("email")}
@@ -61,6 +63,7 @@ export default function RegisterForm() {
         label="Password"
         type="password"
         id="register-password"
+        autoComplete="new-password"
         placeholder="••••••••"
         error={errors.password?.message}
         {...register("password")}
@@ -70,6 +73,7 @@ export default function RegisterForm() {
         label="Confirm Password"
         type="password"
         id="register-confirm-password"
+        autoComplete="new-password"
         placeholder="••••••••"
         error={errors.confirmPassword?.message}
         {...register("confirmPassword")}
@@ -78,6 +82,7 @@ export default function RegisterForm() {
       <Button
         type="submit"
         loading={isSubmitting}
+        loadingText="Creating Account..."
         id="register-submit"
       >
         Create Account

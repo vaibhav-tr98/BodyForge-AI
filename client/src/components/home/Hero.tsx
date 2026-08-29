@@ -29,12 +29,12 @@ export default function Hero() {
             Start Free
           </Link>
 
-          <Link
-            to="#features"
+          <button
+            onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}
             className="rounded-xl border border-slate-700 px-10 py-5 font-semibold transition-all duration-300 hover:scale-105 hover:border-cyan-400 hover:bg-slate-900"
           >
             Learn More
-          </Link>
+          </button>
         </div>
       </div>
     </motion.section>

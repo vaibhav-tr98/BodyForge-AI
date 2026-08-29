@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "https://bodyforge-ai-backend.onrender.com" : "http://localhost:5000");
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -37,7 +37,13 @@ api.interceptors.response.use(
  */
 export function getErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
-    const data = error.response?.data as
+    if (!error.response) {
+      if (error.message === "Network Error") {
+        return "Unable to connect to BodyForge AI server. Please try again.";
+      }
+      return error.message;
+    }
+    const data = error.response.data as
       | { success: false; message?: string }
       | undefined;
     if (data?.message) {

@@ -40,6 +40,7 @@ export default function LoginForm() {
         label="Email"
         type="email"
         id="login-email"
+        autoComplete="username"
         placeholder="john@example.com"
         error={errors.email?.message}
         {...register("email")}
@@ -49,12 +50,13 @@ export default function LoginForm() {
         label="Password"
         type="password"
         id="login-password"
+        autoComplete="current-password"
         placeholder="••••••••"
         error={errors.password?.message}
         {...register("password")}
       />
 
-      <Button type="submit" loading={isSubmitting} id="login-submit">
+      <Button type="submit" loading={isSubmitting} loadingText="Signing In..." id="login-submit">
         Sign In
       </Button>
     </form>

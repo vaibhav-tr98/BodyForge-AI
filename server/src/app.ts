@@ -20,7 +20,16 @@ const app = express();
 app.use(helmet());
 
 // Middleware
-const cleanClientUrl = env.clientUrl.replace(/\/$/, ""); // Remove trailing slash
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:5175",
+  "https://body-forge-ai-eight.vercel.app"
+];
+
+if (env.clientUrl) {
+  allowedOrigins.push(env.clientUrl.replace(/\/$/, ""));
+}
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -29,12 +38,11 @@ app.use(cors({
       return callback(null, true);
     }
     
-    // Allow configured client url (ignoring trailing slash)
-    if (origin === cleanClientUrl || origin + "/" === cleanClientUrl || cleanClientUrl + "/" === origin) {
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
     
-    // Allow localhost in development
+    // Also allow any localhost port in development just in case
     if (env.nodeEnv !== "production" && /^https?:\/\/localhost:\d+$/.test(origin)) {
       return callback(null, true);
     }
