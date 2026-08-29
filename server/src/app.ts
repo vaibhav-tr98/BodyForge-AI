@@ -38,6 +38,11 @@ app.use(cors({
       return callback(null, true);
     }
     
+    // Safely allow any Vercel deployment (preview or production)
+    if (origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }

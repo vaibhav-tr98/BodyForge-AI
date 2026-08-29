@@ -1,3 +1,4 @@
+import React from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,20 +18,25 @@ export default function RegisterForm() {
   const navigate = useNavigate();
   const { register: authRegister } = useAuth();
 
+  const [isLoading, setIsLoading] = React.useState(false);
+
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
   });
 
   const onSubmit = async (data: RegisterFormData) => {
+    setIsLoading(true);
     try {
       await authRegister(data.name, data.email, data.password);
       navigate("/onboarding");
     } catch (error) {
       toast.error(getErrorMessage(error));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -81,7 +87,7 @@ export default function RegisterForm() {
 
       <Button
         type="submit"
-        loading={isSubmitting}
+        loading={isLoading}
         loadingText="Creating Account..."
         id="register-submit"
       >

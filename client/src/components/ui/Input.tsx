@@ -25,15 +25,15 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
         <div className="relative">
           <input
+            {...props}
             ref={ref}
             type={inputType}
             className={`w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white placeholder-gray-400 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500 ${isPasswordField ? "pr-12" : ""} ${className}`}
-            {...props}
           />
           {isPasswordField && (
             <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-cyan-400 focus:outline-none"
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 text-gray-400 hover:text-cyan-400 focus:outline-none"
               onMouseDown={handleRevealStart}
               onMouseUp={handleRevealEnd}
               onMouseLeave={handleRevealEnd}
