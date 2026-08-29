@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 
 export default function Hero() {
   return (
@@ -21,13 +22,19 @@ export default function Hero() {
         </p>
 
         <div className="flex flex-wrap justify-center gap-6">
-          <button className="rounded-xl bg-cyan-500 px-10 py-5 font-semibold text-slate-950 transition-all duration-300 hover:scale-105 hover:bg-cyan-400">
+          <Link
+            to="/register"
+            className="rounded-xl bg-cyan-500 px-10 py-5 font-semibold text-slate-950 transition-all duration-300 hover:scale-105 hover:bg-cyan-400"
+          >
             Start Free
-          </button>
+          </Link>
 
-          <button className="rounded-xl border border-slate-700 px-10 py-5 font-semibold transition-all duration-300 hover:scale-105 hover:border-cyan-400 hover:bg-slate-900">
+          <Link
+            to="#features"
+            className="rounded-xl border border-slate-700 px-10 py-5 font-semibold transition-all duration-300 hover:scale-105 hover:border-cyan-400 hover:bg-slate-900"
+          >
             Learn More
-          </button>
+          </Link>
         </div>
       </div>
     </motion.section>
