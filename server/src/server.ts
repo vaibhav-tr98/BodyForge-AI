@@ -3,6 +3,7 @@ import connectDB from "./config/db";
 import { env } from "./config/env";
 import logger from "./utils/logger";
 import { runExerciseSeed } from "./scripts/seedExercises";
+import { runFoodSeed } from "./scripts/seedFoods";
 
 import mongoose from "mongoose";
 
@@ -17,6 +18,17 @@ const startServer = async (): Promise<void> => {
         logger.info("Exercise seed completed successfully.");
       } catch (seedError) {
         logger.error("Failed to seed exercises during startup:", seedError);
+        process.exit(1);
+      }
+    }
+
+    if (process.env.SEED_FOODS === "true") {
+      logger.info("SEED_FOODS is true. Running food seed before starting server...");
+      try {
+        await runFoodSeed();
+        logger.info("Food seed completed successfully.");
+      } catch (seedError) {
+        logger.error("Failed to seed foods during startup:", seedError);
         process.exit(1);
       }
     }

@@ -1,47 +1,43 @@
 import mongoose from "mongoose";
-import dotenv from "dotenv";
-import path from "path";
-import fs from "fs";
-
-// Load environment variables before any other imports
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
-
+import { env } from "../config/env";
 import { foodRepository } from "../repositories/food.repository";
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/bodyforge";
+// Use dynamic import or require for JSON so it works across ts-node and dist
+import foods from "../data/indian-foods.json";
 
-async function seedFoods() {
+export async function runFoodSeed() {
   console.log("Starting Food DB Seeding...");
   
+  let inserted = 0;
+  let updated = 0;
+  let failed = 0;
+
+  for (const food of foods) {
+    try {
+      const existing = await foodRepository.getFoodByName(food.name);
+      if (existing) {
+        await foodRepository.createOrUpdateFood(food);
+        updated++;
+      } else {
+        await foodRepository.createOrUpdateFood(food);
+        inserted++;
+      }
+    } catch (error) {
+      console.error(`Failed to insert/update ${food.name}:`, error);
+      failed++;
+    }
+  }
+
+  console.log(`Food Seeding completed. Inserted: ${inserted}, Updated: ${updated}, Failed: ${failed}`);
+}
+
+async function seedFoods() {
   try {
-    await mongoose.connect(MONGODB_URI);
+    console.log("Connecting to MongoDB for standalone food seeding...");
+    await mongoose.connect(env.mongoUri);
     console.log("Connected to MongoDB.");
 
-    const dataPath = path.resolve(__dirname, "../data/indian-foods.json");
-    const foodsRaw = fs.readFileSync(dataPath, "utf8");
-    const foods = JSON.parse(foodsRaw);
-
-    let inserted = 0;
-    let updated = 0;
-    let failed = 0;
-
-    for (const food of foods) {
-      try {
-        const existing = await foodRepository.getFoodByName(food.name);
-        if (existing) {
-          await foodRepository.createOrUpdateFood(food);
-          updated++;
-        } else {
-          await foodRepository.createOrUpdateFood(food);
-          inserted++;
-        }
-      } catch (error) {
-        console.error(`Failed to insert/update ${food.name}:`, error);
-        failed++;
-      }
-    }
-
-    console.log(`Seeding completed. Inserted: ${inserted}, Updated: ${updated}, Failed: ${failed}`);
+    await runFoodSeed();
   } catch (error) {
     console.error("Seeding failed with error:", error);
     process.exit(1);
@@ -52,4 +48,6 @@ async function seedFoods() {
   }
 }
 
-seedFoods();
+if (require.main === module) {
+  seedFoods();
+}
