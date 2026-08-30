@@ -99,7 +99,7 @@ export const env: AppEnv = {
   clientUrl: getRequiredEnv("CLIENT_URL"),
   logLevel: parseLogLevel(process.env.LOG_LEVEL),
   geminiApiKey: getRequiredEnv("GEMINI_API_KEY"),
-  aiModel: getOptionalEnv("AI_MODEL", "gemini-2.5-flash"),
+  aiModel: getOptionalEnv("AI_MODEL", "gemini-3.6-flash"),
   nodeEnv: parseNodeEnv(process.env.NODE_ENV),
   rateLimitApiMax: parseInteger(process.env.RATE_LIMIT_API_MAX, 100),
   rateLimitAuthMax: parseInteger(process.env.RATE_LIMIT_AUTH_MAX, 20),
