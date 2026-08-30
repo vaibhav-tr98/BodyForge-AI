@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Loader from "../ui/Loader";
+import { Home, Dumbbell, LineChart, Utensils, User } from "lucide-react";
 
 /**
  * Route guard that redirects unauthenticated users to /login.
@@ -17,6 +18,19 @@ export default function ProtectedLayout() {
   if (!isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
+
+  const isActive = (path: string) => {
+    if (path === "/dashboard") return location.pathname === "/dashboard";
+    return location.pathname.startsWith(path);
+  };
+
+  const navItems = [
+    { name: "Home", path: "/dashboard", icon: Home },
+    { name: "Workouts", path: "/workouts", icon: Dumbbell },
+    { name: "Tracker", path: "/progress", icon: LineChart },
+    { name: "Nutrition", path: "/nutrition", icon: Utensils },
+    { name: "Profile", path: "/profile", icon: User },
+  ];
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -86,9 +100,34 @@ export default function ProtectedLayout() {
       </header>
 
       {/* Main content area */}
-      <main className="mx-auto max-w-7xl px-6 py-8">
+      <main className="mx-auto max-w-7xl px-6 py-8 pb-28 sm:pb-8">
         <Outlet />
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-slate-800 bg-slate-950/95 backdrop-blur">
+        <div className="flex items-center justify-around px-2 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+          {navItems.map((item) => {
+            const active = isActive(item.path);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex flex-col items-center justify-center gap-1 flex-1 ${
+                  active ? "text-cyan-400" : "text-slate-400 hover:text-slate-300"
+                }`}
+                aria-label={item.name}
+              >
+                <Icon size={24} className={active ? "stroke-cyan-400" : "stroke-current"} />
+                <span className="text-[10px] font-medium leading-none">
+                  {item.name}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }
