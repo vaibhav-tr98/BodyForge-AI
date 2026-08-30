@@ -2,12 +2,24 @@ import app from "./app";
 import connectDB from "./config/db";
 import { env } from "./config/env";
 import logger from "./utils/logger";
+import { runExerciseSeed } from "./scripts/seedExercises";
 
 import mongoose from "mongoose";
 
 const startServer = async (): Promise<void> => {
   try {
     await connectDB(env.mongoUri);
+
+    if (process.env.SEED_EXERCISES === "true") {
+      logger.info("SEED_EXERCISES is true. Running exercise seed before starting server...");
+      try {
+        await runExerciseSeed();
+        logger.info("Exercise seed completed successfully.");
+      } catch (seedError) {
+        logger.error("Failed to seed exercises during startup:", seedError);
+        process.exit(1);
+      }
+    }
 
     const server = app.listen(env.port, () => {
       logger.info(`Server running on http://localhost:${env.port}`);

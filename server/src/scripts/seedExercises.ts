@@ -28,47 +28,51 @@ const mapDifficulty = (level: string): "beginner" | "intermediate" | "advanced" 
   return "intermediate"; // default fallback
 };
 
+export async function runExerciseSeed() {
+  logger.info(`Fetching external dataset from ${DATASET_URL}...`);
+  const response = await fetch(DATASET_URL);
+  const exercises: ExternalExercise[] = await response.json();
+  logger.info(`Fetched ${exercises.length} exercises from dataset.`);
+
+  logger.info("Preparing bulk operations...");
+  const bulkOps = exercises.map((ex: ExternalExercise) => {
+    const mappedData = {
+      name: ex.name,
+      category: ex.category || undefined,
+      equipment: ex.equipment || undefined,
+      primaryMuscles: ex.primaryMuscles || [],
+      secondaryMuscles: ex.secondaryMuscles || [],
+      difficulty: mapDifficulty(ex.level),
+      instructions: ex.instructions || [],
+    };
+
+    // Upsert by exact name to prevent duplicates
+    return {
+      updateOne: {
+        filter: { name: ex.name },
+        update: { $set: mappedData },
+        upsert: true,
+      },
+    };
+  });
+
+  logger.info("Executing bulk write...");
+  const result = await Exercise.bulkWrite(bulkOps);
+
+  logger.info("Seed Summary:");
+  logger.info(`- Dataset total: ${exercises.length}`);
+  logger.info(`- Inserted: ${result.upsertedCount}`);
+  logger.info(`- Updated: ${result.modifiedCount}`);
+  logger.info(`- Matched (skipped updates): ${result.matchedCount - result.modifiedCount}`);
+}
+
 async function seedExercises() {
   try {
     logger.info("Connecting to MongoDB for seeding...");
     await mongoose.connect(DB_URI);
     logger.info("Connected successfully.");
 
-    logger.info(`Fetching external dataset from ${DATASET_URL}...`);
-    const response = await fetch(DATASET_URL);
-    const exercises: ExternalExercise[] = await response.json();
-    logger.info(`Fetched ${exercises.length} exercises from dataset.`);
-
-    logger.info("Preparing bulk operations...");
-    const bulkOps = exercises.map((ex: ExternalExercise) => {
-      const mappedData = {
-        name: ex.name,
-        category: ex.category || undefined,
-        equipment: ex.equipment || undefined,
-        primaryMuscles: ex.primaryMuscles || [],
-        secondaryMuscles: ex.secondaryMuscles || [],
-        difficulty: mapDifficulty(ex.level),
-        instructions: ex.instructions || [],
-      };
-
-      // Upsert by exact name to prevent duplicates
-      return {
-        updateOne: {
-          filter: { name: ex.name },
-          update: { $set: mappedData },
-          upsert: true,
-        },
-      };
-    });
-
-    logger.info("Executing bulk write...");
-    const result = await Exercise.bulkWrite(bulkOps);
-
-    logger.info("Seed Summary:");
-    logger.info(`- Dataset total: ${exercises.length}`);
-    logger.info(`- Inserted: ${result.upsertedCount}`);
-    logger.info(`- Updated: ${result.modifiedCount}`);
-    logger.info(`- Matched (skipped updates): ${result.matchedCount - result.modifiedCount}`);
+    await runExerciseSeed();
 
   } catch (error) {
     logger.error("Failed to seed exercises:", error);
@@ -80,4 +84,6 @@ async function seedExercises() {
   }
 }
 
-seedExercises();
+if (require.main === module) {
+  seedExercises();
+}
