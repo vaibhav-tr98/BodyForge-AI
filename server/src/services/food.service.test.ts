@@ -133,6 +133,49 @@ describe("FoodService", () => {
       });
     });
 
+    it("should reject Roti: 2.5 pieces (count-based unit cannot be decimal)", async () => {
+      (foodRepository.getFoodByName as jest.Mock).mockResolvedValue(mockRoti);
+      await expect(foodService.calculateMacros("Roti", 2.5, "piece")).rejects.toThrow(AppError);
+    });
+
+    it("should allow Eggs: 1 piece (count-based unit as integer)", async () => {
+      (foodRepository.getFoodByName as jest.Mock).mockResolvedValue(mockEggs);
+      const macros = await foodService.calculateMacros("Eggs", 1, "piece");
+      expect(macros).toEqual({
+        calories: 72,
+        protein: 6,
+        carbs: 0,
+        fat: 5,
+      });
+    });
+
+    it("should reject Eggs: 1.3 pieces (count-based unit cannot be decimal)", async () => {
+      (foodRepository.getFoodByName as jest.Mock).mockResolvedValue(mockEggs);
+      await expect(foodService.calculateMacros("Eggs", 1.3, "piece")).rejects.toThrow(AppError);
+    });
+
+    it("should allow decimal quantity for Chicken: 200.5 g", async () => {
+      (foodRepository.getFoodByName as jest.Mock).mockResolvedValue(mockChicken);
+      const macros = await foodService.calculateMacros("Chicken Breast", 200.5, "g");
+      expect(macros).toEqual({
+        calories: 331, // 165 * 2.005 = 330.825
+        protein: 62, // 31 * 2.005 = 62.155
+        carbs: 0,
+        fat: 8, // 4 * 2.005 = 8.02
+      });
+    });
+
+    it("should allow decimal quantity for Milk: 250.5 ml", async () => {
+      (foodRepository.getFoodByName as jest.Mock).mockResolvedValue(mockMilk);
+      const macros = await foodService.calculateMacros("Cow Milk", 250.5, "ml");
+      expect(macros).toEqual({
+        calories: 153, // 61 * 2.505 = 152.805
+        protein: 8, // 3.2 * 2.505 = 8.016
+        carbs: 12, // 4.8 * 2.505 = 12.024
+        fat: 8, // 3.3 * 2.505 = 8.2665
+      });
+    });
+
     it("should calculate macros for Roti: 100g (base unit)", async () => {
       (foodRepository.getFoodByName as jest.Mock).mockResolvedValue(mockRoti);
       const macros = await foodService.calculateMacros("Roti", 100, "g");

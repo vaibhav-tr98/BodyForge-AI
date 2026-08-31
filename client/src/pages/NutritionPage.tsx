@@ -23,6 +23,11 @@ export default function NutritionPage() {
   const [quantity, setQuantity] = useState(100);
   const [unit, setUnit] = useState("g");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [quantityError, setQuantityError] = useState("");
+
+  const isMeasurementUnit = (u: string) => {
+    return ['g', 'kg', 'ml', 'l', 'oz', 'lb', 'cup', 'cups', 'tbsp', 'tsp', 'fl oz'].includes(u.toLowerCase());
+  };
 
   const queryClient = useQueryClient();
 
@@ -80,6 +85,7 @@ export default function NutritionPage() {
     setEditingEntry(null);
     setIsFormOpen(false);
     setIsDropdownOpen(false);
+    setQuantityError("");
   };
 
   const handleEdit = (entry: NutritionEntry) => {
@@ -90,6 +96,7 @@ export default function NutritionPage() {
     setUnit(entry.unit);
     setIsFormOpen(true);
     setIsDropdownOpen(false);
+    setQuantityError("");
   };
 
   const handleSelectFood = (food: NutritionFood) => {
@@ -105,10 +112,18 @@ export default function NutritionPage() {
       setQuantity(food.baseQuantity);
     }
     setIsDropdownOpen(false);
+    setQuantityError("");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isMeasurementUnit(unit) && !Number.isInteger(quantity)) {
+      setQuantityError(`Quantity for "${unit}" must be a whole number.`);
+      return;
+    }
+    setQuantityError("");
+
     const data = {
       date,
       foodName: searchQuery,
@@ -290,12 +305,21 @@ export default function NutritionPage() {
                 <input 
                   required 
                   type="number" 
-                  min="0.1" 
-                  step="0.1" 
+                  min={isMeasurementUnit(unit) ? "0.1" : "1"}
+                  step={isMeasurementUnit(unit) ? "0.1" : "1"}
                   value={quantity} 
-                  onChange={e => setQuantity(Number(e.target.value))} 
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyan-500" 
+                  onChange={e => {
+                    setQuantity(Number(e.target.value));
+                    setQuantityError("");
+                  }} 
+                  onKeyDown={(e) => {
+                    if (!isMeasurementUnit(unit) && (e.key === '.' || e.key === 'e' || e.key === 'E' || e.key === '-')) {
+                      e.preventDefault();
+                    }
+                  }}
+                  className={`w-full bg-slate-900 border ${quantityError ? 'border-red-500' : 'border-slate-700'} rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyan-500`} 
                 />
+                {quantityError && <p className="text-red-400 text-xs mt-1">{quantityError}</p>}
               </div>
 
               {/* Unit */}

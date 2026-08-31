@@ -24,6 +24,12 @@ class FoodService {
     const normalizedUnit = unit.toLowerCase();
     const normalizedBaseUnit = food.baseUnit.toLowerCase();
 
+    // Validate integer for count-based units
+    const isMeasurementUnit = ['g', 'kg', 'ml', 'l', 'oz', 'lb', 'cup', 'cups', 'tbsp', 'tsp', 'fl oz'].includes(normalizedUnit);
+    if (!isMeasurementUnit && !Number.isInteger(quantity)) {
+      throw new AppError(`Quantity for count-based unit "${unit}" must be an integer.`, 400);
+    }
+
     let multiplier = 1;
 
     // Check if the requested unit matches a known serving
