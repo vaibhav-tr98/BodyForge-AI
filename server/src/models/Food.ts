@@ -1,4 +1,10 @@
-﻿import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
+
+export interface IFoodServing {
+  unit: string;
+  quantity: number;
+  equivalent: number;
+}
 
 export interface IFood extends Document {
   name: string;
@@ -11,7 +17,17 @@ export interface IFood extends Document {
   carbs: number;
   fat: number;
   source: string;
+  servings?: IFoodServing[];
 }
+
+const ServingSchema: Schema = new Schema(
+  {
+    unit: { type: String, required: true },
+    quantity: { type: Number, required: true },
+    equivalent: { type: Number, required: true }
+  },
+  { _id: false }
+);
 
 const FoodSchema: Schema = new Schema(
   {
@@ -25,6 +41,7 @@ const FoodSchema: Schema = new Schema(
     carbs: { type: Number, required: true },
     fat: { type: Number, required: true },
     source: { type: String, required: true },
+    servings: { type: [ServingSchema], default: [] },
   },
   {
     timestamps: true,

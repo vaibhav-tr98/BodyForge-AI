@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, Edit2, PieChart, Search, Info } from "lucide-react";
 import { 
@@ -95,8 +95,15 @@ export default function NutritionPage() {
   const handleSelectFood = (food: NutritionFood) => {
     setSelectedFood(food);
     setSearchQuery(food.name);
-    setUnit(food.baseUnit);
-    setQuantity(food.baseQuantity);
+    
+    // Auto-select natural unit
+    if (food.servings && food.servings.length > 0) {
+      setUnit(food.servings[0].unit);
+      setQuantity(food.servings[0].quantity || 1);
+    } else {
+      setUnit(food.baseUnit);
+      setQuantity(food.baseQuantity);
+    }
     setIsDropdownOpen(false);
   };
 
@@ -128,7 +135,26 @@ export default function NutritionPage() {
     const nUnit = unit.toLowerCase();
     const nBase = selectedFood.baseUnit.toLowerCase();
     let multiplier = 0;
-    if (nUnit === nBase || (nUnit === "pieces" && nBase === "piece") || (nUnit === "piece" && nBase === "pieces") || (nUnit === "serving" && nBase === "servings") || (nUnit === "servings" && nBase === "serving")) {
+    
+    let servingEquivalent: number | undefined;
+    if (selectedFood.servings && selectedFood.servings.length > 0) {
+      const isPlural = nUnit.endsWith('s');
+      const singular = isPlural ? nUnit.slice(0, -1) : nUnit;
+      const plural = isPlural ? nUnit : nUnit + 's';
+
+      const serving = selectedFood.servings.find(s => {
+        const sUnit = s.unit.toLowerCase();
+        return sUnit === nUnit || sUnit === singular || sUnit === plural;
+      });
+
+      if (serving) {
+        servingEquivalent = serving.equivalent;
+      }
+    }
+
+    if (servingEquivalent !== undefined && (nBase === "g" || nBase === "ml")) {
+      multiplier = (quantity * servingEquivalent) / selectedFood.baseQuantity;
+    } else if (nUnit === nBase || (nUnit === "pieces" && nBase === "piece") || (nUnit === "piece" && nBase === "pieces") || (nUnit === "serving" && nBase === "servings") || (nUnit === "servings" && nBase === "serving")) {
       multiplier = quantity / selectedFood.baseQuantity;
     } else if (nUnit === "kg" && nBase === "g") {
       multiplier = (quantity * 1000) / selectedFood.baseQuantity;

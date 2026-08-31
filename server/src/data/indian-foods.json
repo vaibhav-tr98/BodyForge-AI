@@ -51,13 +51,20 @@
     "name": "Roti",
     "aliases": ["chapati", "phulka", "indian flatbread", "wheat roti"],
     "category": "Cereals & Grains",
-    "baseQuantity": 1,
-    "baseUnit": "piece",
-    "calories": 104,
-    "protein": 3,
-    "carbs": 22,
-    "fat": 0.4,
-    "source": "MVP reference dataset"
+    "baseQuantity": 100,
+    "baseUnit": "g",
+    "calories": 260,
+    "protein": 7.5,
+    "carbs": 55,
+    "fat": 1,
+    "source": "MVP reference dataset",
+    "servings": [
+      {
+        "unit": "piece",
+        "quantity": 1,
+        "equivalent": 40
+      }
+    ]
   },
   {
     "name": "Toor Dal (Cooked)",

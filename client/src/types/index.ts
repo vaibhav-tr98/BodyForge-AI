@@ -250,6 +250,12 @@ export interface UpdateNutritionEntryRequest {
   unit?: string;
 }
 
+export interface NutritionFoodServing {
+  unit: string;
+  quantity: number;
+  equivalent: number;
+}
+
 export interface NutritionFood {
   name: string;
   aliases?: string[];
@@ -259,6 +265,7 @@ export interface NutritionFood {
   protein: number;
   carbs: number;
   fat: number;
+  servings?: NutritionFoodServing[];
 }
 
 export interface NutritionEntry {

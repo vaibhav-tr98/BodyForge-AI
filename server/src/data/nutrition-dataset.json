@@ -146573,7 +146573,14 @@
     "protein": 7.5,
     "carbs": 55,
     "fat": 1,
-    "source": "MVP reference dataset"
+    "source": "MVP reference dataset",
+    "servings": [
+      {
+        "unit": "piece",
+        "quantity": 1,
+        "equivalent": 40
+      }
+    ]
   },
   {
     "name": "Toor Dal (Cooked)",

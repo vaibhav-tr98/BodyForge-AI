@@ -26,7 +26,27 @@ class FoodService {
 
     let multiplier = 1;
 
-    if (normalizedUnit === normalizedBaseUnit) {
+    // Check if the requested unit matches a known serving
+    let servingEquivalent: number | undefined;
+    if (food.servings && food.servings.length > 0) {
+      const isPlural = normalizedUnit.endsWith('s');
+      const singular = isPlural ? normalizedUnit.slice(0, -1) : normalizedUnit;
+      const plural = isPlural ? normalizedUnit : normalizedUnit + 's';
+
+      const serving = food.servings.find(s => {
+        const sUnit = s.unit.toLowerCase();
+        return sUnit === normalizedUnit || sUnit === singular || sUnit === plural;
+      });
+
+      if (serving) {
+        servingEquivalent = serving.equivalent;
+      }
+    }
+
+    if (servingEquivalent !== undefined && (normalizedBaseUnit === "g" || normalizedBaseUnit === "ml")) {
+      // e.g. 1 piece = 40g, base = 100g. Request = 2 pieces. multiplier = (2 * 40) / 100 = 0.8
+      multiplier = (quantity * servingEquivalent) / food.baseQuantity;
+    } else if (normalizedUnit === normalizedBaseUnit) {
       multiplier = quantity / food.baseQuantity;
     } else if (normalizedUnit === "kg" && normalizedBaseUnit === "g") {
       multiplier = (quantity * 1000) / food.baseQuantity;
