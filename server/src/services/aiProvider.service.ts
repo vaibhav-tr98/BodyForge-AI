@@ -32,18 +32,18 @@ export const AIProvider = {
         systemInstruction,
         responseMimeType: "application/json",
         responseSchema: {
-          type: "OBJECT",
+          type: "object",
           properties: {
-            name: { type: "STRING" },
-            description: { type: "STRING" },
+            name: { type: "string" },
+            description: { type: "string" },
             exercises: {
-              type: "ARRAY",
+              type: "array",
               items: {
-                type: "OBJECT",
+                type: "object",
                 properties: {
-                  name: { type: "STRING" },
-                  sets: { type: "INTEGER" },
-                  reps: { type: "INTEGER" }
+                  name: { type: "string" },
+                  sets: { type: "integer" },
+                  reps: { type: "integer" }
                 },
                 required: ["name", "sets", "reps"]
               }
@@ -103,12 +103,12 @@ export const AIProvider = {
         systemInstruction,
         responseMimeType: "application/json",
         responseSchema: {
-          type: "OBJECT",
+          type: "object",
           properties: {
-            summary: { type: "STRING" },
-            positives: { type: "ARRAY", items: { type: "STRING" } },
-            attention: { type: "ARRAY", items: { type: "STRING" } },
-            nextAction: { type: "STRING" }
+            summary: { type: "string" },
+            positives: { type: "array", items: { type: "string" } },
+            attention: { type: "array", items: { type: "string" } },
+            nextAction: { type: "string" }
           },
           required: ["summary", "positives", "attention", "nextAction"]
         }
@@ -161,12 +161,12 @@ export const AIProvider = {
         systemInstruction,
         responseMimeType: "application/json",
         responseSchema: {
-          type: "OBJECT",
+          type: "object",
           properties: {
-            summary: { type: "STRING" },
-            positives: { type: "ARRAY", items: { type: "STRING" } },
-            attention: { type: "ARRAY", items: { type: "STRING" } },
-            nextAction: { type: "STRING" }
+            summary: { type: "string" },
+            positives: { type: "array", items: { type: "string" } },
+            attention: { type: "array", items: { type: "string" } },
+            nextAction: { type: "string" }
           },
           required: ["summary", "positives", "attention", "nextAction"]
         }
@@ -218,12 +218,12 @@ export const AIProvider = {
         systemInstruction,
         responseMimeType: "application/json",
         responseSchema: {
-          type: "OBJECT",
+          type: "object",
           properties: {
-            summary: { type: "STRING" },
-            positives: { type: "ARRAY", items: { type: "STRING" } },
-            attention: { type: "ARRAY", items: { type: "STRING" } },
-            nextAction: { type: "STRING" }
+            summary: { type: "string" },
+            positives: { type: "array", items: { type: "string" } },
+            attention: { type: "array", items: { type: "string" } },
+            nextAction: { type: "string" }
           },
           required: ["summary", "positives", "attention", "nextAction"]
         }
@@ -275,12 +275,12 @@ export const AIProvider = {
         systemInstruction,
         responseMimeType: "application/json",
         responseSchema: {
-          type: "OBJECT",
+          type: "object",
           properties: {
-            summary: { type: "STRING" },
-            positives: { type: "ARRAY", items: { type: "STRING" } },
-            attention: { type: "ARRAY", items: { type: "STRING" } },
-            nextAction: { type: "STRING" }
+            summary: { type: "string" },
+            positives: { type: "array", items: { type: "string" } },
+            attention: { type: "array", items: { type: "string" } },
+            nextAction: { type: "string" }
           },
           required: ["summary", "positives", "attention", "nextAction"]
         }
@@ -332,12 +332,12 @@ export const AIProvider = {
         systemInstruction,
         responseMimeType: "application/json",
         responseSchema: {
-          type: "OBJECT",
+          type: "object",
           properties: {
-            summary: { type: "STRING" },
-            topPositive: { type: "STRING" },
-            mainAttention: { type: "STRING" },
-            nextAction: { type: "STRING" }
+            summary: { type: "string" },
+            topPositive: { type: "string" },
+            mainAttention: { type: "string" },
+            nextAction: { type: "string" }
           },
           required: ["summary", "topPositive", "mainAttention", "nextAction"]
         }
