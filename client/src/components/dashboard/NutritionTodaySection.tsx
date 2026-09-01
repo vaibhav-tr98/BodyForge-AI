@@ -22,7 +22,7 @@ export default function NutritionTodaySection() {
 
   if (isLoading) {
     return (
-      <section className="mb-10">
+      <section>
         <h2 className="mb-4 text-xl font-bold text-white flex items-center gap-2">
           <Utensils className="text-cyan-500" size={20} />
           NUTRITION TODAY
@@ -36,7 +36,7 @@ export default function NutritionTodaySection() {
 
   if (isError || !overview) {
     return (
-      <section className="mb-10">
+      <section>
         <h2 className="mb-4 text-xl font-bold text-white flex items-center gap-2">
           <Utensils className="text-cyan-500" size={20} />
           NUTRITION TODAY
@@ -54,7 +54,7 @@ export default function NutritionTodaySection() {
   
   if (!hasNutritionLogs && !workout.hasWorkout && !targets) {
     return (
-      <section className="mb-10">
+      <section>
         <h2 className="mb-4 text-xl font-bold text-white flex items-center gap-2">
           <Utensils className="text-cyan-500" size={20} />
           NUTRITION TODAY
@@ -69,7 +69,7 @@ export default function NutritionTodaySection() {
   
   if (!hasNutritionLogs && !workout.hasWorkout && targets) {
     return (
-      <section className="mb-10">
+      <section>
         <h2 className="mb-4 text-xl font-bold text-white flex items-center gap-2">
           <Utensils className="text-cyan-500" size={20} />
           NUTRITION TODAY
@@ -96,7 +96,7 @@ export default function NutritionTodaySection() {
   };
 
   return (
-    <section className="mb-10">
+    <section>
       <h2 className="mb-4 text-xl font-bold text-white flex items-center gap-2">
         <Utensils className="text-cyan-500" size={20} />
         NUTRITION TODAY

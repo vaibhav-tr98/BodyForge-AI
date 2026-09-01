@@ -20,7 +20,7 @@ export const BodyForgeInsightSection: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-6 animate-pulse flex items-center gap-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 animate-pulse flex items-center gap-4">
         <div className="w-10 h-10 bg-slate-800 rounded-lg"></div>
         <div className="flex-1">
           <div className="h-5 bg-slate-800 rounded w-1/3 mb-2"></div>
@@ -33,7 +33,7 @@ export const BodyForgeInsightSection: React.FC = () => {
   if (isError || !insight) {
     // Graceful fallback
     return (
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-6 flex items-start gap-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 flex items-start gap-4">
         <div className="bg-slate-800/50 p-3 rounded-lg text-slate-400">
           <AlertCircle className="w-6 h-6" />
         </div>
@@ -68,7 +68,7 @@ export const BodyForgeInsightSection: React.FC = () => {
   };
 
   return (
-    <div className={`bg-slate-900 border ${getBorderColor()} rounded-xl p-6 mb-6 transition-all duration-300 hover:border-slate-700 relative overflow-hidden group`}>
+    <div className={`bg-slate-900 border ${getBorderColor()} rounded-xl p-6 transition-all duration-300 hover:border-slate-700 relative overflow-hidden group`}>
       <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-bl-full -mr-10 -mt-10 transition-transform duration-500 group-hover:scale-110"></div>
       
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 relative z-10">

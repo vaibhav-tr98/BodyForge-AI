@@ -7,7 +7,7 @@ export const ReadinessAnalysisSection: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="bg-slate-900 rounded-2xl p-6 shadow-lg border border-slate-800 animate-pulse mt-6">
+      <div className="bg-slate-900 rounded-2xl p-6 shadow-lg border border-slate-800 animate-pulse">
         <div className="flex items-center space-x-2 mb-4">
           <Sparkles className="w-5 h-5 text-cyan-400" />
           <h3 className="text-lg font-bold text-white tracking-wide uppercase">AI Readiness Analysis</h3>
@@ -23,7 +23,7 @@ export const ReadinessAnalysisSection: React.FC = () => {
 
   if (isError) {
     return (
-      <div className="bg-slate-900 rounded-2xl p-6 shadow-lg border border-slate-800 mt-6">
+      <div className="bg-slate-900 rounded-2xl p-6 shadow-lg border border-slate-800">
         <div className="flex items-center space-x-2 mb-4">
           <Sparkles className="w-5 h-5 text-cyan-400" />
           <h3 className="text-lg font-bold text-white tracking-wide uppercase">AI Readiness Analysis</h3>
@@ -36,7 +36,7 @@ export const ReadinessAnalysisSection: React.FC = () => {
   if (!data) return null;
 
   return (
-    <div className="bg-slate-900 rounded-2xl p-6 shadow-lg border border-slate-800 mt-6 relative overflow-hidden group">
+    <div className="bg-slate-900 rounded-2xl p-6 shadow-lg border border-slate-800 relative overflow-hidden group">
       <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-bl-full -mr-10 -mt-10 transition-transform duration-500 group-hover:scale-110"></div>
       
       <div className="relative z-10">

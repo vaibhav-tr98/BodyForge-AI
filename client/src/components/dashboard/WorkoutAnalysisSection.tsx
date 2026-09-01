@@ -12,7 +12,7 @@ export const WorkoutAnalysisSection: React.FC<WorkoutAnalysisSectionProps> = ({ 
 
   if (isLoading) {
     return (
-      <div className="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700 animate-pulse h-full">
+      <div className="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700 animate-pulse">
         <div className="flex items-center space-x-2 mb-4">
           <Sparkles className="w-5 h-5 text-cyan-400" />
           <h3 className="text-lg font-semibold text-white tracking-wide">AI WORKOUT ANALYSIS</h3>
@@ -28,7 +28,7 @@ export const WorkoutAnalysisSection: React.FC<WorkoutAnalysisSectionProps> = ({ 
 
   if (isError) {
     return (
-      <div className="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700 h-full">
+      <div className="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700">
         <div className="flex items-center space-x-2 mb-4">
           <Sparkles className="w-5 h-5 text-cyan-400" />
           <h3 className="text-lg font-semibold text-white tracking-wide">AI WORKOUT ANALYSIS</h3>
@@ -41,7 +41,7 @@ export const WorkoutAnalysisSection: React.FC<WorkoutAnalysisSectionProps> = ({ 
   if (!data) return null;
 
   return (
-    <div className="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700 h-full mt-6">
+    <div className="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700">
       <div className="flex items-center space-x-2 mb-4">
         <Sparkles className="w-5 h-5 text-cyan-400" />
         <h3 className="text-lg font-semibold text-white tracking-wide">AI WORKOUT ANALYSIS</h3>
