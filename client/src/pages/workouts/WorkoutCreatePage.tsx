@@ -34,7 +34,7 @@ export default function WorkoutCreatePage() {
 
   const aiMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await api.post("/analytics/generate-workout-plan", data);
+      const response = await api.post("/api/analytics/generate-workout-plan", data);
       return response.data.data;
     },
     onSuccess: (data) => {
