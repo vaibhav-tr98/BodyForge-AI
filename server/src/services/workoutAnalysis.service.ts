@@ -61,9 +61,9 @@ export class WorkoutAnalysisService {
       
       recentPRs: recentInsights?.personalRecords?.slice(0, 3).map((pr: any) => ({
         exerciseName: pr.exerciseName,
-        bestWeight: pr.bestWeight,
+        heaviestWeight: pr.heaviestWeight,
         bestReps: pr.bestReps,
-        achievedAt: pr.achievedAt
+        lastPerformedAt: pr.lastPerformedAt
       })) || null,
     };
 

@@ -20,8 +20,8 @@ export interface WorkoutAnalysisContext {
   
   recentPRs: {
     exerciseName: string;
-    bestWeight: number;
+    heaviestWeight: number;
     bestReps: number;
-    achievedAt: string;
+    lastPerformedAt: string;
   }[] | null;
 }

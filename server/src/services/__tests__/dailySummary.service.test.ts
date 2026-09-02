@@ -118,28 +118,30 @@ describe("DailySummaryService", () => {
   });
 
   it("produces controlled error behavior on AI failure", async () => {
-    (progressAnalysisService.getProgressAnalysis as jest.Mock).mockResolvedValue(null);
-    (nutritionAnalysisService.getNutritionAnalysis as jest.Mock).mockResolvedValue(null);
-    (workoutAnalysisService.getWorkoutAnalysis as jest.Mock).mockResolvedValue(null);
-    (readinessAnalysisService.getReadinessAnalysis as jest.Mock).mockResolvedValue(null);
-    
+    const userId = "507f1f77bcf86cd799439011";
+    const date = "2023-11-20";
+
+    (progressAnalysisService.getProgressAnalysis as jest.Mock).mockResolvedValue({ summary: "mock" });
     (AIProvider.generateDailySummary as jest.Mock).mockRejectedValue(new Error("AI error"));
 
     await expect(dailySummaryService.getDailySummary(userId, date)).rejects.toThrow("AI analysis is temporarily unavailable.");
   });
 
   it("correctly constructs structured context and isolates by user and date", async () => {
-    (progressAnalysisService.getProgressAnalysis as jest.Mock).mockResolvedValue(null);
+    const userId = "507f1f77bcf86cd799439011";
+    const date = "2023-11-20";
+
+    (AIProvider.generateDailySummary as jest.Mock).mockResolvedValue({
+      summary: "Test",
+      topPositive: "Test",
+      mainAttention: "Sleep",
+      nextAction: "Go to bed"
+    });
+
+    (progressAnalysisService.getProgressAnalysis as jest.Mock).mockResolvedValue({ summary: "mock" });
     (nutritionAnalysisService.getNutritionAnalysis as jest.Mock).mockResolvedValue(null);
     (workoutAnalysisService.getWorkoutAnalysis as jest.Mock).mockResolvedValue(null);
     (readinessAnalysisService.getReadinessAnalysis as jest.Mock).mockResolvedValue(null);
-    
-    (AIProvider.generateDailySummary as jest.Mock).mockResolvedValue({
-      summary: "All good",
-      topPositive: "You are doing great",
-      mainAttention: "Sleep more",
-      nextAction: "Go to bed"
-    });
 
     await dailySummaryService.getDailySummary(userId, date);
 

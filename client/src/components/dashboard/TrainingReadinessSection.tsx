@@ -75,7 +75,7 @@ export default function TrainingReadinessSection() {
         <Activity className="text-cyan-500" size={20} />
         TRAINING READINESS
       </h2>
-      <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden mb-10">
+      <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
         <div className="p-6 md:p-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>

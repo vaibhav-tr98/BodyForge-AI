@@ -27,7 +27,7 @@ export default function NutritionTodaySection() {
           <Utensils className="text-cyan-500" size={20} />
           NUTRITION TODAY
         </h2>
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 text-center animate-pulse h-[200px]">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 text-center animate-pulse">
           <div className="h-6 w-32 bg-slate-800 rounded mx-auto mb-4"></div>
         </div>
       </section>

@@ -154,7 +154,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="grid gap-6 lg:grid-cols-2">
-                <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 flex flex-col h-full">
+                <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 flex flex-col">
                   <h3 className="mb-4 text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
                     <Trophy className="text-yellow-500" size={16} />
                     Recent Personal Records
@@ -166,17 +166,23 @@ export default function DashboardPage() {
                         <div key={i} className="flex justify-between items-center p-3 rounded-lg bg-slate-950 border border-slate-800">
                           <div>
                             <p className="font-medium text-white">{pr.exerciseName}</p>
-                            <p className="text-xs text-slate-500 mt-1">{new Date(pr.achievedAt).toLocaleDateString()}</p>
+                            <p className="text-xs text-slate-500 mt-1">
+                              {(() => {
+                                if (!pr.lastPerformedAt) return "Date unavailable";
+                                const d = new Date(pr.lastPerformedAt);
+                                return isNaN(d.getTime()) ? "Date unavailable" : d.toLocaleDateString();
+                              })()}
+                            </p>
                           </div>
                           <div className="text-right">
-                            <p className="font-bold text-cyan-400">{pr.bestWeight} kg</p>
+                            <p className="font-bold text-cyan-400">{pr.heaviestWeight} kg</p>
                             <p className="text-xs text-slate-400">{pr.bestReps} reps</p>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-slate-800 bg-slate-950 p-6 text-center h-full flex flex-col items-center justify-center min-h-[160px]">
+                    <div className="rounded-xl border border-slate-800 bg-slate-950 p-6 text-center flex flex-col items-center justify-center min-h-[160px]">
                       <p className="text-lg font-medium text-white mb-2">No personal records yet.</p>
                       <p className="text-slate-400">Complete a workout to start setting records.</p>
                     </div>

@@ -11,6 +11,32 @@ import { buildReadinessAnalysisPrompt } from "./prompts/readinessAnalysis.prompt
 import { DailySummaryContext, DailySummaryDTO } from "../types/dailySummary.types";
 import { buildDailySummaryPrompt } from "./prompts/dailySummary.prompt";
 import { env } from "../config/env";
+import logger from "../utils/logger";
+
+function parseAIResponse(text: string): any {
+  if (!text || text.trim() === "") {
+    logger.error("AI returned an empty or whitespace-only response");
+    throw new Error("Empty AI response");
+  }
+
+  let cleaned = text.trim();
+  if (cleaned.startsWith("```")) {
+    const lines = cleaned.split("\n");
+    if (lines[0].startsWith("```")) lines.shift();
+    if (lines[lines.length - 1].trim().startsWith("```")) lines.pop();
+    cleaned = lines.join("\n").trim();
+  }
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (error: any) {
+    logger.error("Failed to parse AI response as JSON", { 
+      error: error.message, 
+      rawSnippet: text.substring(0, 100) 
+    });
+    throw new Error("Failed to parse AI response as JSON.");
+  }
+}
 
 export const AIProvider = {
 
@@ -58,12 +84,7 @@ export const AIProvider = {
       throw new Error("AI returned an empty response.");
     }
 
-    let parsedResponse: any;
-    try {
-      parsedResponse = JSON.parse(response.text);
-    } catch (error) {
-      throw new Error("Failed to parse AI response as JSON.");
-    }
+    let parsedResponse = parseAIResponse(response.text);
 
     const { z } = require("zod");
     const schema = z.object({
@@ -119,12 +140,7 @@ export const AIProvider = {
       throw new Error("AI returned an empty response.");
     }
 
-    let parsedResponse: any;
-    try {
-      parsedResponse = JSON.parse(response.text);
-    } catch (error) {
-      throw new Error("Failed to parse AI response as JSON.");
-    }
+    let parsedResponse = parseAIResponse(response.text);
 
     const { z } = require("zod");
     const schema = z.object({
@@ -177,12 +193,7 @@ export const AIProvider = {
       throw new Error("AI returned an empty response.");
     }
 
-    let parsedResponse: any;
-    try {
-      parsedResponse = JSON.parse(response.text);
-    } catch (error) {
-      throw new Error("Failed to parse AI response as JSON.");
-    }
+    let parsedResponse = parseAIResponse(response.text);
 
     const { z } = require("zod");
     const schema = z.object({
@@ -234,12 +245,7 @@ export const AIProvider = {
       throw new Error("AI returned an empty response.");
     }
 
-    let parsedResponse: any;
-    try {
-      parsedResponse = JSON.parse(response.text);
-    } catch (error) {
-      throw new Error("Failed to parse AI response as JSON.");
-    }
+    let parsedResponse = parseAIResponse(response.text);
 
     const { z } = require("zod");
     const schema = z.object({
@@ -291,12 +297,7 @@ export const AIProvider = {
       throw new Error("AI returned an empty response.");
     }
 
-    let parsedResponse: any;
-    try {
-      parsedResponse = JSON.parse(response.text);
-    } catch (error) {
-      throw new Error("Failed to parse AI response as JSON.");
-    }
+    let parsedResponse = parseAIResponse(response.text);
 
     const { z } = require("zod");
     const schema = z.object({
@@ -348,12 +349,7 @@ export const AIProvider = {
       throw new Error("AI returned an empty response.");
     }
 
-    let parsedResponse: any;
-    try {
-      parsedResponse = JSON.parse(response.text);
-    } catch (error) {
-      throw new Error("Failed to parse AI response as JSON.");
-    }
+    let parsedResponse = parseAIResponse(response.text);
 
     const { z } = require("zod");
     const schema = z.object({

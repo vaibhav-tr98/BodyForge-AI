@@ -45,6 +45,20 @@ class DailySummaryService {
       readinessAnalysis,
     };
 
+    const isProgressEmpty = !progressAnalysis || progressAnalysis.summary.startsWith("Add more progress");
+    const isNutritionEmpty = !nutritionAnalysis || nutritionAnalysis.summary.startsWith("No nutrition logged");
+    const isWorkoutEmpty = !workoutAnalysis || workoutAnalysis.summary.startsWith("No workout history");
+    const isReadinessEmpty = !readinessAnalysis || readinessAnalysis.summary.startsWith("You don't have enough");
+
+    if (isProgressEmpty && isNutritionEmpty && isWorkoutEmpty && isReadinessEmpty) {
+      return {
+        summary: "Not enough data available to generate a daily summary.",
+        topPositive: "Start logging your workouts and nutrition to get personalized insights.",
+        mainAttention: "Missing data",
+        nextAction: "Complete your profile and start logging today's activities."
+      };
+    }
+
     try {
       const summary = await AIProvider.generateDailySummary(context);
       return summary;
