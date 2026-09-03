@@ -1,15 +1,20 @@
 import { readinessAnalysisService } from "../readinessAnalysis.service";
 import { analyticsService } from "../analytics.service";
 import { AIProvider } from "../aiProvider.service";
+import { aiAnalysisCacheRepository } from "../../repositories/aiAnalysisCache.repository";
 
 jest.mock("../analytics.service");
 jest.mock("../aiProvider.service");
+jest.mock("../../repositories/aiAnalysisCache.repository");
 
 describe("ReadinessAnalysisService", () => {
   const userId = "test-user-id";
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default: cache miss so existing tests hit the AI path
+    (aiAnalysisCacheRepository.findValid as jest.Mock).mockResolvedValue(null);
+    (aiAnalysisCacheRepository.save as jest.Mock).mockResolvedValue({});
   });
 
   it("should return deterministic fallback when no training history exists", async () => {

@@ -3,11 +3,13 @@ import { AIProvider } from "../aiProvider.service";
 import { analyticsService } from "../analytics.service";
 import { workoutRecommendationService } from "../workoutRecommendation.service";
 import { userRepository } from "../../repositories/user.repository";
+import { aiAnalysisCacheRepository } from "../../repositories/aiAnalysisCache.repository";
 
 jest.mock("../aiProvider.service");
 jest.mock("../analytics.service");
 jest.mock("../workoutRecommendation.service");
 jest.mock("../../repositories/user.repository");
+jest.mock("../../repositories/aiAnalysisCache.repository");
 
 describe("WorkoutAnalysisService", () => {
   const userId = "testUser123";
@@ -16,6 +18,9 @@ describe("WorkoutAnalysisService", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (userRepository.findById as jest.Mock).mockResolvedValue({ _id: userId });
+    // Default: cache miss so existing tests hit the AI path
+    (aiAnalysisCacheRepository.findValid as jest.Mock).mockResolvedValue(null);
+    (aiAnalysisCacheRepository.save as jest.Mock).mockResolvedValue({});
   });
 
   it("returns explicit message when no workout history exists", async () => {

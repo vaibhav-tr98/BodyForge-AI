@@ -13,6 +13,10 @@ import { buildDailySummaryPrompt } from "./prompts/dailySummary.prompt";
 import { env } from "../config/env";
 import logger from "../utils/logger";
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
 function parseAIResponse(text: string): any {
   if (!text || text.trim() === "") {
     logger.error("AI returned an empty or whitespace-only response");
@@ -30,412 +34,433 @@ function parseAIResponse(text: string): any {
   try {
     return JSON.parse(cleaned);
   } catch (error: any) {
-    logger.error("Failed to parse AI response as JSON", { 
-      error: error.message, 
-      rawSnippet: text.substring(0, 100) 
+    logger.error("Failed to parse AI response as JSON", {
+      error: error.message,
+      rawSnippet: text.substring(0, 100),
     });
     throw new Error("Failed to parse AI response as JSON.");
   }
 }
 
+/**
+ * Classify a Gemini error to determine quota/rate-limit status.
+ * isQuotaExhausted = true means the daily/monthly quota is spent;
+ * do NOT retry — save the call, surface a friendly error.
+ */
+export function classifyGeminiError(error: unknown): {
+  isQuotaExhausted: boolean;
+  isRateLimit: boolean;
+  retryAfterMs: number | null;
+} {
+  if (!(error instanceof Error)) {
+    return { isQuotaExhausted: false, isRateLimit: false, retryAfterMs: null };
+  }
+  const msg = error.message;
+  const isQuotaExhausted =
+    msg.includes("RESOURCE_EXHAUSTED") ||
+    msg.includes("quota") ||
+    msg.includes("429");
+  // Quota exhaustion = don't retry; treat rate-limit as quota exhaustion for simplicity
+  return { isQuotaExhausted, isRateLimit: isQuotaExhausted, retryAfterMs: null };
+}
+
+// ---------------------------------------------------------------------------
+// AIProvider
+// ---------------------------------------------------------------------------
+
 export const AIProvider = {
-
   async generateWorkoutPlan(context: WorkoutGeneratorContext): Promise<GeneratedWorkoutDTO> {
-    let phase = "Initialization";
-    let rawText = "";
-    let geminiResponse: any = null;
     try {
-    if (!env.geminiApiKey) {
-      throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
-    }
-    
-    const { GoogleGenAI } = await eval('import("@google/genai")');
-    const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
-
-    const { systemInstruction, userPrompt } = buildWorkoutGeneratorPrompt(context);
-    const model = env.aiModel;
-
-    phase = "A. Gemini generateContent()";
-      const response = await ai.models.generateContent({
-      model,
-      contents: userPrompt,
-      config: {
-        systemInstruction,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "OBJECT",
-          properties: {
-            name: { type: "STRING" },
-            description: { type: "STRING" },
-            exercises: {
-              type: "ARRAY",
-              items: {
-                type: "OBJECT",
-                properties: {
-                  name: { type: "STRING" },
-                  sets: { type: "INTEGER" },
-                  reps: { type: "INTEGER" }
-                },
-                required: ["name", "sets", "reps"]
-              }
-            }
-          },
-          required: ["name", "description", "exercises"]
-        }
+      if (!env.geminiApiKey) {
+        throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
       }
-    });
 
-    phase = "B. response.text extraction";
-      geminiResponse = response;
+      const { GoogleGenAI } = await eval('import("@google/genai")');
+      const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
+
+      const { systemInstruction, userPrompt } = buildWorkoutGeneratorPrompt(context);
+      const model = env.aiModel;
+
+      const response = await ai.models.generateContent({
+        model,
+        contents: userPrompt,
+        config: {
+          systemInstruction,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              name: { type: "STRING" },
+              description: { type: "STRING" },
+              exercises: {
+                type: "ARRAY",
+                items: {
+                  type: "OBJECT",
+                  properties: {
+                    name: { type: "STRING" },
+                    sets: { type: "INTEGER" },
+                    reps: { type: "INTEGER" },
+                  },
+                  required: ["name", "sets", "reps"],
+                },
+              },
+            },
+            required: ["name", "description", "exercises"],
+          },
+        },
+      });
+
       if (!response.text) {
-      throw new Error("AI returned an empty response.");
-    }
+        throw new Error("AI returned an empty response.");
+      }
 
-    rawText = response.text || "";
-      phase = "C. parseAIResponse()";
       let parsedResponse = parseAIResponse(response.text);
 
-    phase = "D. Zod validation";
       const { z } = require("zod");
-    const schema = z.object({
-      name: z.string(),
-      description: z.string(),
-      exercises: z.array(z.object({
+      const schema = z.object({
         name: z.string(),
-        sets: z.number().int().min(1),
-        reps: z.number().int().min(1)
-      }))
-    });
+        description: z.string(),
+        exercises: z.array(
+          z.object({
+            name: z.string(),
+            sets: z.number().int().min(1),
+            reps: z.number().int().min(1),
+          })
+        ),
+      });
 
-    const validationResult = schema.safeParse(parsedResponse);
-    if (!validationResult.success) {
-      throw new Error("AI output validation failed.");
-    }
+      const validationResult = schema.safeParse(parsedResponse);
+      if (!validationResult.success) {
+        throw new Error("AI output validation failed.");
+      }
 
-    phase = "E. DTO mapping";
       return validationResult.data as GeneratedWorkoutDTO;
-      } catch (error: any) {
-      logger.error("AI generation failed", {
+    } catch (error: any) {
+      const classified = classifyGeminiError(error);
+      logger.error("Gemini generateContent failed", {
         operation: "generateWorkoutPlan",
-        phase,
+        isQuotaExhausted: classified.isQuotaExhausted,
         errorName: error instanceof Error ? error.name : "Unknown",
         errorMessage: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        geminiMetadata: geminiResponse ? JSON.stringify(geminiResponse).substring(0, 500) : undefined,
-        textExists: !!rawText,
-        textLength: rawText ? rawText.length : 0,
-        rawSnippet: rawText ? rawText.substring(0, 100) : undefined
       });
       throw error;
-    }},
+    }
+  },
 
   async generateStructuredAnalysis(context: ProgressAnalysisContext): Promise<ProgressAnalysisDTO> {
-    if (!env.geminiApiKey) {
-      throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
-    }
-    
-    // Dynamic import to support ESM package in CommonJS project
-    const { GoogleGenAI } = await eval('import("@google/genai")');
-    const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
-
-    const { systemInstruction, userPrompt } = buildProgressAnalysisPrompt(context);
-    const model = env.aiModel;
-
-    const response = await ai.models.generateContent({
-      model,
-      contents: userPrompt,
-      config: {
-        systemInstruction,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "OBJECT",
-          properties: {
-            summary: { type: "STRING" },
-            positives: { type: "ARRAY", items: { type: "STRING" } },
-            attention: { type: "ARRAY", items: { type: "STRING" } },
-            nextAction: { type: "STRING" }
-          },
-          required: ["summary", "positives", "attention", "nextAction"]
-        }
+    try {
+      if (!env.geminiApiKey) {
+        throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
       }
-    });
 
-    if (!response.text) {
-      throw new Error("AI returned an empty response.");
+      // Dynamic import to support ESM package in CommonJS project
+      const { GoogleGenAI } = await eval('import("@google/genai")');
+      const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
+
+      const { systemInstruction, userPrompt } = buildProgressAnalysisPrompt(context);
+      const model = env.aiModel;
+
+      const response = await ai.models.generateContent({
+        model,
+        contents: userPrompt,
+        config: {
+          systemInstruction,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              summary: { type: "STRING" },
+              positives: { type: "ARRAY", items: { type: "STRING" } },
+              attention: { type: "ARRAY", items: { type: "STRING" } },
+              nextAction: { type: "STRING" },
+            },
+            required: ["summary", "positives", "attention", "nextAction"],
+          },
+        },
+      });
+
+      if (!response.text) {
+        throw new Error("AI returned an empty response.");
+      }
+
+      let parsedResponse = parseAIResponse(response.text);
+
+      const { z } = require("zod");
+      const schema = z.object({
+        summary: z.string(),
+        positives: z.array(z.string()),
+        attention: z.array(z.string()),
+        nextAction: z.string(),
+      });
+
+      const validationResult = schema.safeParse(parsedResponse);
+      if (!validationResult.success) {
+        throw new Error("AI output validation failed.");
+      }
+
+      return validationResult.data as ProgressAnalysisDTO;
+    } catch (error: any) {
+      const classified = classifyGeminiError(error);
+      logger.error("Gemini generateContent failed", {
+        operation: "generateStructuredAnalysis",
+        isQuotaExhausted: classified.isQuotaExhausted,
+        errorName: error instanceof Error ? error.name : "Unknown",
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
     }
-
-    let parsedResponse = parseAIResponse(response.text);
-
-    const { z } = require("zod");
-    const schema = z.object({
-      summary: z.string(),
-      positives: z.array(z.string()),
-      attention: z.array(z.string()),
-      nextAction: z.string(),
-    });
-
-    const validationResult = schema.safeParse(parsedResponse);
-    if (!validationResult.success) {
-      throw new Error("AI output validation failed.");
-    }
-
-    return validationResult.data as ProgressAnalysisDTO;
   },
 
   async generateNutritionAnalysis(context: NutritionAnalysisContext): Promise<NutritionAnalysisDTO> {
-    let phase = "Initialization";
-    let rawText = "";
-    let geminiResponse: any = null;
     try {
-    if (!env.geminiApiKey) {
-      throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
-    }
-    
-    // Dynamic import to support ESM package in CommonJS project
-    const { GoogleGenAI } = await eval('import("@google/genai")');
-    const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
-
-    const { systemInstruction, userPrompt } = buildNutritionAnalysisPrompt(context);
-    const model = env.aiModel;
-
-    phase = "A. Gemini generateContent()";
-      const response = await ai.models.generateContent({
-      model,
-      contents: userPrompt,
-      config: {
-        systemInstruction,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "OBJECT",
-          properties: {
-            summary: { type: "STRING" },
-            positives: { type: "ARRAY", items: { type: "STRING" } },
-            attention: { type: "ARRAY", items: { type: "STRING" } },
-            nextAction: { type: "STRING" }
-          },
-          required: ["summary", "positives", "attention", "nextAction"]
-        }
+      if (!env.geminiApiKey) {
+        throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
       }
-    });
 
-    phase = "B. response.text extraction";
-      geminiResponse = response;
+      // Dynamic import to support ESM package in CommonJS project
+      const { GoogleGenAI } = await eval('import("@google/genai")');
+      const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
+
+      const { systemInstruction, userPrompt } = buildNutritionAnalysisPrompt(context);
+      const model = env.aiModel;
+
+      const response = await ai.models.generateContent({
+        model,
+        contents: userPrompt,
+        config: {
+          systemInstruction,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              summary: { type: "STRING" },
+              positives: { type: "ARRAY", items: { type: "STRING" } },
+              attention: { type: "ARRAY", items: { type: "STRING" } },
+              nextAction: { type: "STRING" },
+            },
+            required: ["summary", "positives", "attention", "nextAction"],
+          },
+        },
+      });
+
       if (!response.text) {
-      throw new Error("AI returned an empty response.");
-    }
+        throw new Error("AI returned an empty response.");
+      }
 
-    rawText = response.text || "";
-      phase = "C. parseAIResponse()";
       let parsedResponse = parseAIResponse(response.text);
 
-    phase = "D. Zod validation";
       const { z } = require("zod");
-    const schema = z.object({
-      summary: z.string(),
-      positives: z.array(z.string()),
-      attention: z.array(z.string()),
-      nextAction: z.string(),
-    });
+      const schema = z.object({
+        summary: z.string(),
+        positives: z.array(z.string()),
+        attention: z.array(z.string()),
+        nextAction: z.string(),
+      });
 
-    const validationResult = schema.safeParse(parsedResponse);
-    if (!validationResult.success) {
-      throw new Error("AI output validation failed.");
-    }
+      const validationResult = schema.safeParse(parsedResponse);
+      if (!validationResult.success) {
+        throw new Error("AI output validation failed.");
+      }
 
-    phase = "E. DTO mapping";
       return validationResult.data as NutritionAnalysisDTO;
-      } catch (error: any) {
-      logger.error("AI generation failed", {
+    } catch (error: any) {
+      const classified = classifyGeminiError(error);
+      logger.error("Gemini generateContent failed", {
         operation: "generateNutritionAnalysis",
-        phase,
+        isQuotaExhausted: classified.isQuotaExhausted,
         errorName: error instanceof Error ? error.name : "Unknown",
         errorMessage: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        geminiMetadata: geminiResponse ? JSON.stringify(geminiResponse).substring(0, 500) : undefined,
-        textExists: !!rawText,
-        textLength: rawText ? rawText.length : 0,
-        rawSnippet: rawText ? rawText.substring(0, 100) : undefined
       });
       throw error;
-    }},
+    }
+  },
 
   async generateWorkoutAnalysis(context: WorkoutAnalysisContext): Promise<WorkoutAnalysisDTO> {
-    if (!env.geminiApiKey) {
-      throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
-    }
-    
-    const { GoogleGenAI } = await eval('import("@google/genai")');
-    const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
-
-    const { systemInstruction, userPrompt } = buildWorkoutAnalysisPrompt(context);
-    const model = env.aiModel;
-
-    const response = await ai.models.generateContent({
-      model,
-      contents: userPrompt,
-      config: {
-        systemInstruction,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "OBJECT",
-          properties: {
-            summary: { type: "STRING" },
-            positives: { type: "ARRAY", items: { type: "STRING" } },
-            attention: { type: "ARRAY", items: { type: "STRING" } },
-            nextAction: { type: "STRING" }
-          },
-          required: ["summary", "positives", "attention", "nextAction"]
-        }
+    try {
+      if (!env.geminiApiKey) {
+        throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
       }
-    });
 
-    if (!response.text) {
-      throw new Error("AI returned an empty response.");
+      const { GoogleGenAI } = await eval('import("@google/genai")');
+      const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
+
+      const { systemInstruction, userPrompt } = buildWorkoutAnalysisPrompt(context);
+      const model = env.aiModel;
+
+      const response = await ai.models.generateContent({
+        model,
+        contents: userPrompt,
+        config: {
+          systemInstruction,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              summary: { type: "STRING" },
+              positives: { type: "ARRAY", items: { type: "STRING" } },
+              attention: { type: "ARRAY", items: { type: "STRING" } },
+              nextAction: { type: "STRING" },
+            },
+            required: ["summary", "positives", "attention", "nextAction"],
+          },
+        },
+      });
+
+      if (!response.text) {
+        throw new Error("AI returned an empty response.");
+      }
+
+      let parsedResponse = parseAIResponse(response.text);
+
+      const { z } = require("zod");
+      const schema = z.object({
+        summary: z.string(),
+        positives: z.array(z.string()),
+        attention: z.array(z.string()),
+        nextAction: z.string(),
+      });
+
+      const validationResult = schema.safeParse(parsedResponse);
+      if (!validationResult.success) {
+        throw new Error("AI output validation failed.");
+      }
+
+      return validationResult.data as WorkoutAnalysisDTO;
+    } catch (error: any) {
+      const classified = classifyGeminiError(error);
+      logger.error("Gemini generateContent failed", {
+        operation: "generateWorkoutAnalysis",
+        isQuotaExhausted: classified.isQuotaExhausted,
+        errorName: error instanceof Error ? error.name : "Unknown",
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
     }
-
-    let parsedResponse = parseAIResponse(response.text);
-
-    const { z } = require("zod");
-    const schema = z.object({
-      summary: z.string(),
-      positives: z.array(z.string()),
-      attention: z.array(z.string()),
-      nextAction: z.string(),
-    });
-
-    const validationResult = schema.safeParse(parsedResponse);
-    if (!validationResult.success) {
-      throw new Error("AI output validation failed.");
-    }
-
-    return validationResult.data as WorkoutAnalysisDTO;
   },
 
   async generateReadinessAnalysis(context: ReadinessAnalysisContext): Promise<ReadinessAnalysisDTO> {
-    if (!env.geminiApiKey) {
-      throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
-    }
-    
-    const { GoogleGenAI } = await eval('import("@google/genai")');
-    const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
-
-    const { systemInstruction, userPrompt } = buildReadinessAnalysisPrompt(context);
-    const model = env.aiModel;
-
-    const response = await ai.models.generateContent({
-      model,
-      contents: userPrompt,
-      config: {
-        systemInstruction,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "OBJECT",
-          properties: {
-            summary: { type: "STRING" },
-            positives: { type: "ARRAY", items: { type: "STRING" } },
-            attention: { type: "ARRAY", items: { type: "STRING" } },
-            nextAction: { type: "STRING" }
-          },
-          required: ["summary", "positives", "attention", "nextAction"]
-        }
+    try {
+      if (!env.geminiApiKey) {
+        throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
       }
-    });
 
-    if (!response.text) {
-      throw new Error("AI returned an empty response.");
+      const { GoogleGenAI } = await eval('import("@google/genai")');
+      const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
+
+      const { systemInstruction, userPrompt } = buildReadinessAnalysisPrompt(context);
+      const model = env.aiModel;
+
+      const response = await ai.models.generateContent({
+        model,
+        contents: userPrompt,
+        config: {
+          systemInstruction,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              summary: { type: "STRING" },
+              positives: { type: "ARRAY", items: { type: "STRING" } },
+              attention: { type: "ARRAY", items: { type: "STRING" } },
+              nextAction: { type: "STRING" },
+            },
+            required: ["summary", "positives", "attention", "nextAction"],
+          },
+        },
+      });
+
+      if (!response.text) {
+        throw new Error("AI returned an empty response.");
+      }
+
+      let parsedResponse = parseAIResponse(response.text);
+
+      const { z } = require("zod");
+      const schema = z.object({
+        summary: z.string(),
+        positives: z.array(z.string()),
+        attention: z.array(z.string()),
+        nextAction: z.string(),
+      });
+
+      const validationResult = schema.safeParse(parsedResponse);
+      if (!validationResult.success) {
+        throw new Error("AI output validation failed.");
+      }
+
+      return validationResult.data as ReadinessAnalysisDTO;
+    } catch (error: any) {
+      const classified = classifyGeminiError(error);
+      logger.error("Gemini generateContent failed", {
+        operation: "generateReadinessAnalysis",
+        isQuotaExhausted: classified.isQuotaExhausted,
+        errorName: error instanceof Error ? error.name : "Unknown",
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
     }
-
-    let parsedResponse = parseAIResponse(response.text);
-
-    const { z } = require("zod");
-    const schema = z.object({
-      summary: z.string(),
-      positives: z.array(z.string()),
-      attention: z.array(z.string()),
-      nextAction: z.string(),
-    });
-
-    const validationResult = schema.safeParse(parsedResponse);
-    if (!validationResult.success) {
-      throw new Error("AI output validation failed.");
-    }
-
-    return validationResult.data as ReadinessAnalysisDTO;
   },
 
   async generateDailySummary(context: DailySummaryContext): Promise<DailySummaryDTO> {
-    let phase = "Initialization";
-    let rawText = "";
-    let geminiResponse: any = null;
     try {
-    if (!env.geminiApiKey) {
-      throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
-    }
-    
-    const { GoogleGenAI } = await eval('import("@google/genai")');
-    const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
-
-    const { systemInstruction, userPrompt } = buildDailySummaryPrompt(context);
-    const model = env.aiModel;
-
-    phase = "A. Gemini generateContent()";
-      const response = await ai.models.generateContent({
-      model,
-      contents: userPrompt,
-      config: {
-        systemInstruction,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "OBJECT",
-          properties: {
-            summary: { type: "STRING" },
-            topPositive: { type: "STRING" },
-            mainAttention: { type: "STRING" },
-            nextAction: { type: "STRING" }
-          },
-          required: ["summary", "topPositive", "mainAttention", "nextAction"]
-        }
+      if (!env.geminiApiKey) {
+        throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
       }
-    });
 
-    phase = "B. response.text extraction";
-      geminiResponse = response;
+      const { GoogleGenAI } = await eval('import("@google/genai")');
+      const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
+
+      const { systemInstruction, userPrompt } = buildDailySummaryPrompt(context);
+      const model = env.aiModel;
+
+      const response = await ai.models.generateContent({
+        model,
+        contents: userPrompt,
+        config: {
+          systemInstruction,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              summary: { type: "STRING" },
+              topPositive: { type: "STRING" },
+              mainAttention: { type: "STRING" },
+              nextAction: { type: "STRING" },
+            },
+            required: ["summary", "topPositive", "mainAttention", "nextAction"],
+          },
+        },
+      });
+
       if (!response.text) {
-      throw new Error("AI returned an empty response.");
-    }
+        throw new Error("AI returned an empty response.");
+      }
 
-    rawText = response.text || "";
-      phase = "C. parseAIResponse()";
       let parsedResponse = parseAIResponse(response.text);
 
-    phase = "D. Zod validation";
       const { z } = require("zod");
-    const schema = z.object({
-      summary: z.string(),
-      topPositive: z.string(),
-      mainAttention: z.string(),
-      nextAction: z.string(),
-    });
+      const schema = z.object({
+        summary: z.string(),
+        topPositive: z.string(),
+        mainAttention: z.string(),
+        nextAction: z.string(),
+      });
 
-    const validationResult = schema.safeParse(parsedResponse);
-    if (!validationResult.success) {
-      throw new Error("AI output validation failed.");
-    }
+      const validationResult = schema.safeParse(parsedResponse);
+      if (!validationResult.success) {
+        throw new Error("AI output validation failed.");
+      }
 
-    phase = "E. DTO mapping";
       return validationResult.data as DailySummaryDTO;
-      } catch (error: any) {
-      logger.error("AI generation failed", {
+    } catch (error: any) {
+      const classified = classifyGeminiError(error);
+      logger.error("Gemini generateContent failed", {
         operation: "generateDailySummary",
-        phase,
+        isQuotaExhausted: classified.isQuotaExhausted,
         errorName: error instanceof Error ? error.name : "Unknown",
         errorMessage: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        geminiMetadata: geminiResponse ? JSON.stringify(geminiResponse).substring(0, 500) : undefined,
-        textExists: !!rawText,
-        textLength: rawText ? rawText.length : 0,
-        rawSnippet: rawText ? rawText.substring(0, 100) : undefined
       });
       throw error;
-    }}
+    }
+  },
 };

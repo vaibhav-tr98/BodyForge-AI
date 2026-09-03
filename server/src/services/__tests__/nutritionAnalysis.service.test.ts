@@ -4,12 +4,14 @@ import { nutritionService } from "../nutrition.service";
 import { nutritionTargetService } from "../nutritionTarget.service";
 import { workoutRecommendationService } from "../workoutRecommendation.service";
 import { userRepository } from "../../repositories/user.repository";
+import { aiAnalysisCacheRepository } from "../../repositories/aiAnalysisCache.repository";
 
 jest.mock("../aiProvider.service");
 jest.mock("../nutrition.service");
 jest.mock("../nutritionTarget.service");
 jest.mock("../workoutRecommendation.service");
 jest.mock("../../repositories/user.repository");
+jest.mock("../../repositories/aiAnalysisCache.repository");
 
 describe("NutritionAnalysisService", () => {
   const userId = "testUser123";
@@ -20,6 +22,9 @@ describe("NutritionAnalysisService", () => {
 
     (userRepository.findById as jest.Mock).mockResolvedValue({ _id: userId, fitnessGoal: "lose_fat" });
     (workoutRecommendationService.getTodayRecommendation as jest.Mock).mockResolvedValue({ recommendation: null });
+    // Default: cache miss so existing tests hit the AI path
+    (aiAnalysisCacheRepository.findValid as jest.Mock).mockResolvedValue(null);
+    (aiAnalysisCacheRepository.save as jest.Mock).mockResolvedValue({});
   });
 
   it("returns explicit message when no nutrition entries exist", async () => {

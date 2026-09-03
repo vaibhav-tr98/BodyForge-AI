@@ -1,6 +1,7 @@
 import { WorkoutGeneratorRequest, GeneratedWorkoutDTO } from "../types/workoutGenerator.types";
 import { AIProvider } from "./aiProvider.service";
 import { userRepository } from "../repositories/user.repository";
+import logger from "../utils/logger";
 
 export class WorkoutGeneratorService {
   public async generateWorkout(userId: string, request: WorkoutGeneratorRequest): Promise<GeneratedWorkoutDTO> {
@@ -20,7 +21,7 @@ export class WorkoutGeneratorService {
         userFitnessGoal: user.fitnessGoal,
       });
     } catch (error) {
-      console.error("AI Workout Generation failed:", error);
+      logger.error("AI Workout Generation failed:", { error });
       throw new Error("AI workout generation is temporarily unavailable.");
     }
   }

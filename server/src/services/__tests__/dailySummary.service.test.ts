@@ -4,12 +4,14 @@ import { progressAnalysisService } from "../progressAnalysis.service";
 import { nutritionAnalysisService } from "../nutritionAnalysis.service";
 import { workoutAnalysisService } from "../workoutAnalysis.service";
 import { readinessAnalysisService } from "../readinessAnalysis.service";
+import { aiAnalysisCacheRepository } from "../../repositories/aiAnalysisCache.repository";
 
 jest.mock("../aiProvider.service");
 jest.mock("../progressAnalysis.service");
 jest.mock("../nutritionAnalysis.service");
 jest.mock("../workoutAnalysis.service");
 jest.mock("../readinessAnalysis.service");
+jest.mock("../../repositories/aiAnalysisCache.repository");
 
 describe("DailySummaryService", () => {
   const userId = "testUser123";
@@ -17,6 +19,9 @@ describe("DailySummaryService", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default: cache miss so existing tests hit the AI path
+    (aiAnalysisCacheRepository.findValid as jest.Mock).mockResolvedValue(null);
+    (aiAnalysisCacheRepository.save as jest.Mock).mockResolvedValue({});
   });
 
   it("successfully generates summary with full data", async () => {

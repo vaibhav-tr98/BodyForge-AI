@@ -3,6 +3,12 @@ import { AIProvider } from "./aiProvider.service";
 import { analyticsService } from "./analytics.service";
 import { workoutRecommendationService } from "./workoutRecommendation.service";
 import { userRepository } from "../repositories/user.repository";
+import { aiAnalysisCacheRepository } from "../repositories/aiAnalysisCache.repository";
+import { hashContext } from "../utils/hashContext";
+import { env } from "../config/env";
+import logger from "../utils/logger";
+
+const CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
 
 export class WorkoutAnalysisService {
   public async getWorkoutAnalysis(userId: string, date: string): Promise<WorkoutAnalysisDTO> {
@@ -15,13 +21,17 @@ export class WorkoutAnalysisService {
     const recommendation = await workoutRecommendationService.getTodayRecommendation(userId, date);
     const recentInsights = await analyticsService.getPersonalRecordsAndInsights(userId);
 
-    // If no readiness and no recent insights and no recommendation (e.g. brand new user)
-    if (!readiness && (!recentInsights || recentInsights.insights.length === 0) && !recommendation?.recommendation) {
+    // Deterministic fallback for brand new users
+    if (
+      !readiness &&
+      (!recentInsights || recentInsights.insights.length === 0) &&
+      !recommendation?.recommendation
+    ) {
       return {
         summary: "No workout history available yet.",
         positives: [],
         attention: [],
-        nextAction: "Complete your first workout to start receiving AI analysis."
+        nextAction: "Complete your first workout to start receiving AI analysis.",
       };
     }
 
@@ -29,18 +39,11 @@ export class WorkoutAnalysisService {
     let recentWorkoutCount14Days = 0;
 
     if (readiness?.muscleGroups) {
-      const uniqueSessions7Days = new Set<string>();
-      const uniqueSessions14Days = new Set<string>();
-      // muscleGroups readiness computes sessions per muscle, but actually it tracks sets of session IDs.
-      // Wait, we don't have direct access to session IDs from readiness here.
-      // We can just estimate or use total readiness if we can't extract the exact number of workouts easily.
-      // Let's omit exact workout count if we can't get it cheaply, or fetch it.
-      // Wait, getTrainingReadiness returns overallScore, status, recommendation, muscleGroups.
-      // muscleGroups has sessionsLast7Days and sessionsLast14Days counts.
-      // Taking the max across muscles gives a rough count of workouts.
-      readiness.muscleGroups.forEach(m => {
-        if (m.sessionsLast7Days > recentWorkoutCount7Days) recentWorkoutCount7Days = m.sessionsLast7Days;
-        if (m.sessionsLast14Days > recentWorkoutCount14Days) recentWorkoutCount14Days = m.sessionsLast14Days;
+      readiness.muscleGroups.forEach((m) => {
+        if (m.sessionsLast7Days > recentWorkoutCount7Days)
+          recentWorkoutCount7Days = m.sessionsLast7Days;
+        if (m.sessionsLast14Days > recentWorkoutCount14Days)
+          recentWorkoutCount14Days = m.sessionsLast14Days;
       });
     }
 
@@ -49,28 +52,56 @@ export class WorkoutAnalysisService {
       overallReadinessScore: readiness?.overallScore ?? null,
       overallReadinessStatus: readiness?.status ?? null,
       readinessRecommendationReason: readiness?.recommendation?.reason ?? null,
-      readyMuscleGroups: readiness?.status === "ready" || readiness?.status === "moderate" 
-        ? readiness.muscleGroups.filter(m => m.status === "ready").map(m => m.muscle) 
-        : [],
-      
+      readyMuscleGroups:
+        readiness?.status === "ready" || readiness?.status === "moderate"
+          ? readiness.muscleGroups.filter((m) => m.status === "ready").map((m) => m.muscle)
+          : [],
+
       todayWorkoutRecommendationName: recommendation?.recommendation?.workoutName ?? null,
       todayWorkoutRecommendationReason: recommendation?.recommendation?.reason ?? null,
-      
+
       recentWorkoutCount7Days,
       recentWorkoutCount14Days,
-      
-      recentPRs: recentInsights?.personalRecords?.slice(0, 3).map((pr: any) => ({
-        exerciseName: pr.exerciseName,
-        heaviestWeight: pr.heaviestWeight,
-        bestReps: pr.bestReps,
-        lastPerformedAt: pr.lastPerformedAt
-      })) || null,
+
+      recentPRs:
+        recentInsights?.personalRecords?.slice(0, 3).map((pr: any) => ({
+          exerciseName: pr.exerciseName,
+          heaviestWeight: pr.heaviestWeight,
+          bestReps: pr.bestReps,
+          lastPerformedAt: pr.lastPerformedAt,
+        })) || null,
     };
 
+    // --- Cache check ---
+    const inputHash = hashContext(context);
+    const cached = await aiAnalysisCacheRepository.findValid({
+      userId,
+      date,
+      type: "workout",
+      inputHash,
+    });
+    if (cached) {
+      logger.info("Returning cached workout analysis", { userId, date });
+      return cached.result as WorkoutAnalysisDTO;
+    }
+
+    // --- Gemini call ---
     try {
-      return await AIProvider.generateWorkoutAnalysis(context);
+      const aiResponse = await AIProvider.generateWorkoutAnalysis(context);
+
+      await aiAnalysisCacheRepository.save({
+        userId,
+        date,
+        type: "workout",
+        inputHash,
+        result: aiResponse,
+        model: env.aiModel,
+        expiresAt: new Date(Date.now() + CACHE_TTL_MS),
+      });
+
+      return aiResponse;
     } catch (error) {
-      console.error("AI Workout Analysis failed:", error);
+      logger.error("AI Workout Analysis failed", { userId, date });
       throw new Error("AI analysis is temporarily unavailable.");
     }
   }

@@ -7,6 +7,12 @@ import { nutritionService } from "./nutrition.service";
 import { nutritionTargetService } from "./nutritionTarget.service";
 import { progressInsightService } from "./progressInsight.service";
 import { userRepository } from "../repositories/user.repository";
+import { aiAnalysisCacheRepository } from "../repositories/aiAnalysisCache.repository";
+import { hashContext } from "../utils/hashContext";
+import { env } from "../config/env";
+import logger from "../utils/logger";
+
+const CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4 hours
 
 export class ProgressAnalysisService {
   public async getProgressAnalysis(userId: string, date: string): Promise<ProgressAnalysisDTO> {
@@ -70,11 +76,37 @@ export class ProgressAnalysisService {
       deterministicProgressInsight: deterministicInsight.message
     };
 
+    // --- Cache check ---
+    const inputHash = hashContext(context);
+    const cached = await aiAnalysisCacheRepository.findValid({
+      userId,
+      date,
+      type: "progress",
+      inputHash,
+    });
+    if (cached) {
+      logger.info("Returning cached progress analysis", { userId, date });
+      return cached.result as ProgressAnalysisDTO;
+    }
+
+    // --- Gemini call ---
     try {
       const aiResponse = await AIProvider.generateStructuredAnalysis(context);
+
+      // Save to cache only on success
+      await aiAnalysisCacheRepository.save({
+        userId,
+        date,
+        type: "progress",
+        inputHash,
+        result: aiResponse,
+        model: env.aiModel,
+        expiresAt: new Date(Date.now() + CACHE_TTL_MS),
+      });
+
       return aiResponse;
     } catch (error) {
-      console.error("AI Progress Analysis failed:", error);
+      logger.error("AI Progress Analysis failed", { userId, date, error });
       throw new Error("AI analysis is temporarily unavailable.");
     }
   }
