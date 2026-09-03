@@ -41,6 +41,10 @@ function parseAIResponse(text: string): any {
 export const AIProvider = {
 
   async generateWorkoutPlan(context: WorkoutGeneratorContext): Promise<GeneratedWorkoutDTO> {
+    let phase = "Initialization";
+    let rawText = "";
+    let geminiResponse: any = null;
+    try {
     if (!env.geminiApiKey) {
       throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
     }
@@ -51,7 +55,8 @@ export const AIProvider = {
     const { systemInstruction, userPrompt } = buildWorkoutGeneratorPrompt(context);
     const model = env.aiModel;
 
-    const response = await ai.models.generateContent({
+    phase = "A. Gemini generateContent()";
+      const response = await ai.models.generateContent({
       model,
       contents: userPrompt,
       config: {
@@ -80,13 +85,18 @@ export const AIProvider = {
       }
     });
 
-    if (!response.text) {
+    phase = "B. response.text extraction";
+      geminiResponse = response;
+      if (!response.text) {
       throw new Error("AI returned an empty response.");
     }
 
-    let parsedResponse = parseAIResponse(response.text);
+    rawText = response.text || "";
+      phase = "C. parseAIResponse()";
+      let parsedResponse = parseAIResponse(response.text);
 
-    const { z } = require("zod");
+    phase = "D. Zod validation";
+      const { z } = require("zod");
     const schema = z.object({
       name: z.string(),
       description: z.string(),
@@ -102,8 +112,22 @@ export const AIProvider = {
       throw new Error("AI output validation failed.");
     }
 
-    return validationResult.data as GeneratedWorkoutDTO;
-  },
+    phase = "E. DTO mapping";
+      return validationResult.data as GeneratedWorkoutDTO;
+      } catch (error: any) {
+      logger.error("AI generation failed", {
+        operation: "generateWorkoutPlan",
+        phase,
+        errorName: error instanceof Error ? error.name : "Unknown",
+        errorMessage: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        geminiMetadata: geminiResponse ? JSON.stringify(geminiResponse).substring(0, 500) : undefined,
+        textExists: !!rawText,
+        textLength: rawText ? rawText.length : 0,
+        rawSnippet: rawText ? rawText.substring(0, 100) : undefined
+      });
+      throw error;
+    }},
 
   async generateStructuredAnalysis(context: ProgressAnalysisContext): Promise<ProgressAnalysisDTO> {
     if (!env.geminiApiKey) {
@@ -159,6 +183,10 @@ export const AIProvider = {
   },
 
   async generateNutritionAnalysis(context: NutritionAnalysisContext): Promise<NutritionAnalysisDTO> {
+    let phase = "Initialization";
+    let rawText = "";
+    let geminiResponse: any = null;
+    try {
     if (!env.geminiApiKey) {
       throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
     }
@@ -170,7 +198,8 @@ export const AIProvider = {
     const { systemInstruction, userPrompt } = buildNutritionAnalysisPrompt(context);
     const model = env.aiModel;
 
-    const response = await ai.models.generateContent({
+    phase = "A. Gemini generateContent()";
+      const response = await ai.models.generateContent({
       model,
       contents: userPrompt,
       config: {
@@ -189,13 +218,18 @@ export const AIProvider = {
       }
     });
 
-    if (!response.text) {
+    phase = "B. response.text extraction";
+      geminiResponse = response;
+      if (!response.text) {
       throw new Error("AI returned an empty response.");
     }
 
-    let parsedResponse = parseAIResponse(response.text);
+    rawText = response.text || "";
+      phase = "C. parseAIResponse()";
+      let parsedResponse = parseAIResponse(response.text);
 
-    const { z } = require("zod");
+    phase = "D. Zod validation";
+      const { z } = require("zod");
     const schema = z.object({
       summary: z.string(),
       positives: z.array(z.string()),
@@ -208,8 +242,22 @@ export const AIProvider = {
       throw new Error("AI output validation failed.");
     }
 
-    return validationResult.data as NutritionAnalysisDTO;
-  },
+    phase = "E. DTO mapping";
+      return validationResult.data as NutritionAnalysisDTO;
+      } catch (error: any) {
+      logger.error("AI generation failed", {
+        operation: "generateNutritionAnalysis",
+        phase,
+        errorName: error instanceof Error ? error.name : "Unknown",
+        errorMessage: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        geminiMetadata: geminiResponse ? JSON.stringify(geminiResponse).substring(0, 500) : undefined,
+        textExists: !!rawText,
+        textLength: rawText ? rawText.length : 0,
+        rawSnippet: rawText ? rawText.substring(0, 100) : undefined
+      });
+      throw error;
+    }},
 
   async generateWorkoutAnalysis(context: WorkoutAnalysisContext): Promise<WorkoutAnalysisDTO> {
     if (!env.geminiApiKey) {
@@ -316,6 +364,10 @@ export const AIProvider = {
   },
 
   async generateDailySummary(context: DailySummaryContext): Promise<DailySummaryDTO> {
+    let phase = "Initialization";
+    let rawText = "";
+    let geminiResponse: any = null;
+    try {
     if (!env.geminiApiKey) {
       throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
     }
@@ -326,7 +378,8 @@ export const AIProvider = {
     const { systemInstruction, userPrompt } = buildDailySummaryPrompt(context);
     const model = env.aiModel;
 
-    const response = await ai.models.generateContent({
+    phase = "A. Gemini generateContent()";
+      const response = await ai.models.generateContent({
       model,
       contents: userPrompt,
       config: {
@@ -345,13 +398,18 @@ export const AIProvider = {
       }
     });
 
-    if (!response.text) {
+    phase = "B. response.text extraction";
+      geminiResponse = response;
+      if (!response.text) {
       throw new Error("AI returned an empty response.");
     }
 
-    let parsedResponse = parseAIResponse(response.text);
+    rawText = response.text || "";
+      phase = "C. parseAIResponse()";
+      let parsedResponse = parseAIResponse(response.text);
 
-    const { z } = require("zod");
+    phase = "D. Zod validation";
+      const { z } = require("zod");
     const schema = z.object({
       summary: z.string(),
       topPositive: z.string(),
@@ -364,6 +422,20 @@ export const AIProvider = {
       throw new Error("AI output validation failed.");
     }
 
-    return validationResult.data as DailySummaryDTO;
-  }
+    phase = "E. DTO mapping";
+      return validationResult.data as DailySummaryDTO;
+      } catch (error: any) {
+      logger.error("AI generation failed", {
+        operation: "generateDailySummary",
+        phase,
+        errorName: error instanceof Error ? error.name : "Unknown",
+        errorMessage: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        geminiMetadata: geminiResponse ? JSON.stringify(geminiResponse).substring(0, 500) : undefined,
+        textExists: !!rawText,
+        textLength: rawText ? rawText.length : 0,
+        rawSnippet: rawText ? rawText.substring(0, 100) : undefined
+      });
+      throw error;
+    }}
 };
