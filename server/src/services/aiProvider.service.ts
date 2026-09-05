@@ -44,24 +44,78 @@ function parseAIResponse(text: string): any {
 
 /**
  * Classify a Gemini error to determine quota/rate-limit status.
- * isQuotaExhausted = true means the daily/monthly quota is spent;
- * do NOT retry — save the call, surface a friendly error.
+ * isQuotaExhausted = true means the daily/monthly quota is spent.
  */
 export function classifyGeminiError(error: unknown): {
   isQuotaExhausted: boolean;
   isRateLimit: boolean;
+  isServerError: boolean;
+  isRetryable: boolean;
   retryAfterMs: number | null;
 } {
+  const result = {
+    isQuotaExhausted: false,
+    isRateLimit: false,
+    isServerError: false,
+    isRetryable: false,
+    retryAfterMs: null as number | null
+  };
+
   if (!(error instanceof Error)) {
-    return { isQuotaExhausted: false, isRateLimit: false, retryAfterMs: null };
+    return result;
   }
-  const msg = error.message;
-  const isQuotaExhausted =
-    msg.includes("RESOURCE_EXHAUSTED") ||
-    msg.includes("quota") ||
-    msg.includes("429");
-  // Quota exhaustion = don't retry; treat rate-limit as quota exhaustion for simplicity
-  return { isQuotaExhausted, isRateLimit: isQuotaExhausted, retryAfterMs: null };
+
+  const msg = error.message.toLowerCase();
+
+  if (msg.includes("503") || msg.includes("high demand") || msg.includes("overloaded")) {
+    result.isServerError = true;
+    result.isRetryable = true;
+  } else if (msg.includes("429") || msg.includes("resource_exhausted") || msg.includes("quota")) {
+    if (msg.includes("perminute") || msg.includes("rpm") || msg.includes("rate limit")) {
+      result.isRateLimit = true;
+      result.isRetryable = true;
+    } else {
+      result.isQuotaExhausted = true;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Executes a Gemini API call with exponential backoff for rate limits and server errors.
+ */
+export async function withGeminiRetry<T>(
+  operation: string,
+  fn: () => Promise<T>,
+  maxAttempts: number = 3
+): Promise<T> {
+  let attempt = 1;
+  while (true) {
+    try {
+      return await fn();
+    } catch (error: unknown) {
+      const classified = classifyGeminiError(error);
+
+      if (!classified.isRetryable || attempt >= maxAttempts) {
+        throw error;
+      }
+
+      const retryDelay = 5000 * Math.pow(2, attempt - 1);
+      
+      logger.warn(`Gemini API error - Retrying`, {
+        operation,
+        attempt,
+        maxAttempts,
+        errorClassification: classified,
+        retryDelay,
+        errorMessage: error instanceof Error ? error.message : String(error)
+      });
+
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+      attempt++;
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -277,55 +331,57 @@ export const AIProvider = {
 
   async generateWorkoutAnalysis(context: WorkoutAnalysisContext): Promise<WorkoutAnalysisDTO> {
     try {
-      if (!env.geminiApiKey) {
-        throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
-      }
+      return await withGeminiRetry("generateWorkoutAnalysis", async () => {
+        if (!env.geminiApiKey) {
+          throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
+        }
 
-      const { GoogleGenAI } = await eval('import("@google/genai")');
-      const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
+        const { GoogleGenAI } = await eval('import("@google/genai")');
+        const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
 
-      const { systemInstruction, userPrompt } = buildWorkoutAnalysisPrompt(context);
-      const model = env.aiModel;
+        const { systemInstruction, userPrompt } = buildWorkoutAnalysisPrompt(context);
+        const model = env.aiModel;
 
-      const response = await ai.models.generateContent({
-        model,
-        contents: userPrompt,
-        config: {
-          systemInstruction,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: "OBJECT",
-            properties: {
-              summary: { type: "STRING" },
-              positives: { type: "ARRAY", items: { type: "STRING" } },
-              attention: { type: "ARRAY", items: { type: "STRING" } },
-              nextAction: { type: "STRING" },
+        const response = await ai.models.generateContent({
+          model,
+          contents: userPrompt,
+          config: {
+            systemInstruction,
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: "OBJECT",
+              properties: {
+                summary: { type: "STRING" },
+                positives: { type: "ARRAY", items: { type: "STRING" } },
+                attention: { type: "ARRAY", items: { type: "STRING" } },
+                nextAction: { type: "STRING" },
+              },
+              required: ["summary", "positives", "attention", "nextAction"],
             },
-            required: ["summary", "positives", "attention", "nextAction"],
           },
-        },
+        });
+
+        if (!response.text) {
+          throw new Error("AI returned an empty response.");
+        }
+
+        let parsedResponse = parseAIResponse(response.text);
+
+        const { z } = require("zod");
+        const schema = z.object({
+          summary: z.string(),
+          positives: z.array(z.string()),
+          attention: z.array(z.string()),
+          nextAction: z.string(),
+        });
+
+        const validationResult = schema.safeParse(parsedResponse);
+        if (!validationResult.success) {
+          throw new Error("AI output validation failed.");
+        }
+
+        return validationResult.data as WorkoutAnalysisDTO;
       });
-
-      if (!response.text) {
-        throw new Error("AI returned an empty response.");
-      }
-
-      let parsedResponse = parseAIResponse(response.text);
-
-      const { z } = require("zod");
-      const schema = z.object({
-        summary: z.string(),
-        positives: z.array(z.string()),
-        attention: z.array(z.string()),
-        nextAction: z.string(),
-      });
-
-      const validationResult = schema.safeParse(parsedResponse);
-      if (!validationResult.success) {
-        throw new Error("AI output validation failed.");
-      }
-
-      return validationResult.data as WorkoutAnalysisDTO;
     } catch (error: any) {
       const classified = classifyGeminiError(error);
       logger.error("Gemini generateContent failed", {

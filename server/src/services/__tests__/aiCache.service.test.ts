@@ -286,10 +286,10 @@ describe("Test 7: classifyGeminiError correctly classifies 429 / RESOURCE_EXHAUS
     const err = new Error("RESOURCE_EXHAUSTED: Quota exceeded");
     const result = classifyGeminiError(err);
     expect(result.isQuotaExhausted).toBe(true);
-    expect(result.isRateLimit).toBe(true);
+    expect(result.isRateLimit).toBe(false);
   });
 
-  it("returns isQuotaExhausted=true for 429 messages", () => {
+  it("returns isQuotaExhausted=true for 429 messages without perminute", () => {
     const err = new Error("Error 429: Too many requests");
     const result = classifyGeminiError(err);
     expect(result.isQuotaExhausted).toBe(true);
@@ -299,6 +299,21 @@ describe("Test 7: classifyGeminiError correctly classifies 429 / RESOURCE_EXHAUS
     const err = new Error("Daily quota limit reached");
     const result = classifyGeminiError(err);
     expect(result.isQuotaExhausted).toBe(true);
+  });
+
+  it("returns isRateLimit=true for temporary RPM limits", () => {
+    const err = new Error("Error 429: GenerateRequestsPerMinutePerProjectPerModel-FreeTier limit exceeded");
+    const result = classifyGeminiError(err);
+    expect(result.isQuotaExhausted).toBe(false);
+    expect(result.isRateLimit).toBe(true);
+    expect(result.isRetryable).toBe(true);
+  });
+
+  it("returns isServerError=true for 503 high demand", () => {
+    const err = new Error("503 This model is currently experiencing high demand.");
+    const result = classifyGeminiError(err);
+    expect(result.isServerError).toBe(true);
+    expect(result.isRetryable).toBe(true);
   });
 
   it("returns isQuotaExhausted=false for unrelated errors", () => {
