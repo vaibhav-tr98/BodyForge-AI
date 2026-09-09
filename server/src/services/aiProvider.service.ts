@@ -156,6 +156,7 @@ export const AIProvider = {
     const key = `${userId}-generateWorkoutPlan-${hashContext(context)}`;
     return withSingleFlight(key, async () => {
       try {
+        return await withGeminiRetry("generateWorkoutPlan", async () => {
         if (!env.geminiApiKey) {
         throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
       }
@@ -220,7 +221,8 @@ export const AIProvider = {
       }
 
       return validationResult.data as GeneratedWorkoutDTO;
-    } catch (error: any) {
+            });
+      } catch (error: any) {
       const classified = classifyGeminiError(error);
       logger.error("Gemini generateContent failed", {
         operation: "generateWorkoutPlan",
@@ -237,6 +239,7 @@ export const AIProvider = {
     const key = `${userId}-generateStructuredAnalysis-${hashContext(context)}`;
     return withSingleFlight(key, async () => {
       try {
+        return await withGeminiRetry("generateStructuredAnalysis", async () => {
         if (!env.geminiApiKey) {
           throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
         }
@@ -287,7 +290,8 @@ export const AIProvider = {
       }
 
       return validationResult.data as ProgressAnalysisDTO;
-    } catch (error: any) {
+            });
+      } catch (error: any) {
       const classified = classifyGeminiError(error);
       logger.error("Gemini generateContent failed", {
         operation: "generateStructuredAnalysis",
@@ -304,6 +308,7 @@ export const AIProvider = {
     const key = `${userId}-generateNutritionAnalysis-${hashContext(context)}`;
     return withSingleFlight(key, async () => {
       try {
+        return await withGeminiRetry("generateNutritionAnalysis", async () => {
         if (!env.geminiApiKey) {
           throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
         }
@@ -354,7 +359,8 @@ export const AIProvider = {
       }
 
       return validationResult.data as NutritionAnalysisDTO;
-    } catch (error: any) {
+            });
+      } catch (error: any) {
       const classified = classifyGeminiError(error);
       logger.error("Gemini generateContent failed", {
         operation: "generateNutritionAnalysis",
@@ -439,6 +445,7 @@ export const AIProvider = {
     const key = `${userId}-generateReadinessAnalysis-${hashContext(context)}`;
     return withSingleFlight(key, async () => {
       try {
+        return await withGeminiRetry("generateReadinessAnalysis", async () => {
         if (!env.geminiApiKey) {
           throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
         }
@@ -488,7 +495,8 @@ export const AIProvider = {
       }
 
       return validationResult.data as ReadinessAnalysisDTO;
-    } catch (error: any) {
+            });
+      } catch (error: any) {
       const classified = classifyGeminiError(error);
       logger.error("Gemini generateContent failed", {
         operation: "generateReadinessAnalysis",
@@ -505,6 +513,7 @@ export const AIProvider = {
     const key = `${userId}-generateDailySummary-${hashContext(context)}`;
     return withSingleFlight(key, async () => {
       try {
+        return await withGeminiRetry("generateDailySummary", async () => {
         if (!env.geminiApiKey) {
           throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
         }
@@ -554,7 +563,8 @@ export const AIProvider = {
       }
 
       return validationResult.data as DailySummaryDTO;
-    } catch (error: any) {
+            });
+      } catch (error: any) {
       const classified = classifyGeminiError(error);
       logger.error("Gemini generateContent failed", {
         operation: "generateDailySummary",

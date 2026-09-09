@@ -1,4 +1,4 @@
-import { classifyGeminiError, withGeminiRetry, withSingleFlight } from "../aiProvider.service";
+import { AIProvider, classifyGeminiError, withGeminiRetry, withSingleFlight } from "../aiProvider.service";
 
 describe("AIProvider Service Tests", () => {
   describe("classifyGeminiError", () => {
@@ -206,6 +206,112 @@ describe("AIProvider Service Tests", () => {
       const result = await withSingleFlight("hash1", mockFn);
       expect(result).toBe("success");
       expect(callCount).toBe(2);
+    });
+  });
+
+  describe("AIProvider Retry Verification", () => {
+    let generateContentMock: jest.Mock;
+    let evalSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      generateContentMock = jest.fn();
+      evalSpy = jest.spyOn(global, "eval").mockResolvedValue({
+        GoogleGenAI: class {
+          models = {
+            generateContent: generateContentMock
+          };
+        }
+      });
+      jest.useFakeTimers();
+      jest.spyOn(global, "setTimeout");
+    });
+
+    afterEach(() => {
+      jest.clearAllTimers();
+      jest.useRealTimers();
+      jest.restoreAllMocks();
+    });
+
+    it("generateReadinessAnalysis retries on 503 error", async () => {
+      const error503 = new Error("503 This model is currently experiencing high demand.");
+      generateContentMock
+        .mockRejectedValueOnce(error503)
+        .mockResolvedValueOnce({
+          text: JSON.stringify({
+            summary: "Ready",
+            positives: ["Sleep"],
+            attention: [],
+            nextAction: "Train",
+          })
+        });
+
+      const promise = AIProvider.generateReadinessAnalysis("user1", {
+        overallScore: 8, status: "ready", recommendationReason: "Good", muscleGroups: []
+      } as any);
+
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(generateContentMock).toHaveBeenCalledTimes(1);
+      
+      jest.advanceTimersByTime(5000);
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const result = await promise;
+      expect(result.summary).toBe("Ready");
+      expect(generateContentMock).toHaveBeenCalledTimes(2);
+    });
+
+    it("generateDailySummary retries on 503 error", async () => {
+      const error503 = new Error("503 This model is currently experiencing high demand.");
+      generateContentMock
+        .mockRejectedValueOnce(error503)
+        .mockResolvedValueOnce({
+          text: JSON.stringify({
+            summary: "Good day",
+            topPositive: "Good",
+            mainAttention: "None", nextAction: "Sleep"
+          })
+        });
+
+      const promise = AIProvider.generateDailySummary("user1", {} as any);
+
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(generateContentMock).toHaveBeenCalledTimes(1);
+      
+      jest.advanceTimersByTime(5000);
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const result = await promise;
+      expect(result.summary).toBe("Good day");
+      expect(generateContentMock).toHaveBeenCalledTimes(2);
+    });
+
+    it("generateReadinessAnalysis does not retry on quota exhaustion", async () => {
+      const errorQuota = new Error("RESOURCE_EXHAUSTED: explicit quota exhaustion reached");
+      generateContentMock.mockRejectedValue(errorQuota);
+
+      const promise = AIProvider.generateReadinessAnalysis("user1", { overallScore: 8, status: "ready", recommendationReason: "Good", muscleGroups: [] } as any);
+      
+      await expect(promise).rejects.toBe(errorQuota);
+      expect(generateContentMock).toHaveBeenCalledTimes(1);
+      expect(setTimeout).not.toHaveBeenCalled();
     });
   });
 });

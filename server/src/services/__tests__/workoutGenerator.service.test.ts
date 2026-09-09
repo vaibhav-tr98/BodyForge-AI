@@ -35,7 +35,7 @@ describe("WorkoutGeneratorService", () => {
 
     expect(result.name).toBe("AI Chest & Triceps");
     expect(result.exercises.length).toBe(1);
-    expect(AIProvider.generateWorkoutPlan).toHaveBeenCalledWith(expect.objectContaining({
+    expect(AIProvider.generateWorkoutPlan).toHaveBeenCalledWith("507f1f77bcf86cd799439011", expect.objectContaining({
       targetMuscles: "Chest",
       userExperience: "intermediate",
     }));
