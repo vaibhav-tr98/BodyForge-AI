@@ -40,7 +40,7 @@ describe("DailySummaryService", () => {
     const result = await dailySummaryService.getDailySummary(userId, date);
 
     expect(result.summary).toBe("All good");
-    const callArgs = (AIProvider.generateDailySummary as jest.Mock).mock.calls[0][0];
+    const callArgs = (AIProvider.generateDailySummary as jest.Mock).mock.calls[0][1];
     expect(callArgs.progressAnalysis).toEqual({ summary: "progress ok" });
     expect(callArgs.nutritionAnalysis).toEqual({ summary: "nutrition ok" });
     expect(callArgs.workoutAnalysis).toEqual({ summary: "workout ok" });
@@ -63,7 +63,7 @@ describe("DailySummaryService", () => {
     const result = await dailySummaryService.getDailySummary(userId, date);
     expect(result.summary).toBe("Summary without progress");
     
-    const callArgs = (AIProvider.generateDailySummary as jest.Mock).mock.calls[0][0];
+    const callArgs = (AIProvider.generateDailySummary as jest.Mock).mock.calls[0][1];
     expect(callArgs.progressAnalysis).toBeNull();
     expect(callArgs.nutritionAnalysis).toBeDefined();
   });
@@ -82,7 +82,7 @@ describe("DailySummaryService", () => {
     });
 
     await dailySummaryService.getDailySummary(userId, date);
-    const callArgs = (AIProvider.generateDailySummary as jest.Mock).mock.calls[0][0];
+    const callArgs = (AIProvider.generateDailySummary as jest.Mock).mock.calls[0][1];
     expect(callArgs.nutritionAnalysis).toBeNull();
   });
 
@@ -100,7 +100,7 @@ describe("DailySummaryService", () => {
     });
 
     await dailySummaryService.getDailySummary(userId, date);
-    const callArgs = (AIProvider.generateDailySummary as jest.Mock).mock.calls[0][0];
+    const callArgs = (AIProvider.generateDailySummary as jest.Mock).mock.calls[0][1];
     expect(callArgs.workoutAnalysis).toBeNull();
   });
 
@@ -118,7 +118,7 @@ describe("DailySummaryService", () => {
     });
 
     await dailySummaryService.getDailySummary(userId, date);
-    const callArgs = (AIProvider.generateDailySummary as jest.Mock).mock.calls[0][0];
+    const callArgs = (AIProvider.generateDailySummary as jest.Mock).mock.calls[0][1];
     expect(callArgs.readinessAnalysis).toBeNull();
   });
 
@@ -155,7 +155,7 @@ describe("DailySummaryService", () => {
     expect(workoutAnalysisService.getWorkoutAnalysis).toHaveBeenCalledWith(userId, date);
     expect(readinessAnalysisService.getReadinessAnalysis).toHaveBeenCalledWith(userId);
 
-    const callArgs = (AIProvider.generateDailySummary as jest.Mock).mock.calls[0][0];
+    const callArgs = (AIProvider.generateDailySummary as jest.Mock).mock.calls[0][1];
     expect(callArgs.date).toBe(date);
     expect(callArgs.password).toBeUndefined();
   });

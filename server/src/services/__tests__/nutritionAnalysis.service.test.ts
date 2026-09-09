@@ -43,7 +43,7 @@ describe("NutritionAnalysisService", () => {
 
     await nutritionAnalysisService.getNutritionAnalysis(userId, date);
 
-    const callArgs = (AIProvider.generateNutritionAnalysis as jest.Mock).mock.calls[0][0];
+    const callArgs = (AIProvider.generateNutritionAnalysis as jest.Mock).mock.calls[0][1];
     expect(callArgs.calorieTarget).toBeNull();
     expect(callArgs.caloriePercentage).toBeNull();
   });
@@ -55,7 +55,7 @@ describe("NutritionAnalysisService", () => {
 
     await nutritionAnalysisService.getNutritionAnalysis(userId, date);
 
-    const callArgs = (AIProvider.generateNutritionAnalysis as jest.Mock).mock.calls[0][0];
+    const callArgs = (AIProvider.generateNutritionAnalysis as jest.Mock).mock.calls[0][1];
     expect(callArgs.proteinConsumed).toBe(80);
     expect(callArgs.proteinTarget).toBe(160);
     expect(callArgs.proteinPercentage).toBe(50); // 80/160 * 100
@@ -68,7 +68,7 @@ describe("NutritionAnalysisService", () => {
 
     await nutritionAnalysisService.getNutritionAnalysis(userId, date);
 
-    const callArgs = (AIProvider.generateNutritionAnalysis as jest.Mock).mock.calls[0][0];
+    const callArgs = (AIProvider.generateNutritionAnalysis as jest.Mock).mock.calls[0][1];
     expect(callArgs.nutritionStatus).toBe("below_target");
   });
 
@@ -79,7 +79,7 @@ describe("NutritionAnalysisService", () => {
 
     await nutritionAnalysisService.getNutritionAnalysis(userId, date);
 
-    const callArgs = (AIProvider.generateNutritionAnalysis as jest.Mock).mock.calls[0][0];
+    const callArgs = (AIProvider.generateNutritionAnalysis as jest.Mock).mock.calls[0][1];
     expect(callArgs.nutritionStatus).toBe("on_track"); // 1800 >= 2000 * 0.85 (1700)
   });
 
@@ -91,7 +91,7 @@ describe("NutritionAnalysisService", () => {
 
     await nutritionAnalysisService.getNutritionAnalysis(userId, date);
 
-    const callArgs = (AIProvider.generateNutritionAnalysis as jest.Mock).mock.calls[0][0];
+    const callArgs = (AIProvider.generateNutritionAnalysis as jest.Mock).mock.calls[0][1];
     expect(callArgs.workoutRecommendationName).toBe("Leg Day");
   });
 
@@ -103,7 +103,7 @@ describe("NutritionAnalysisService", () => {
 
     await nutritionAnalysisService.getNutritionAnalysis(userId, date);
 
-    const callArgs = (AIProvider.generateNutritionAnalysis as jest.Mock).mock.calls[0][0];
+    const callArgs = (AIProvider.generateNutritionAnalysis as jest.Mock).mock.calls[0][1];
     expect(callArgs.workoutRecommendationName).toBeNull();
   });
 
@@ -122,7 +122,7 @@ describe("NutritionAnalysisService", () => {
 
     await nutritionAnalysisService.getNutritionAnalysis(userId, date);
 
-    const callArgs = (AIProvider.generateNutritionAnalysis as jest.Mock).mock.calls[0][0];
+    const callArgs = (AIProvider.generateNutritionAnalysis as jest.Mock).mock.calls[0][1];
     expect(callArgs.password).toBeUndefined();
     expect(callArgs.email).toBeUndefined();
     expect(callArgs.date).toBe(date); // Date isolation

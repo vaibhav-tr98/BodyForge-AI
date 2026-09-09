@@ -85,7 +85,7 @@ class DailySummaryService {
 
     // --- Step 4: Gemini call ---
     try {
-      const summary = await AIProvider.generateDailySummary(context);
+      const summary = await AIProvider.generateDailySummary(userId, context);
 
       await aiAnalysisCacheRepository.save({
         userId,

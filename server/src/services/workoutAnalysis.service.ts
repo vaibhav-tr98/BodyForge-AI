@@ -87,7 +87,7 @@ export class WorkoutAnalysisService {
 
     // --- Gemini call ---
     try {
-      const aiResponse = await AIProvider.generateWorkoutAnalysis(context);
+      const aiResponse = await AIProvider.generateWorkoutAnalysis(userId, context);
 
       await aiAnalysisCacheRepository.save({
         userId,

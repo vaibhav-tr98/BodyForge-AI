@@ -91,7 +91,7 @@ export class ProgressAnalysisService {
 
     // --- Gemini call ---
     try {
-      const aiResponse = await AIProvider.generateStructuredAnalysis(context);
+      const aiResponse = await AIProvider.generateStructuredAnalysis(userId, context);
 
       // Save to cache only on success
       await aiAnalysisCacheRepository.save({

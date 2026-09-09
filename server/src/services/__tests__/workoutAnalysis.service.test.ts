@@ -48,7 +48,7 @@ describe("WorkoutAnalysisService", () => {
 
     await workoutAnalysisService.getWorkoutAnalysis(userId, date);
     
-    const callArgs = (AIProvider.generateWorkoutAnalysis as jest.Mock).mock.calls[0][0];
+    const callArgs = (AIProvider.generateWorkoutAnalysis as jest.Mock).mock.calls[0][1];
     expect(callArgs.overallReadinessScore).toBeNull();
     expect(callArgs.todayWorkoutRecommendationName).toBeNull();
   });
@@ -67,7 +67,7 @@ describe("WorkoutAnalysisService", () => {
 
     await workoutAnalysisService.getWorkoutAnalysis(userId, date);
     
-    const callArgs = (AIProvider.generateWorkoutAnalysis as jest.Mock).mock.calls[0][0];
+    const callArgs = (AIProvider.generateWorkoutAnalysis as jest.Mock).mock.calls[0][1];
     expect(callArgs.todayWorkoutRecommendationName).toBe("Pull Day");
     expect(callArgs.todayWorkoutRecommendationReason).toBe("Pull day is due");
   });
@@ -92,7 +92,7 @@ describe("WorkoutAnalysisService", () => {
 
     await workoutAnalysisService.getWorkoutAnalysis(userId, date);
     
-    const callArgs = (AIProvider.generateWorkoutAnalysis as jest.Mock).mock.calls[0][0];
+    const callArgs = (AIProvider.generateWorkoutAnalysis as jest.Mock).mock.calls[0][1];
     expect(callArgs.recentWorkoutCount7Days).toBe(2);
     expect(callArgs.recentPRs).toBeNull();
   });
@@ -121,7 +121,7 @@ describe("WorkoutAnalysisService", () => {
 
     await workoutAnalysisService.getWorkoutAnalysis(userId, date);
     
-    const callArgs = (AIProvider.generateWorkoutAnalysis as jest.Mock).mock.calls[0][0];
+    const callArgs = (AIProvider.generateWorkoutAnalysis as jest.Mock).mock.calls[0][1];
     expect(callArgs.password).toBeUndefined(); // Verify user isolation and no sensitive data
     expect(callArgs.date).toBe(date); 
     

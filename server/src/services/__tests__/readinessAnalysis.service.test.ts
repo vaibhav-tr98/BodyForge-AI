@@ -51,7 +51,7 @@ describe("ReadinessAnalysisService", () => {
     const result = await readinessAnalysisService.getReadinessAnalysis(userId);
 
     expect(AIProvider.generateReadinessAnalysis).toHaveBeenCalled();
-    const contextArg = (AIProvider.generateReadinessAnalysis as jest.Mock).mock.calls[0][0];
+    const contextArg = (AIProvider.generateReadinessAnalysis as jest.Mock).mock.calls[0][1];
     expect(contextArg.overallScore).toBe(85);
     expect(contextArg.status).toBe("ready");
     expect(contextArg.recommendationReason).toBe("Well rested");

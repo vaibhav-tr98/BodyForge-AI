@@ -81,7 +81,7 @@ describe("ProgressAnalysisService", () => {
 
     await progressAnalysisService.getProgressAnalysis(userId, date);
 
-    const callArgs = (AIProvider.generateStructuredAnalysis as jest.Mock).mock.calls[0][0];
+    const callArgs = (AIProvider.generateStructuredAnalysis as jest.Mock).mock.calls[0][1];
     
     // Check structured context is correct
     expect(callArgs.currentWeight).toBe(79);
@@ -105,7 +105,7 @@ describe("ProgressAnalysisService", () => {
 
     await progressAnalysisService.getProgressAnalysis(userId, date);
 
-    const callArgs = (AIProvider.generateStructuredAnalysis as jest.Mock).mock.calls[0][0];
+    const callArgs = (AIProvider.generateStructuredAnalysis as jest.Mock).mock.calls[0][1];
     expect(callArgs.currentBodyFat).toBeNull();
     expect(callArgs.bodyFatChange).toBeNull();
     expect(callArgs.currentWaist).toBeNull();

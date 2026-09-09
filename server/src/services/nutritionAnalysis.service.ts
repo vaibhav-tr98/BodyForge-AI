@@ -89,7 +89,7 @@ export class NutritionAnalysisService {
 
     // --- Gemini call ---
     try {
-      const aiResponse = await AIProvider.generateNutritionAnalysis(context);
+      const aiResponse = await AIProvider.generateNutritionAnalysis(userId, context);
 
       // Save to cache only on success
       await aiAnalysisCacheRepository.save({

@@ -50,7 +50,7 @@ export class ReadinessAnalysisService {
 
     // --- Gemini call ---
     try {
-      const aiResponse = await AIProvider.generateReadinessAnalysis(context);
+      const aiResponse = await AIProvider.generateReadinessAnalysis(userId, context);
 
       await aiAnalysisCacheRepository.save({
         userId,

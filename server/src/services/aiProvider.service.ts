@@ -12,6 +12,7 @@ import { DailySummaryContext, DailySummaryDTO } from "../types/dailySummary.type
 import { buildDailySummaryPrompt } from "./prompts/dailySummary.prompt";
 import { env } from "../config/env";
 import logger from "../utils/logger";
+import { hashContext } from "../utils/hashContext";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -66,17 +67,25 @@ export function classifyGeminiError(error: unknown): {
   }
 
   const msg = error.message.toLowerCase();
+  
+  // Also check full serialized string for retry delay and other keys
+  const fullString = String(error).toLowerCase() + " " + JSON.stringify(error, Object.getOwnPropertyNames(error)).toLowerCase();
+  
+  // Extract RetryInfo.retryDelay e.g., "35s", "6s"
+  const retryMatch = fullString.match(/retrydelay.*?(\d+)s/i) || fullString.match(/retrydelay['"\s:]+(\d+)s/i);
+  if (retryMatch && retryMatch[1]) {
+    result.retryAfterMs = parseInt(retryMatch[1], 10) * 1000;
+  }
 
-  if (msg.includes("503") || msg.includes("high demand") || msg.includes("overloaded")) {
+  if (msg.includes("503") || msg.includes("unavailable") || msg.includes("high demand") || msg.includes("overloaded")) {
     result.isServerError = true;
     result.isRetryable = true;
-  } else if (msg.includes("429") || msg.includes("resource_exhausted") || msg.includes("quota")) {
-    if (msg.includes("perminute") || msg.includes("rpm") || msg.includes("rate limit")) {
-      result.isRateLimit = true;
-      result.isRetryable = true;
-    } else {
-      result.isQuotaExhausted = true;
-    }
+  } else if (msg.includes("generate_content_free_tier_requests") || msg.includes("resource_exhausted") || msg.includes("explicit quota exhaustion")) {
+    result.isQuotaExhausted = true;
+    result.isRetryable = false;
+  } else if (msg.includes("429") || msg.includes("rate limit") || msg.includes("rpm")) {
+    result.isRateLimit = true;
+    result.isRetryable = true;
   }
 
   return result;
@@ -101,7 +110,7 @@ export async function withGeminiRetry<T>(
         throw error;
       }
 
-      const retryDelay = 5000 * Math.pow(2, attempt - 1);
+      const retryDelay = classified.retryAfterMs ?? (5000 * Math.pow(2, attempt - 1));
       
       logger.warn(`Gemini API error - Retrying`, {
         operation,
@@ -119,13 +128,35 @@ export async function withGeminiRetry<T>(
 }
 
 // ---------------------------------------------------------------------------
+// Single-Flight Request Coalescing
+// ---------------------------------------------------------------------------
+
+const inFlightRequests = new Map<string, Promise<any>>();
+
+export function withSingleFlight<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  if (inFlightRequests.has(key)) {
+    logger.info(`Single-flight coalescing Gemini request`, { key });
+    return inFlightRequests.get(key) as Promise<T>;
+  }
+
+  const promise = fn().finally(() => {
+    inFlightRequests.delete(key);
+  });
+
+  inFlightRequests.set(key, promise);
+  return promise;
+}
+
+// ---------------------------------------------------------------------------
 // AIProvider
 // ---------------------------------------------------------------------------
 
 export const AIProvider = {
-  async generateWorkoutPlan(context: WorkoutGeneratorContext): Promise<GeneratedWorkoutDTO> {
-    try {
-      if (!env.geminiApiKey) {
+  async generateWorkoutPlan(userId: string, context: WorkoutGeneratorContext): Promise<GeneratedWorkoutDTO> {
+    const key = `${userId}-generateWorkoutPlan-${hashContext(context)}`;
+    return withSingleFlight(key, async () => {
+      try {
+        if (!env.geminiApiKey) {
         throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
       }
 
@@ -199,13 +230,16 @@ export const AIProvider = {
       });
       throw error;
     }
+    });
   },
 
-  async generateStructuredAnalysis(context: ProgressAnalysisContext): Promise<ProgressAnalysisDTO> {
-    try {
-      if (!env.geminiApiKey) {
-        throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
-      }
+  async generateStructuredAnalysis(userId: string, context: ProgressAnalysisContext): Promise<ProgressAnalysisDTO> {
+    const key = `${userId}-generateStructuredAnalysis-${hashContext(context)}`;
+    return withSingleFlight(key, async () => {
+      try {
+        if (!env.geminiApiKey) {
+          throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
+        }
 
       // Dynamic import to support ESM package in CommonJS project
       const { GoogleGenAI } = await eval('import("@google/genai")');
@@ -263,13 +297,16 @@ export const AIProvider = {
       });
       throw error;
     }
+    });
   },
 
-  async generateNutritionAnalysis(context: NutritionAnalysisContext): Promise<NutritionAnalysisDTO> {
-    try {
-      if (!env.geminiApiKey) {
-        throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
-      }
+  async generateNutritionAnalysis(userId: string, context: NutritionAnalysisContext): Promise<NutritionAnalysisDTO> {
+    const key = `${userId}-generateNutritionAnalysis-${hashContext(context)}`;
+    return withSingleFlight(key, async () => {
+      try {
+        if (!env.geminiApiKey) {
+          throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
+        }
 
       // Dynamic import to support ESM package in CommonJS project
       const { GoogleGenAI } = await eval('import("@google/genai")');
@@ -327,12 +364,15 @@ export const AIProvider = {
       });
       throw error;
     }
+    });
   },
 
-  async generateWorkoutAnalysis(context: WorkoutAnalysisContext): Promise<WorkoutAnalysisDTO> {
-    try {
-      return await withGeminiRetry("generateWorkoutAnalysis", async () => {
-        if (!env.geminiApiKey) {
+  async generateWorkoutAnalysis(userId: string, context: WorkoutAnalysisContext): Promise<WorkoutAnalysisDTO> {
+    const key = `${userId}-generateWorkoutAnalysis-${hashContext(context)}`;
+    return withSingleFlight(key, async () => {
+      try {
+        return await withGeminiRetry("generateWorkoutAnalysis", async () => {
+          if (!env.geminiApiKey) {
           throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
         }
 
@@ -392,13 +432,16 @@ export const AIProvider = {
       });
       throw error;
     }
+    });
   },
 
-  async generateReadinessAnalysis(context: ReadinessAnalysisContext): Promise<ReadinessAnalysisDTO> {
-    try {
-      if (!env.geminiApiKey) {
-        throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
-      }
+  async generateReadinessAnalysis(userId: string, context: ReadinessAnalysisContext): Promise<ReadinessAnalysisDTO> {
+    const key = `${userId}-generateReadinessAnalysis-${hashContext(context)}`;
+    return withSingleFlight(key, async () => {
+      try {
+        if (!env.geminiApiKey) {
+          throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
+        }
 
       const { GoogleGenAI } = await eval('import("@google/genai")');
       const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
@@ -455,13 +498,16 @@ export const AIProvider = {
       });
       throw error;
     }
+    });
   },
 
-  async generateDailySummary(context: DailySummaryContext): Promise<DailySummaryDTO> {
-    try {
-      if (!env.geminiApiKey) {
-        throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
-      }
+  async generateDailySummary(userId: string, context: DailySummaryContext): Promise<DailySummaryDTO> {
+    const key = `${userId}-generateDailySummary-${hashContext(context)}`;
+    return withSingleFlight(key, async () => {
+      try {
+        if (!env.geminiApiKey) {
+          throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
+        }
 
       const { GoogleGenAI } = await eval('import("@google/genai")');
       const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
@@ -518,5 +564,6 @@ export const AIProvider = {
       });
       throw error;
     }
+    });
   },
 };

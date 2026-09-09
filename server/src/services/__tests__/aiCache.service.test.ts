@@ -289,17 +289,20 @@ describe("Test 7: classifyGeminiError correctly classifies 429 / RESOURCE_EXHAUS
     expect(result.isRateLimit).toBe(false);
   });
 
-  it("returns isQuotaExhausted=true for 429 messages without perminute", () => {
-    const err = new Error("Error 429: Too many requests");
-    const result = classifyGeminiError(err);
-    expect(result.isQuotaExhausted).toBe(true);
-  });
-
-  it("returns isQuotaExhausted=true for 'quota' messages", () => {
-    const err = new Error("Daily quota limit reached");
-    const result = classifyGeminiError(err);
-    expect(result.isQuotaExhausted).toBe(true);
-  });
+    it("returns isRateLimit=true for 429 messages without specific quota exhaustion keywords", () => {
+      const err = new Error("Error 429: Too many requests");
+      const result = classifyGeminiError(err);
+      expect(result.isQuotaExhausted).toBe(false);
+      expect(result.isRateLimit).toBe(true);
+      expect(result.isRetryable).toBe(true);
+    });
+  
+    it("returns isQuotaExhausted=true for 'explicit quota exhaustion' messages", () => {
+      const err = new Error("explicit quota exhaustion reached");
+      const result = classifyGeminiError(err);
+      expect(result.isQuotaExhausted).toBe(true);
+      expect(result.isRetryable).toBe(false);
+    });
 
   it("returns isRateLimit=true for temporary RPM limits", () => {
     const err = new Error("Error 429: GenerateRequestsPerMinutePerProjectPerModel-FreeTier limit exceeded");
@@ -374,7 +377,7 @@ describe("Test 9: Daily Summary uses cached sub-analysis results", () => {
     await dailySummaryService.getDailySummary(userId, date);
 
     // The context passed to generateDailySummary should include the sub-analysis DTOs
-    const callArgs = (AIProvider.generateDailySummary as jest.Mock).mock.calls[0][0];
+    const callArgs = (AIProvider.generateDailySummary as jest.Mock).mock.calls[0][1];
     expect(callArgs.date).toBe(date);
     expect(callArgs.progressAnalysis).toEqual(cachedProgress);
     expect(callArgs.nutritionAnalysis).toEqual(cachedNutrition);

@@ -11,7 +11,7 @@ export class WorkoutGeneratorService {
     }
 
     try {
-      return await AIProvider.generateWorkoutPlan({
+      return await AIProvider.generateWorkoutPlan(userId, {
         targetMuscles: request.targetMuscles,
         availableTime: request.availableTime,
         equipment: request.equipment,
