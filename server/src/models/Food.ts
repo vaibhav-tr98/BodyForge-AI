@@ -50,6 +50,5 @@ const FoodSchema: Schema = new Schema(
 
 // Indexes for search performance
 FoodSchema.index({ name: 'text', aliases: 'text' });
-FoodSchema.index({ name: 1 });
 
 export default mongoose.model<IFood>("Food", FoodSchema);
