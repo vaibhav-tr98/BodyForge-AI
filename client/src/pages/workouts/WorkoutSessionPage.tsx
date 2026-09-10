@@ -358,7 +358,10 @@ export default function WorkoutSessionPage() {
                   min={0}
                   step={0.5}
                   value={set.weight}
-                  onChange={(e) => handleUpdateSet(idx, "weight", parseFloat(e.target.value) || 0)}
+                  onChange={(e) => {
+                    e.target.value = e.target.value.replace(/^0+(?=\d)/, '');
+                    handleUpdateSet(idx, "weight", parseFloat(e.target.value) || 0);
+                  }}
                   className={`w-full rounded bg-slate-800 py-3 text-center font-semibold text-white outline-none focus:ring-2 focus:ring-cyan-500 ${
                     set.completed ? "opacity-50" : ""
                   }`}
