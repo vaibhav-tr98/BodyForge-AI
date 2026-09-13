@@ -9,6 +9,8 @@ import type { ReactNode } from "react";
 import type { User } from "../types";
 import { loginUser, registerUser } from "../services/auth.service";
 import { getProfile } from "../services/user.service";
+import { queryClient } from "../lib/queryClient";
+import { clearBodyForgeCache } from "../lib/queryPersister";
 
 // ── Context shape ───────────────────────────────────────────────────────────────
 
@@ -37,6 +39,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearAuth = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
     setUser(null);
+    queryClient.clear();
+    clearBodyForgeCache().catch(console.error);
   }, []);
 
   const storeToken = (token: string) => {
@@ -88,6 +92,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedToken = localStorage.getItem(TOKEN_KEY);
     if (!storedToken) {
       setIsLoading(false);
+      queryClient.clear();
+      clearBodyForgeCache().catch(console.error);
       return;
     }
 
@@ -95,11 +101,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((userData) => setUser(userData))
       .catch((error: any) => {
         if (error?.response?.status === 401) {
-          localStorage.removeItem(TOKEN_KEY);
+          clearAuth();
         }
       })
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [clearAuth]);
 
   // ── render ──────────────────────────────────────────────────────────────────
 
