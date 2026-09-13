@@ -53,8 +53,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const userData = await getProfile();
       setUser(userData);
-    } catch {
-      clearAuth();
+    } catch (error: any) {
+      if (error?.response?.status === 401) {
+        clearAuth();
+      }
     }
   }, [clearAuth]);
 
@@ -91,8 +93,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     getProfile()
       .then((userData) => setUser(userData))
-      .catch(() => {
-        localStorage.removeItem(TOKEN_KEY);
+      .catch((error: any) => {
+        if (error?.response?.status === 401) {
+          localStorage.removeItem(TOKEN_KEY);
+        }
       })
       .finally(() => setIsLoading(false));
   }, []);
@@ -103,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user || !!localStorage.getItem(TOKEN_KEY),
         isLoading,
         login,
         register,
