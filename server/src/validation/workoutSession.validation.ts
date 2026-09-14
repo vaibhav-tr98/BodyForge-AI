@@ -1,4 +1,4 @@
-﻿import mongoose from "mongoose";
+import mongoose from "mongoose";
 import { z } from "zod";
 
 export const sessionIdParamSchema = z.object({
@@ -32,13 +32,13 @@ export const sessionExerciseSchema = z
     plannedSets: z.number().int().min(1),
     plannedReps: z.number().int().min(1),
     plannedWeight: z.number().min(0).optional(),
-    sets: z.array(sessionSetSchema),
+    sets: z.array(sessionSetSchema).max(50, "Maximum of 50 sets allowed per exercise"),
   })
   .strict();
 
 export const updateSessionSchema = z
   .object({
-    exercises: z.array(sessionExerciseSchema),
+    exercises: z.array(sessionExerciseSchema).max(100, "Maximum of 100 exercises allowed per session"),
     expectedUpdatedAt: z.string().datetime().optional()
   })
   .strict()

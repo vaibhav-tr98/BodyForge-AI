@@ -1,5 +1,7 @@
 import { ErrorRequestHandler } from "express";
 import { ZodError } from "zod";
+import { MongoServerError } from "mongodb";
+import { Error as MongooseError } from "mongoose";
 import { AppError } from "../errors/AppError";
 import logger from "../utils/logger";
 
@@ -54,6 +56,22 @@ export const errorMiddleware: ErrorRequestHandler = (err, _req, res, next) => {
       success: false,
       message: firstMessage,
       errors,
+    });
+    return;
+  }
+
+  if (err instanceof MongoServerError && err.code === 11000) {
+    res.status(409).json({
+      success: false,
+      message: "Resource already exists",
+    });
+    return;
+  }
+
+  if (err instanceof MongooseError.CastError) {
+    res.status(400).json({
+      success: false,
+      message: "Invalid resource identifier",
     });
     return;
   }
