@@ -45,17 +45,28 @@ class WorkoutSessionRepository {
     return { sessions, total };
   }
 
-  async updateSession(sessionId: string, userId: string, data: WorkoutSessionUpdateData): Promise<IWorkoutSession | null> {
+  async updateSession(sessionId: string, userId: string, data: WorkoutSessionUpdateData & { expectedUpdatedAt?: string }): Promise<IWorkoutSession | null> {
+    const filter: any = { _id: sessionId, user: userId, status: "active" };
+    const { expectedUpdatedAt, ...updateData } = data;
+
+    if (expectedUpdatedAt) {
+      filter.updatedAt = new Date(expectedUpdatedAt);
+    }
+
     return await WorkoutSession.findOneAndUpdate(
-      { _id: sessionId, user: userId, status: "active" },
-      { $set: data },
+      filter,
+      { $set: updateData },
       { new: true, runValidators: true }
     );
   }
 
-  async completeSession(sessionId: string, userId: string): Promise<IWorkoutSession | null> {
+  async completeSession(sessionId: string, userId: string, expectedUpdatedAt?: string): Promise<IWorkoutSession | null> {
+    const filter: any = { _id: sessionId, user: userId, status: "active" };
+    if (expectedUpdatedAt) {
+      filter.updatedAt = new Date(expectedUpdatedAt);
+    }
     return await WorkoutSession.findOneAndUpdate(
-      { _id: sessionId, user: userId, status: "active" },
+      filter,
       { $set: { status: "completed", completedAt: new Date() } },
       { new: true }
     );

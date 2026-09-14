@@ -108,7 +108,7 @@ export const completeSession = async (req: Request, res: Response, next: NextFun
   if (!userId) return;
 
   try {
-    const session = await workoutSessionService.completeSession(req.params.id as string, userId);
+    const session = await workoutSessionService.completeSession(req.params.id as string, userId, req.body?.expectedUpdatedAt);
     res.status(200).json({ success: true, message: "Workout session completed successfully", data: { session } });
   } catch (error) {
     if (error instanceof AppError) {

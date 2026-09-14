@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+﻿import mongoose from "mongoose";
 import { z } from "zod";
 
 export const sessionIdParamSchema = z.object({
@@ -39,8 +39,15 @@ export const sessionExerciseSchema = z
 export const updateSessionSchema = z
   .object({
     exercises: z.array(sessionExerciseSchema),
+    expectedUpdatedAt: z.string().datetime().optional()
   })
   .strict()
   .refine((data) => Object.keys(data).length > 0, {
     message: "A valid session update is required",
   });
+
+export const completeSessionSchema = z
+  .object({
+    expectedUpdatedAt: z.string().datetime().optional()
+  })
+  .strict();

@@ -27,6 +27,7 @@ export interface SafeWorkoutSession {
   completedAt?: Date | null;
   status: "active" | "completed";
   exercises: SafeWorkoutSessionExercise[];
+  updatedAt: Date;
 }
 
 const toWorkoutSessionResponse = (session: any): SafeWorkoutSession => {
@@ -52,6 +53,7 @@ const toWorkoutSessionResponse = (session: any): SafeWorkoutSession => {
         completed: set.completed,
       })),
     })),
+    updatedAt: session.updatedAt,
   };
 };
 
@@ -110,7 +112,7 @@ class WorkoutSessionService {
     };
   }
 
-  async updateSession(sessionId: string, userId: string, data: WorkoutSessionUpdateData): Promise<SafeWorkoutSession> {
+  async updateSession(sessionId: string, userId: string, data: WorkoutSessionUpdateData & { expectedUpdatedAt?: string }): Promise<SafeWorkoutSession> {
     const session = await workoutSessionRepository.findByIdAndUser(sessionId, userId);
     if (!session) {
       throw new AppError("Workout session not found", 404);
@@ -122,13 +124,16 @@ class WorkoutSessionService {
 
     const updatedSession = await workoutSessionRepository.updateSession(sessionId, userId, data);
     if (!updatedSession) {
+      if (data.expectedUpdatedAt) {
+        throw new AppError("Concurrency conflict: session has been modified since last read", 409, true, "ERR_CONCURRENCY_CONFLICT");
+      }
       throw new AppError("Failed to update workout session", 500);
     }
 
     return toWorkoutSessionResponse(updatedSession);
   }
 
-  async completeSession(sessionId: string, userId: string): Promise<SafeWorkoutSession> {
+  async completeSession(sessionId: string, userId: string, expectedUpdatedAt?: string): Promise<SafeWorkoutSession> {
     const session = await workoutSessionRepository.findByIdAndUser(sessionId, userId);
     if (!session) {
       throw new AppError("Workout session not found", 404);
@@ -138,8 +143,11 @@ class WorkoutSessionService {
       throw new AppError("Workout session is already completed", 400);
     }
 
-    const completedSession = await workoutSessionRepository.completeSession(sessionId, userId);
+    const completedSession = await workoutSessionRepository.completeSession(sessionId, userId, expectedUpdatedAt);
     if (!completedSession) {
+      if (expectedUpdatedAt) {
+        throw new AppError("Concurrency conflict: session has been modified since last read", 409, true, "ERR_CONCURRENCY_CONFLICT");
+      }
       throw new AppError("Failed to complete workout session", 500);
     }
 

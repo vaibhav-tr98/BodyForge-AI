@@ -8,6 +8,7 @@ import {
   updateSession,
 } from "../controllers/workoutSession.controller";
 import { authenticate } from "../middleware/auth.middleware";
+import { idempotencyMiddleware } from "../middleware/idempotency.middleware";
 import {
   validateBody,
   validateParams,
@@ -17,6 +18,7 @@ import {
   sessionIdParamSchema,
   startSessionSchema,
   updateSessionSchema,
+  completeSessionSchema,
 } from "../validation/workoutSession.validation";
 
 const router = Router();
@@ -28,13 +30,15 @@ router.get("/:id", authenticate, validateParams(sessionIdParamSchema), getSessio
 router.patch(
   "/:id",
   authenticate,
+  idempotencyMiddleware,
   validateRequest({ params: sessionIdParamSchema, body: updateSessionSchema }),
   updateSession
 );
 router.post(
   "/:id/complete",
   authenticate,
-  validateParams(sessionIdParamSchema),
+  idempotencyMiddleware,
+  validateRequest({ params: sessionIdParamSchema, body: completeSessionSchema }),
   completeSession
 );
 
