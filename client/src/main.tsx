@@ -7,6 +7,7 @@ import "./index.css";
 import { queryClient, shouldPersistQuery } from "./lib/queryClient";
 import { bodyForgePersister } from "./lib/queryPersister";
 import { AuthProvider } from "./context/AuthContext";
+import "./lib/syncQueue"; // Initialize SyncManager global listeners
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

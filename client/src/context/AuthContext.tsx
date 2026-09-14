@@ -36,12 +36,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── helpers ─────────────────────────────────────────────────────────────────
 
-  const clearAuth = useCallback(() => {
+  const clearAuth = useCallback(async () => {
     localStorage.removeItem(TOKEN_KEY);
+    const prevUser = user;
     setUser(null);
     queryClient.clear();
     clearBodyForgeCache().catch(console.error);
-  }, []);
+    const { setSyncUserId, clearUserQueue } = await import("../lib/syncQueue");
+    setSyncUserId(null);
+    if (prevUser?.id) {
+      clearUserQueue(prevUser.id).catch(console.error);
+    }
+  }, [user]);
 
   const storeToken = (token: string) => {
     localStorage.setItem(TOKEN_KEY, token);
@@ -57,6 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const userData = await getProfile();
       setUser(userData);
+      const { setSyncUserId } = await import("../lib/syncQueue");
+      setSyncUserId(userData.id);
     } catch (error: any) {
       if (error?.response?.status === 401) {
         clearAuth();
@@ -69,6 +77,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { user: userData, token } = await loginUser(email, password);
       storeToken(token);
       setUser(userData);
+      const { setSyncUserId } = await import("../lib/syncQueue");
+      setSyncUserId(userData.id);
     },
     [],
   );
@@ -82,6 +92,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
       storeToken(token);
       setUser(userData);
+      const { setSyncUserId } = await import("../lib/syncQueue");
+      setSyncUserId(userData.id);
     },
     [],
   );
@@ -94,11 +106,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       queryClient.clear();
       clearBodyForgeCache().catch(console.error);
+      import("../lib/syncQueue").then(m => m.setSyncUserId(null));
       return;
     }
 
     getProfile()
-      .then((userData) => setUser(userData))
+      .then((userData) => {
+        setUser(userData);
+        import("../lib/syncQueue").then(m => m.setSyncUserId(userData.id));
+      })
       .catch((error: any) => {
         if (error?.response?.status === 401) {
           clearAuth();

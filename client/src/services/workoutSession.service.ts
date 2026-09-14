@@ -57,11 +57,14 @@ export async function getWorkoutSession(id: string): Promise<WorkoutSession> {
 
 export async function updateWorkoutSession(
   id: string,
-  sessionData: UpdateWorkoutSessionRequest
+  sessionData: UpdateWorkoutSessionRequest,
+  idempotencyKey?: string
 ): Promise<WorkoutSession> {
+  const config = idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : undefined;
   const { data } = await api.patch<ApiResponse<{ session: WorkoutSession }>>(
     `/api/workout-sessions/${id}`,
-    sessionData
+    sessionData,
+    config
   );
   if (!data.data) {
     throw new Error(data.message ?? "Failed to update workout session");
@@ -69,9 +72,17 @@ export async function updateWorkoutSession(
   return data.data.session;
 }
 
-export async function completeWorkoutSession(id: string): Promise<import("../types").CompleteSessionResponse> {
+export async function completeWorkoutSession(
+  id: string,
+  idempotencyKey?: string,
+  expectedUpdatedAt?: string
+): Promise<import("../types").CompleteSessionResponse> {
+  const config = idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : undefined;
+  const payload = expectedUpdatedAt ? { expectedUpdatedAt } : {};
   const { data } = await api.post<ApiResponse<import("../types").CompleteSessionResponse>>(
-    `/api/workout-sessions/${id}/complete`
+    `/api/workout-sessions/${id}/complete`,
+    payload,
+    config
   );
   if (!data.data) {
     throw new Error(data.message ?? "Failed to complete workout session");

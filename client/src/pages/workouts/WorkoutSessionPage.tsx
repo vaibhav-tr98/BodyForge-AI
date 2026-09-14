@@ -93,18 +93,43 @@ export default function WorkoutSessionPage() {
   }, [session, localSession]);
 
   const updateMutation = useMutation({
-    mutationFn: (data: WorkoutSession) => updateWorkoutSession(data.id, { exercises: data.exercises }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["workoutSession", id] });
+    mutationFn: async (data: WorkoutSession) => {
+      if (!navigator.onLine) {
+        throw new Error("offline");
+      }
+      return updateWorkoutSession(data.id, { exercises: data.exercises, expectedUpdatedAt: data.updatedAt });
     },
+    onSuccess: (data) => {
+      queryClient.setQueryData(["workoutSession", id], data);
+    },
+    onError: async (err: any, data: WorkoutSession) => {
+      const isAxiosNetwork = err.isAxiosError && (!err.response || err.response.status >= 500 || err.response.status === 429);
+      const isNetworkError = !navigator.onLine || err.message === "offline" || isAxiosNetwork;
+      if (isNetworkError) {
+        toast.success("Saved offline", { id: "offline-save", duration: 2000 });
+        const { enqueueUpdateMutation } = await import("../../lib/syncQueue");
+        // We need userId here. The session object doesn't directly have the string userId unless populated,
+        // but we can extract it from AuthContext or rely on the auth interceptor.
+        // Wait, localSession.user might be an ID or object, or we can get it from another context.
+        // For simplicity, let's just pass `typeof data.user === 'string' ? data.user : (data as any).user?._id || "unknown"`
+        // Actually, let's fix user extraction down below.
+        const userId = typeof (data as any).user === 'string' ? (data as any).user : (data as any).user?._id || "unknown";
+        await enqueueUpdateMutation(userId, data.id, { exercises: data.exercises }, data.updatedAt);
+      } else {
+        toast.error("Failed to save workout");
+      }
+    }
   });
 
   const completeMutation = useMutation({
-    mutationFn: () => completeWorkoutSession(id!),
+    mutationFn: async () => {
+      if (!navigator.onLine) throw new Error("offline");
+      return completeWorkoutSession(id!, undefined, localSession?.updatedAt);
+    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
-      queryClient.invalidateQueries({ queryKey: ["workoutSession", id] });
       queryClient.invalidateQueries({ queryKey: ["activeWorkout"] });
+      queryClient.invalidateQueries({ queryKey: ["workoutSession", id] });
       
       if (data.newPersonalRecords && data.newPersonalRecords.length > 0) {
         data.newPersonalRecords.forEach(pr => {
@@ -126,6 +151,19 @@ export default function WorkoutSessionPage() {
       
       navigate("/workouts/history");
     },
+    onError: async (err: any) => {
+      const isAxiosNetwork = err.isAxiosError && (!err.response || err.response.status >= 500 || err.response.status === 429);
+      const isNetworkError = !navigator.onLine || err.message === "offline" || isAxiosNetwork;
+      if (isNetworkError && localSession) {
+        toast.success("Workout completed offline. It will sync when reconnected.");
+        const { enqueueCompleteMutation } = await import("../../lib/syncQueue");
+        const userId = typeof (localSession as any).user === 'string' ? (localSession as any).user : (localSession as any).user?._id || "unknown";
+        await enqueueCompleteMutation(userId, id!, localSession.updatedAt);
+        navigate("/workouts/history");
+      } else {
+        toast.error("Failed to complete workout");
+      }
+    }
   });
 
   const currentExerciseSafe = localSession?.exercises[currentExerciseIndex];

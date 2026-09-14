@@ -93,10 +93,13 @@ export interface WorkoutSession {
   completedAt?: string | null;
   status: "active" | "completed";
   exercises: SessionExercise[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface UpdateWorkoutSessionRequest {
   exercises: SessionExercise[];
+  expectedUpdatedAt?: string;
 }
 
 // ── Progression ─────────────────────────────────────────────────────────────────
