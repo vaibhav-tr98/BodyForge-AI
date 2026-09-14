@@ -5,7 +5,7 @@ import { router } from "./routes/AppRouter";
 function App() {
   return (
     <>
-      <Toaster position="top-right" />
+      <Toaster position="top-center" />
       <RouterProvider router={router} />
     </>
   );

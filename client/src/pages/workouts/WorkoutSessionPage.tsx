@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check, ChevronLeft, ChevronRight, X, Play, Pause, RotateCcw, Loader2 } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, X, Play, Pause, RotateCcw, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { getWorkoutSession, updateWorkoutSession, completeWorkoutSession } from "../../services/workoutSession.service";
 import { getExerciseRecommendation } from "../../services/progression.service";
+import { useSessionSyncState, discardLocal } from "../../lib/syncQueue";
 import Loader from "../../components/ui/Loader";
 import type { SessionSet, WorkoutSession } from "../../types";
 
@@ -73,6 +74,7 @@ function RestTimer({ defaultSeconds = 90, autoStartTrigger = 0 }: { defaultSecon
 
 export default function WorkoutSessionPage() {
   const { id } = useParams<{ id: string }>();
+  const syncState = useSessionSyncState(id!);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
@@ -290,6 +292,42 @@ export default function WorkoutSessionPage() {
           {updateMutation.isPending ? "Saving..." : "Save"}
         </button>
       </div>
+
+      {syncState.conflict && (
+        <div className="rounded-xl border border-red-500/20 bg-red-950/40 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 text-red-400 shrink-0" size={18} />
+            <div>
+              <p className="text-sm font-semibold text-red-200">Sync Conflict</p>
+              <p className="mt-1 text-xs text-red-300/90 leading-relaxed">
+                This workout was modified on another device. Your local changes are preserved but cannot be synced safely.
+              </p>
+              <button 
+                onClick={() => {
+                  if (window.confirm("This will discard any offline changes you made to this session. Continue?")) {
+                    discardLocal(id!);
+                  }
+                }}
+                className="mt-3 rounded bg-red-900/60 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-800 transition"
+              >
+                Discard Local Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {syncState.failed && !syncState.conflict && (
+        <div className="rounded-xl border border-amber-500/20 bg-amber-950/40 p-4 flex items-start gap-3">
+          <AlertTriangle className="mt-0.5 text-amber-400 shrink-0" size={18} />
+          <div>
+            <p className="text-sm font-semibold text-amber-200">Sync Pending</p>
+            <p className="mt-1 text-xs text-amber-300/90">
+              Some changes couldn't reach the server. They are saved locally and will retry.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Exercise Navigation & Headline */}
       <div className="rounded-xl bg-slate-900 p-6">

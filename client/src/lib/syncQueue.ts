@@ -1,4 +1,5 @@
 import { get, set } from 'idb-keyval';
+import { useSyncExternalStore } from 'react';
 import { updateWorkoutSession, completeWorkoutSession } from '../services/workoutSession.service';
 import { queryClient } from './queryClient';
 import { isAxiosError } from 'axios';
@@ -18,13 +19,35 @@ export interface QueuedWorkoutMutation {
   lastError?: string;
 }
 
+
+
+const listeners = new Set<() => void>();
+
+function notifyListeners() {
+  for (const listener of listeners) {
+    listener();
+  }
+}
+
+let cachedQueue: QueuedWorkoutMutation[] = [];
+
 export async function getQueue(): Promise<QueuedWorkoutMutation[]> {
-  const queue = await get<QueuedWorkoutMutation[]>(QUEUE_KEY);
-  return queue || [];
+  const val = await get(QUEUE_KEY);
+  return Array.isArray(val) ? val : [];
+}
+
+// Hydrate initial cache
+if (typeof window !== "undefined") {
+  getQueue().then(q => {
+    cachedQueue = q;
+    notifyListeners();
+  });
 }
 
 export async function saveQueue(queue: QueuedWorkoutMutation[]): Promise<void> {
   await set(QUEUE_KEY, queue);
+  cachedQueue = [...queue];
+  notifyListeners();
 }
 
 export async function clearUserQueue(userId: string): Promise<void> {
@@ -113,6 +136,7 @@ let currentAuthUserId: string | null = null;
 
 export function setSyncUserId(userId: string | null) {
   currentAuthUserId = userId;
+  notifyListeners();
   if (userId) triggerSync();
 }
 
@@ -142,6 +166,7 @@ async function processQueueWithLock() {
 
 async function processQueue() {
   isSyncing = true;
+  notifyListeners();
   try {
     let queue = await getQueue();
     
@@ -260,6 +285,7 @@ async function processQueue() {
     }
   } finally {
     isSyncing = false;
+    notifyListeners();
   }
 }
 
@@ -271,7 +297,109 @@ function updateSubsequentExpectedUpdatedAt(queue: QueuedWorkoutMutation[], sessi
   }
 }
 
-// Global listeners
 if (typeof window !== "undefined") {
-  window.addEventListener("online", triggerSync);
+  window.addEventListener("online", () => {
+    notifyListeners();
+    triggerSync();
+  });
+  window.addEventListener("offline", () => {
+    notifyListeners();
+  });
+}
+
+export interface SyncStatus {
+  isOnline: boolean;
+  isSyncing: boolean;
+  pendingCount: number;
+  failedCount: number;
+  conflictCount: number;
+}
+
+export function subscribeToSyncStatus(listener: () => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+let lastSnapshot: SyncStatus = { isOnline: true, isSyncing: false, pendingCount: 0, failedCount: 0, conflictCount: 0 };
+
+export function getSyncStatusSnapshot(): SyncStatus {
+  const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+  
+  if (!currentAuthUserId) {
+    if (lastSnapshot.isOnline !== isOnline || lastSnapshot.isSyncing !== isSyncing || lastSnapshot.pendingCount !== 0 || lastSnapshot.failedCount !== 0 || lastSnapshot.conflictCount !== 0) {
+      lastSnapshot = { isOnline, isSyncing: false, pendingCount: 0, failedCount: 0, conflictCount: 0 };
+    }
+    return lastSnapshot;
+  }
+
+  let pendingCount = 0;
+  let failedCount = 0;
+  let conflictCount = 0;
+
+  for (const item of cachedQueue) {
+    if (item.userId === currentAuthUserId) {
+      if (item.status === 'pending') pendingCount++;
+      else if (item.status === 'failed') failedCount++;
+      else if (item.status === 'conflict') conflictCount++;
+    }
+  }
+
+  if (lastSnapshot.isOnline !== isOnline || 
+      lastSnapshot.isSyncing !== isSyncing || 
+      lastSnapshot.pendingCount !== pendingCount || 
+      lastSnapshot.failedCount !== failedCount || 
+      lastSnapshot.conflictCount !== conflictCount) {
+    lastSnapshot = { isOnline, isSyncing, pendingCount, failedCount, conflictCount };
+  }
+
+  return lastSnapshot;
+}
+
+export function useSyncStatus(): SyncStatus {
+  return useSyncExternalStore(subscribeToSyncStatus, getSyncStatusSnapshot);
+}
+
+export function useSessionSyncState(sessionId: string) {
+  useSyncStatus(); // Force react to re-render when store updates
+  
+  if (!currentAuthUserId) return { pending: false, failed: false, conflict: false };
+  let pending = false, failed = false, conflict = false;
+  
+  for (const item of cachedQueue) {
+    if (item.userId === currentAuthUserId && item.sessionId === sessionId) {
+      if (item.status === 'pending') pending = true;
+      if (item.status === 'failed') failed = true;
+      if (item.status === 'conflict') conflict = true;
+    }
+  }
+  
+  return { pending, failed, conflict };
+}
+
+export async function retryFailedMutations() {
+  if (!currentAuthUserId) return;
+  const queue = await getQueue();
+  let modified = false;
+  for (const item of queue) {
+    if (item.userId === currentAuthUserId && item.status === 'failed') {
+      item.status = 'pending';
+      item.retryCount = 0;
+      modified = true;
+    }
+  }
+  if (modified) {
+    await saveQueue(queue);
+    triggerSync();
+  }
+}
+
+export async function discardLocal(sessionId: string) {
+  if (!currentAuthUserId) return;
+  const queue = await getQueue();
+  const remaining = queue.filter(item => !(item.userId === currentAuthUserId && item.sessionId === sessionId));
+  if (remaining.length !== queue.length) {
+    await saveQueue(remaining);
+    queryClient.invalidateQueries({ queryKey: ["workoutSession", sessionId] });
+    queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
+  }
 }

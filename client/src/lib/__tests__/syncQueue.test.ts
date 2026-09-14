@@ -346,5 +346,87 @@ describe('Phase 2.4 Offline Mutation Queue', () => {
       expect(q).toHaveLength(1);
       expect(updateWorkoutSession).not.toHaveBeenCalled();
     });
+  describe('Phase 2.5 Sync Observability & Operations', () => {
+    it('subscriber receives updates and counts are accurate', async () => {
+      // @ts-ignore
+      const { subscribeToSyncStatus, getSyncStatusSnapshot, enqueueUpdateMutation, setSyncUserId } = require('../syncQueue');
+      setSyncUserId('user1');
+      
+      let callCount = 0;
+      const unsubscribe = subscribeToSyncStatus(() => {
+        callCount++;
+      });
+
+      // initial
+      let status = getSyncStatusSnapshot();
+      expect(status.pendingCount).toBe(0);
+
+      // enqueue item -> should trigger saveQueue -> notifyListeners
+      await enqueueUpdateMutation('user1', 'session1', {}, 'd1');
+      
+      // Delay to let async IDB save finish and trigger listener
+      await new Promise(r => setTimeout(r, 50));
+      
+      status = getSyncStatusSnapshot();
+      expect(status.pendingCount).toBe(1);
+      expect(callCount).toBeGreaterThan(0);
+
+      unsubscribe();
+      const countBefore = callCount;
+      await enqueueUpdateMutation('user1', 'session2', {}, 'd2');
+      await new Promise(r => setTimeout(r, 50));
+      
+      expect(callCount).toBe(countBefore); // listener shouldn't fire
+    });
+
+    it('retryFailedMutations resets failures but not conflicts', async () => {
+      // @ts-ignore
+      const { retryFailedMutations, getQueue, saveQueue, setSyncUserId } = require('../syncQueue');
+      setSyncUserId('user1');
+      
+      // Seed queue manually
+      const mockQueue = [
+        { id: '1', userId: 'user1', sessionId: 's1', status: 'failed', retryCount: 5 },
+        { id: '2', userId: 'user1', sessionId: 's2', status: 'conflict', retryCount: 2 },
+        { id: '3', userId: 'user2', sessionId: 's3', status: 'failed', retryCount: 2 }
+      ];
+      await saveQueue(mockQueue);
+      
+      await retryFailedMutations();
+      
+      const q = await getQueue();
+      const s1 = q.find((i: any) => i.id === '1');
+      const s2 = q.find((i: any) => i.id === '2');
+      const s3 = q.find((i: any) => i.id === '3');
+      
+      expect(s1.status).toBe('pending');
+      expect(s1.retryCount).toBe(0); // reset
+      expect(s1.id).toBe('1'); // preserves idempotency
+      
+      expect(s2.status).toBe('conflict'); // remains conflict
+      expect(s3.status).toBe('failed'); // wrong user untouched
+    });
+
+    it('discardLocal safely removes only intended session', async () => {
+      // @ts-ignore
+      const { discardLocal, getQueue, saveQueue, setSyncUserId } = require('../syncQueue');
+      setSyncUserId('user1');
+      
+      const mockQueue = [
+        { id: '1', userId: 'user1', sessionId: 'conflict-session', status: 'conflict' },
+        { id: '2', userId: 'user1', sessionId: 'other-session', status: 'pending' },
+        { id: '3', userId: 'user2', sessionId: 'conflict-session', status: 'conflict' }
+      ];
+      await saveQueue(mockQueue);
+      
+      await discardLocal('conflict-session');
+      
+      const q = await getQueue();
+      expect(q).toHaveLength(2);
+      expect(q.find((i: any) => i.id === '1')).toBeUndefined();
+      expect(q.find((i: any) => i.id === '2')).toBeDefined();
+      expect(q.find((i: any) => i.id === '3')).toBeDefined(); // different user preserved
+    });
   });
+});
 });

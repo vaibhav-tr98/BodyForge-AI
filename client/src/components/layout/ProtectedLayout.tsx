@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Loader from "../ui/Loader";
 import { Home, Dumbbell, LineChart, Utensils, User } from "lucide-react";
+import SyncIndicator from "../ui/SyncIndicator";
 
 /**
  * Route guard that redirects unauthenticated users to /login.
@@ -85,6 +86,7 @@ export default function ProtectedLayout() {
           </nav>
 
           <div className="flex items-center gap-4">
+            <SyncIndicator />
             <span className="hidden text-sm text-slate-400 sm:inline">
               {user?.name}
             </span>
