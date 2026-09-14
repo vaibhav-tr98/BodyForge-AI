@@ -382,38 +382,73 @@ export default function NutritionPage() {
         {loadingEntries ? (
           <div className="flex justify-center py-10"><Loader /></div>
         ) : entries && entries.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-800 text-slate-400 text-sm">
-                  <th className="pb-3 font-medium">Food</th>
-                  <th className="pb-3 font-medium">Amount</th>
-                  <th className="pb-3 font-medium">Calories</th>
-                  <th className="pb-3 font-medium">Macros (P/C/F)</th>
-                  <th className="pb-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map(entry => (
-                  <tr key={entry._id} className="border-b border-slate-800/50 hover:bg-slate-800/20 transition">
-                    <td className="py-4 text-white font-medium">{entry.foodName}</td>
-                    <td className="py-4 text-slate-300">{entry.quantity} {entry.unit}</td>
-                    <td className="py-4 text-amber-500 font-semibold">{entry.calories}</td>
-                    <td className="py-4 text-slate-300 text-sm">
-                      <span className="text-cyan-400">{entry.protein}g</span> / <span className="text-blue-400">{entry.carbs}g</span> / <span className="text-orange-400">{entry.fat}g</span>
-                    </td>
-                    <td className="py-4 flex justify-end gap-2">
-                      <button onClick={() => handleEdit(entry)} className="p-2 text-slate-400 hover:text-cyan-400 transition bg-slate-950 rounded-lg">
-                        <Edit2 size={16} />
+          <div>
+            {/* Mobile View */}
+            <div className="grid gap-4 md:hidden">
+              {entries.map(entry => (
+                <div key={entry._id} className="bg-slate-950 border border-slate-800 rounded-xl p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="pr-2">
+                      <h4 className="text-white font-medium leading-tight">{entry.foodName}</h4>
+                      <p className="text-slate-400 text-sm mt-1">{entry.quantity} {entry.unit}</p>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <button aria-label="Edit entry" onClick={() => handleEdit(entry)} className="p-2 text-slate-400 hover:text-cyan-400 transition bg-slate-900 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center">
+                        <Edit2 size={18} />
                       </button>
-                      <button onClick={() => deleteMutation.mutate(entry._id)} className="p-2 text-slate-400 hover:text-red-400 transition bg-slate-950 rounded-lg">
-                        <Trash2 size={16} />
+                      <button aria-label="Delete entry" onClick={() => deleteMutation.mutate(entry._id)} className="p-2 text-slate-400 hover:text-red-400 transition bg-slate-900 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center">
+                        <Trash2 size={18} />
                       </button>
-                    </td>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center pt-3 border-t border-slate-800/50">
+                    <div className="text-amber-500 font-bold">{entry.calories} kcal</div>
+                    <div className="text-slate-300 text-sm flex gap-2">
+                      <span className="text-cyan-400 font-medium">{entry.protein}g P</span>
+                      <span className="text-slate-600">|</span>
+                      <span className="text-blue-400 font-medium">{entry.carbs}g C</span>
+                      <span className="text-slate-600">|</span>
+                      <span className="text-orange-400 font-medium">{entry.fat}g F</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-800 text-slate-400 text-sm">
+                    <th className="pb-3 font-medium">Food</th>
+                    <th className="pb-3 font-medium">Amount</th>
+                    <th className="pb-3 font-medium">Calories</th>
+                    <th className="pb-3 font-medium">Macros (P/C/F)</th>
+                    <th className="pb-3 font-medium text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {entries.map(entry => (
+                    <tr key={entry._id} className="border-b border-slate-800/50 hover:bg-slate-800/20 transition">
+                      <td className="py-4 text-white font-medium">{entry.foodName}</td>
+                      <td className="py-4 text-slate-300">{entry.quantity} {entry.unit}</td>
+                      <td className="py-4 text-amber-500 font-semibold">{entry.calories}</td>
+                      <td className="py-4 text-slate-300 text-sm">
+                        <span className="text-cyan-400">{entry.protein}g</span> / <span className="text-blue-400">{entry.carbs}g</span> / <span className="text-orange-400">{entry.fat}g</span>
+                      </td>
+                      <td className="py-4 flex justify-end gap-2">
+                        <button aria-label="Edit entry" onClick={() => handleEdit(entry)} className="p-2 text-slate-400 hover:text-cyan-400 transition bg-slate-950 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center">
+                          <Edit2 size={16} />
+                        </button>
+                        <button aria-label="Delete entry" onClick={() => deleteMutation.mutate(entry._id)} className="p-2 text-slate-400 hover:text-red-400 transition bg-slate-950 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center">
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
           <div className="text-center py-12">

@@ -492,7 +492,7 @@ export default function WorkoutSessionPage() {
       <RestTimer autoStartTrigger={timerTrigger} />
 
       {/* Complete Workout Button */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-slate-800 bg-slate-950 p-4 backdrop-blur-sm sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+      <div className="fixed bottom-0 left-0 right-0 border-t border-slate-800 bg-slate-950/95 backdrop-blur-sm p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:pb-0 sm:backdrop-blur-none">
         <div className="mx-auto max-w-md">
           <button
             onClick={() => {

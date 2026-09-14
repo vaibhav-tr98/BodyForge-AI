@@ -23,7 +23,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [selectedExercise, setSelectedExercise] = useState<string>("");
 
-  const { isLoading: loadingActive } = useQuery({
+  const { data: activeWorkout, isLoading: loadingActive } = useQuery({
     queryKey: ["activeWorkout"],
     queryFn: getActiveWorkout,
   });
@@ -80,17 +80,36 @@ export default function DashboardPage() {
         </div>
       ) : (
         <>
-          {/* 1. Daily AI Briefing */}
-          <section className="space-y-6">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Brain className="text-purple-400" size={24} />
-              AI DAILY BRIEFING
-            </h2>
-            <BodyForgeDailySummarySection />
-          </section>
+          {/* 1. Active Workout (if exists) */}
+          {activeWorkout && (
+            <section className="space-y-4">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Dumbbell className="text-cyan-500" size={24} />
+                ACTIVE WORKOUT
+              </h2>
+              <div className="rounded-2xl border border-cyan-900/50 bg-cyan-950/20 p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-white">
+                      {typeof activeWorkout.workout === 'object' ? activeWorkout.workout.name : "Workout Session"}
+                    </h3>
+                    <p className="text-sm text-cyan-200/80 mt-1">
+                      {activeWorkout.exercises.length} exercises planned
+                    </p>
+                  </div>
+                  <Link
+                    to={`/workouts/session/${activeWorkout.id}`}
+                    className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-cyan-600 px-6 py-2.5 font-semibold text-white shadow-lg shadow-cyan-900/20 transition hover:bg-cyan-700 active:scale-95"
+                  >
+                    Resume Workout
+                  </Link>
+                </div>
+              </div>
+            </section>
+          )}
 
           {/* 2. Training & Readiness */}
-          <section className="space-y-6 pt-6 border-t border-slate-800/50">
+          <section className={`space-y-6 ${activeWorkout ? 'pt-6 border-t border-slate-800/50' : ''}`}>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <HeartPulse className="text-emerald-400" size={24} />
               TRAINING & READINESS
@@ -119,7 +138,16 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* 4. Body & Metrics Progress */}
+          {/* 4. Daily AI Briefing */}
+          <section className="space-y-6 pt-6 border-t border-slate-800/50">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Brain className="text-purple-400" size={24} />
+              AI DAILY BRIEFING
+            </h2>
+            <BodyForgeDailySummarySection />
+          </section>
+
+          {/* 5. Body & Metrics Progress */}
           <section className="space-y-6 pt-6 border-t border-slate-800/50">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <LineChart className="text-cyan-400" size={24} />
