@@ -1,4 +1,5 @@
 import { AppError } from "../errors/AppError";
+import { progressionService } from "./progression.service";
 import { workoutRepository } from "../repositories/workout.repository";
 import { workoutSessionRepository, WorkoutSessionUpdateData } from "../repositories/workoutSession.repository";
 import { IWorkoutSession, IWorkoutSessionExercise } from "../models/WorkoutSession";
@@ -71,16 +72,34 @@ class WorkoutSessionService {
       throw new AppError("Workout not found or you do not have permission", 404);
     }
 
-    // Snapshot exercises
-    const sessionExercises: IWorkoutSessionExercise[] = workout.exercises.map((ex) => {
-      return {
-        exerciseName: ex.name,
-        plannedSets: ex.sets,
-        plannedReps: ex.reps,
-        plannedWeight: ex.weight,
-        sets: [],
-      };
-    });
+    // Snapshot exercises and apply progression
+    const sessionExercises: IWorkoutSessionExercise[] = await Promise.all(
+      workout.exercises.map(async (ex) => {
+        let plannedWeight = ex.weight;
+        let plannedReps = ex.reps;
+
+        const progression = await progressionService.getRecommendation(
+          userId,
+          ex.name,
+          ex.sets,
+          ex.reps
+        );
+
+        if (progression && progression.recommendation) {
+          plannedWeight = progression.recommendation.weight;
+          // we can map the min/max reps back to plannedReps since the schema expects a single number for plannedReps
+          plannedReps = progression.recommendation.maxReps;
+        }
+
+        return {
+          exerciseName: ex.name,
+          plannedSets: ex.sets,
+          plannedReps,
+          plannedWeight,
+          sets: [],
+        };
+      })
+    );
 
     const session = await workoutSessionRepository.createSession(userId, {
       workout: workoutId,
