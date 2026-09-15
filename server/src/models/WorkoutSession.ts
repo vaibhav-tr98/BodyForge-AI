@@ -12,6 +12,11 @@ export interface IWorkoutSessionExercise {
   plannedSets: number;
   plannedReps: number;
   plannedWeight?: number;
+  progressionInsight?: {
+    reason: string;
+    previousWeight?: number;
+    previousReps?: number;
+  };
   sets: IWorkoutSessionSet[];
 }
 
@@ -42,6 +47,14 @@ const workoutSessionExerciseSchema = new Schema<IWorkoutSessionExercise>(
     plannedSets: { type: Number, required: true, min: 1 },
     plannedReps: { type: Number, required: true, min: 1 },
     plannedWeight: { type: Number, min: 0 },
+    progressionInsight: {
+      type: new Schema({
+        reason: { type: String, required: true },
+        previousWeight: { type: Number },
+        previousReps: { type: Number }
+      }, { _id: false }),
+      required: false
+    },
     sets: { type: [workoutSessionSetSchema], default: [] },
   },
   { _id: false }

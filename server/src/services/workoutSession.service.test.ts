@@ -150,4 +150,99 @@ describe("WorkoutSessionService - Adaptive Session Loading", () => {
 
     expect(result.exercises[0].plannedWeight).toBe(67.5);
   });
+
+  describe("Phase 4: Progression Insight Snapshot Tests", () => {
+    it("1. Recommendation produces progressionInsight", async () => {
+      mockProgressionService.getRecommendation.mockResolvedValue({
+        reason: "Target increased.",
+        latestPerformance: { weight: 60, totalReps: 24, setsCompleted: 3 },
+        recommendation: { weight: 62.5, sets: 3, minReps: 8, maxReps: 12 },
+      } as any);
+
+      const result = await workoutSessionService.startSession(userId, workoutId);
+      expect(result.exercises[0].progressionInsight).toBeDefined();
+    });
+
+    it("2. progressionInsight.reason matches ProgressionService response", async () => {
+      const reason = "You reached the top of your rep range last session, so your target increased.";
+      mockProgressionService.getRecommendation.mockResolvedValue({
+        reason,
+        latestPerformance: { weight: 60, totalReps: 24, setsCompleted: 3 },
+        recommendation: { weight: 62.5, sets: 3, minReps: 8, maxReps: 12 },
+      } as any);
+
+      const result = await workoutSessionService.startSession(userId, workoutId);
+      expect(result.exercises[0].progressionInsight?.reason).toBe(reason);
+    });
+
+    it("3 & 4. previousWeight and previousReps are stored correctly", async () => {
+      mockProgressionService.getRecommendation.mockResolvedValue({
+        reason: "Maintain weight.",
+        latestPerformance: { weight: 60, totalReps: 20, setsCompleted: 3 },
+        recommendation: { weight: 60, sets: 3, minReps: 8, maxReps: 12 },
+      } as any);
+
+      const result = await workoutSessionService.startSession(userId, workoutId);
+      expect(result.exercises[0].progressionInsight?.previousWeight).toBe(60);
+      expect(result.exercises[0].progressionInsight?.previousReps).toBe(20);
+    });
+
+    it("5 & 6. No-history (recommendation === null) does not fabricate previous values", async () => {
+      mockProgressionService.getRecommendation.mockResolvedValue({
+        reason: "No previous performance data for this exercise yet.",
+        latestPerformance: null,
+        recommendation: null,
+      } as any);
+
+      const result = await workoutSessionService.startSession(userId, workoutId);
+      // progressionInsight should be undefined if recommendation is null
+      expect(result.exercises[0].progressionInsight).toBeUndefined();
+    });
+
+    it("9 & 10. getSessionById and getActiveSession return progressionInsight", async () => {
+      const insight = { reason: "Insightful reason", previousWeight: 100, previousReps: 15 };
+      mockSessionRepo.findByIdAndUser.mockResolvedValue({
+        _id: new mongoose.Types.ObjectId(),
+        workout: mockWorkout,
+        exercises: [{ exerciseName: "Squat", plannedSets: 3, plannedReps: 10, progressionInsight: insight, sets: [] }]
+      } as any);
+      
+      const sessionById = await workoutSessionService.getSessionById("fake-id", userId);
+      expect(sessionById.exercises[0].progressionInsight).toEqual(insight);
+
+      mockSessionRepo.findActiveSession.mockResolvedValue({
+        _id: new mongoose.Types.ObjectId(),
+        workout: mockWorkout,
+        exercises: [{ exerciseName: "Squat", plannedSets: 3, plannedReps: 10, progressionInsight: insight, sets: [] }]
+      } as any);
+      const activeSession = await workoutSessionService.getActiveSession(userId);
+      expect(activeSession?.exercises[0].progressionInsight).toEqual(insight);
+    });
+
+    it("12. Multiple exercises receive independent insight data", async () => {
+      mockProgressionService.getRecommendation.mockImplementation(async (uid, exName) => {
+        if (exName === "Squat") {
+          return {
+            reason: "Squat Reason",
+            latestPerformance: { weight: 100, totalReps: 20 },
+            recommendation: { weight: 105, sets: 3, minReps: 8, maxReps: 10 },
+          } as any;
+        } else if (exName === "Push Up") {
+          return {
+            reason: "Push Up Reason",
+            latestPerformance: { weight: 0, totalReps: 45 },
+            recommendation: { weight: 0, sets: 3, minReps: 15, maxReps: 20 },
+          } as any;
+        }
+        return { recommendation: null } as any;
+      });
+
+      const result = await workoutSessionService.startSession(userId, workoutId);
+      expect(result.exercises[0].progressionInsight?.reason).toBe("Squat Reason");
+      expect(result.exercises[0].progressionInsight?.previousWeight).toBe(100);
+      
+      expect(result.exercises[1].progressionInsight?.reason).toBe("Push Up Reason");
+      expect(result.exercises[1].progressionInsight?.previousWeight).toBe(0);
+    });
+  });
 });

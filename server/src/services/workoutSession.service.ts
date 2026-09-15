@@ -18,6 +18,11 @@ export interface SafeWorkoutSessionExercise {
   plannedSets: number;
   plannedReps: number;
   plannedWeight?: number;
+  progressionInsight?: {
+    reason: string;
+    previousWeight?: number;
+    previousReps?: number;
+  };
   sets: SafeWorkoutSessionSet[];
 }
 
@@ -47,6 +52,11 @@ const toWorkoutSessionResponse = (session: any): SafeWorkoutSession => {
       plannedSets: ex.plannedSets,
       plannedReps: ex.plannedReps,
       plannedWeight: ex.plannedWeight,
+      progressionInsight: ex.progressionInsight ? {
+        reason: ex.progressionInsight.reason,
+        previousWeight: ex.progressionInsight.previousWeight,
+        previousReps: ex.progressionInsight.previousReps
+      } : undefined,
       sets: ex.sets.map((set: any) => ({
         setNumber: set.setNumber,
         weight: set.weight,
@@ -77,6 +87,7 @@ class WorkoutSessionService {
       workout.exercises.map(async (ex) => {
         let plannedWeight = ex.weight;
         let plannedReps = ex.reps;
+        let progressionInsight: { reason: string; previousWeight?: number; previousReps?: number; } | undefined = undefined;
 
         const progression = await progressionService.getRecommendation(
           userId,
@@ -89,6 +100,13 @@ class WorkoutSessionService {
           plannedWeight = progression.recommendation.weight;
           // we can map the min/max reps back to plannedReps since the schema expects a single number for plannedReps
           plannedReps = progression.recommendation.maxReps;
+          progressionInsight = {
+            reason: progression.reason,
+            previousWeight: progression.latestPerformance?.weight,
+            previousReps: progression.latestPerformance?.totalReps
+          };
+        } else if (progression && progression.recommendation === null) {
+           progressionInsight = undefined;
         }
 
         return {
@@ -96,6 +114,7 @@ class WorkoutSessionService {
           plannedSets: ex.sets,
           plannedReps,
           plannedWeight,
+          progressionInsight,
           sets: [],
         };
       })

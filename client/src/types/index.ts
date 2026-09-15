@@ -83,6 +83,11 @@ export interface SessionExercise {
   plannedSets: number;
   plannedReps: number;
   plannedWeight?: number;
+  progressionInsight?: {
+    reason: string;
+    previousWeight?: number;
+    previousReps?: number;
+  };
   sets: SessionSet[];
 }
 
