@@ -10,6 +10,7 @@ import {
   searchFoods 
 } from "../services/nutrition.service";
 import Loader from "../components/ui/Loader";
+import NaturalLanguageLogger from "../components/nutrition/NaturalLanguageLogger";
 import type { NutritionEntry, NutritionFood } from "../types";
 
 export default function NutritionPage() {
@@ -220,6 +221,9 @@ export default function NutritionPage() {
           <button onClick={() => changeDate(1)} className="px-3 py-1 text-slate-400 hover:text-white">&gt;</button>
         </div>
       </div>
+
+      {/* AI Food Logger */}
+      <NaturalLanguageLogger date={date} />
 
       {/* Summary Section */}
       {loadingSummary ? (

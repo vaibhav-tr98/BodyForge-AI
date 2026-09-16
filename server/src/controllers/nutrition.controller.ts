@@ -1,4 +1,4 @@
-﻿import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import { nutritionService } from "../services/nutrition.service";
 import { AppError } from "../errors/AppError";
 import { foodService } from "../services/food.service";
@@ -135,6 +135,19 @@ class NutritionController {
       res.status(200).json({
         success: true,
         data: overview,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  analyzeLog = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { text } = req.body;
+      const result = await nutritionService.analyzeLog(text);
+      res.status(200).json({
+        success: true,
+        data: result,
       });
     } catch (error) {
       next(error);

@@ -6,6 +6,7 @@ import { userRepository } from "../repositories/user.repository";
 
 import { foodService } from "./food.service";
 import { nutritionTargetService } from "./nutritionTarget.service";
+import { AIProvider } from "./aiProvider.service";
 
 class NutritionService {
   async addEntry(userId: string, data: Partial<INutritionEntry>): Promise<INutritionEntry> {
@@ -14,9 +15,9 @@ class NutritionService {
     }
 
     const calculatedMacros = await foodService.calculateMacros(data.foodName, data.quantity, data.unit);
-    
-    return await nutritionRepository.create({ 
-      ...data, 
+
+    return await nutritionRepository.create({
+      ...data,
       user: userId as any,
       calories: calculatedMacros.calories,
       protein: calculatedMacros.protein,
@@ -37,7 +38,7 @@ class NutritionService {
     if (entry.user.toString() !== userId) {
       throw new AppError("Not authorized to update this entry", 403);
     }
-    
+
     let macrosToUpdate = {};
     const newFoodName = updateData.foodName || entry.foodName;
     const newQuantity = updateData.quantity !== undefined ? updateData.quantity : entry.quantity;
@@ -52,7 +53,7 @@ class NutritionService {
         fat: calculatedMacros.fat
       };
     }
-    
+
     // Explicitly ignore any client-provided macros to prevent manipulation
     delete updateData.calories;
     delete updateData.protein;
@@ -76,13 +77,13 @@ class NutritionService {
     if (entry.user.toString() !== userId) {
       throw new AppError("Not authorized to delete this entry", 403);
     }
-    
+
     await nutritionRepository.deleteOne({ _id: entryId });
   }
 
   async getSummary(userId: string, date: string) {
     const entries = await nutritionRepository.find({ user: userId, date });
-    
+
     let totalCalories = 0;
     let totalProtein = 0;
     let totalCarbs = 0;
@@ -107,9 +108,9 @@ class NutritionService {
 
   async getTodayOverview(userId: string, date: string) {
     const summary = await this.getSummary(userId, date);
-    
+
     const user = await userRepository.findById(userId);
-    
+
     const targets = user ? nutritionTargetService.calculateTargets(user as any) : null;
     let targetCalories = targets ? targets.calories : 0;
     let targetProtein = targets ? targets.protein : 0;
@@ -121,7 +122,7 @@ class NutritionService {
         proteinPercent: targetProtein > 0 ? Math.min(100, Math.round((summary.totalProtein / targetProtein) * 100)) : 0,
       };
     }
-    
+
     let caloriesStatus = "below_target";
     if (targetCalories > 0) {
       if (summary.totalCalories >= targetCalories) {
@@ -168,6 +169,63 @@ class NutritionService {
         protein: proteinStatus,
       }
     };
+  }
+
+  async analyzeLog(text: string): Promise<import("../types/foodExtraction.types").AnalyzeMealResponseDTO> {
+    const extractionResult = await AIProvider.extractFoodFromText(text);
+    const proposals = [];
+
+    for (const item of extractionResult.items) {
+      let normalizedText = item.foodText.trim().toLowerCase();
+      if (normalizedText.endsWith('s') && !normalizedText.endsWith('ss') && !normalizedText.endsWith('us')) {
+        normalizedText = normalizedText.slice(0, -1);
+      }
+
+      const searchResults = await foodService.searchFoods(normalizedText);
+      const candidates = [];
+
+      for (const food of searchResults) {
+        try {
+          const preview = await foodService.calculateMacros(food.name, item.quantity, item.unit);
+          candidates.push({
+            food: {
+              _id: food._id.toString(),
+              name: food.name
+            },
+            preview: preview
+          });
+        } catch (e) {
+          continue;
+        }
+      }
+
+      let status: "not_found" | "matched" | "ambiguous" = "not_found";
+      let requiresReview = false;
+      let selectedCandidateId = null;
+
+      if (candidates.length === 0) {
+        status = "not_found";
+      } else if (candidates.length === 1) {
+        status = "matched";
+        selectedCandidateId = candidates[0].food._id;
+      } else {
+        status = "ambiguous";
+        requiresReview = true;
+        selectedCandidateId = candidates[0].food._id;
+      }
+
+      proposals.push({
+        extractedFood: item.foodText,
+        quantity: item.quantity,
+        unit: item.unit,
+        candidates,
+        selectedCandidateId,
+        requiresReview,
+        status
+      });
+    }
+
+    return { proposals };
   }
 }
 

@@ -43,3 +43,8 @@ export const getTodayOverview = async (date?: string): Promise<NutritionOverview
   const response = await api.get<ApiResponse<NutritionOverview>>(url);
   return response.data.data!;
 };
+
+export const analyzeLog = async (text: string): Promise<any> => {
+  const response = await api.post<ApiResponse<any>>(`/api/nutrition/analyze-log`, { text });
+  return response.data.data!;
+};

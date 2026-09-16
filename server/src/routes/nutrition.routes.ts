@@ -5,8 +5,10 @@ import { authenticate } from "../middleware/auth.middleware";
 import {
   createNutritionEntrySchema,
   updateNutritionEntrySchema,
-  getNutritionByDateSchema
+  getNutritionByDateSchema,
+  analyzeLogSchema
 } from "../validation/nutrition.validation";
+import { nutritionNlpLimiter } from "../middleware/rateLimit.middleware";
 
 const router = Router();
 
@@ -14,6 +16,7 @@ const router = Router();
 router.use(authenticate);
 
 router.get("/foods/search", nutritionController.searchFoods);
+router.post("/analyze-log", nutritionNlpLimiter, validateRequest(analyzeLogSchema), nutritionController.analyzeLog);
 router.post("/", validateRequest(createNutritionEntrySchema), nutritionController.addEntry);
 router.get("/today-overview", validateRequest(getNutritionByDateSchema), nutritionController.getTodayOverview);
 router.get("/", validateRequest(getNutritionByDateSchema), nutritionController.getEntries);

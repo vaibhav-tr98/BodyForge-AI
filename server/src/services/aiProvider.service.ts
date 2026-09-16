@@ -12,6 +12,8 @@ import { DailySummaryContext, DailySummaryDTO } from "../types/dailySummary.type
 import { buildDailySummaryPrompt } from "./prompts/dailySummary.prompt";
 import { CoachingContext, CoachingResponseDTO } from "../types/aiCoaching.types";
 import { buildAICoachingPrompt } from "./prompts/aiCoaching.prompt";
+import { FoodExtractionResultDTO } from "../types/foodExtraction.types";
+import { buildFoodExtractionPrompt } from "./prompts/foodExtraction.prompt";
 import { env } from "../config/env";
 import logger from "../utils/logger";
 import { hashContext } from "../utils/hashContext";
@@ -673,6 +675,69 @@ export const AIProvider = {
         });
         throw error;
       }
+    });
+  },
+
+  async extractFoodFromText(text: string): Promise<import("../types/foodExtraction.types").FoodExtractionResultDTO> {
+    // This is user-triggered and unique; DO NOT use AIAnalysisCache or withSingleFlight.
+    return await withGeminiRetry("extractFoodFromText", async () => {
+      if (!env.geminiApiKey) {
+        throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
+      }
+      const { GoogleGenAI } = await eval('import("@google/genai")');
+      const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
+
+      const { systemInstruction, userPrompt } = buildFoodExtractionPrompt(text);
+      const model = env.aiModel;
+
+      const response = await ai.models.generateContent({
+        model,
+        contents: userPrompt,
+        config: {
+          systemInstruction,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              items: {
+                type: "ARRAY",
+                items: {
+                  type: "OBJECT",
+                  properties: {
+                    foodText: { type: "STRING" },
+                    quantity: { type: "NUMBER" },
+                    unit: { type: "STRING" }
+                  },
+                  required: ["foodText", "quantity", "unit"]
+                }
+              }
+            },
+            required: ["items"]
+          }
+        },
+      });
+
+      if (!response.text) {
+        throw new Error("AI returned an empty response.");
+      }
+
+      let parsedResponse = parseAIResponse(response.text);
+
+      const { z } = require("zod");
+      const schema = z.object({
+        items: z.array(z.object({
+          foodText: z.string(),
+          quantity: z.number(),
+          unit: z.string(),
+        }))
+      });
+
+      const validationResult = schema.safeParse(parsedResponse);
+      if (!validationResult.success) {
+        throw new Error("AI output validation failed.");
+      }
+
+      return validationResult.data as import("../types/foodExtraction.types").FoodExtractionResultDTO;
     });
   }
 };

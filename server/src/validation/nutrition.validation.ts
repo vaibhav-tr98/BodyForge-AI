@@ -23,3 +23,9 @@ export const getNutritionByDateSchema = {
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format. Expected YYYY-MM-DD"),
   }),
 };
+
+export const analyzeLogSchema = {
+  body: z.object({
+    text: z.string().trim().min(2, "Text must be at least 2 characters").max(500, "Text must be at most 500 characters"),
+  }),
+};
