@@ -10,6 +10,8 @@ import { ReadinessAnalysisContext, ReadinessAnalysisDTO } from "../types/readine
 import { buildReadinessAnalysisPrompt } from "./prompts/readinessAnalysis.prompt";
 import { DailySummaryContext, DailySummaryDTO } from "../types/dailySummary.types";
 import { buildDailySummaryPrompt } from "./prompts/dailySummary.prompt";
+import { CoachingContext, CoachingResponseDTO } from "../types/aiCoaching.types";
+import { buildAICoachingPrompt } from "./prompts/aiCoaching.prompt";
 import { env } from "../config/env";
 import logger from "../utils/logger";
 import { hashContext } from "../utils/hashContext";
@@ -576,4 +578,101 @@ export const AIProvider = {
     }
     });
   },
+
+  async generateCoaching(userId: string, context: CoachingContext): Promise<CoachingResponseDTO> {
+    const key = `${userId}-generateCoaching-${hashContext(context)}`;
+    return withSingleFlight(key, async () => {
+      try {
+        return await withGeminiRetry("generateCoaching", async () => {
+          if (!env.geminiApiKey) {
+            throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
+          }
+          const { GoogleGenAI } = await eval('import("@google/genai")');
+          const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
+
+          const { systemInstruction, userPrompt } = buildAICoachingPrompt(context);
+          const model = env.aiModel;
+
+          const response = await ai.models.generateContent({
+            model,
+            contents: userPrompt,
+            config: {
+              systemInstruction,
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: "OBJECT",
+                properties: {
+                  summary: { type: "STRING" },
+                  primaryAction: { type: "STRING" },
+                  trainingGuidance: {
+                    type: "OBJECT",
+                    properties: {
+                      status: { type: "STRING", enum: ["ready", "light", "rest"] },
+                      recommendation: { type: "STRING" },
+                    },
+                    required: ["status", "recommendation"]
+                  },
+                  nutritionGuidance: {
+                    type: "OBJECT",
+                    properties: {
+                      status: { type: "STRING", enum: ["on_track", "needs_attention"] },
+                      recommendation: { type: "STRING" },
+                    },
+                    required: ["status", "recommendation"]
+                  },
+                  progressInsight: {
+                    type: "OBJECT",
+                    properties: {
+                      observation: { type: "STRING" }
+                    },
+                    required: ["observation"]
+                  }
+                },
+                required: ["summary", "primaryAction", "trainingGuidance", "nutritionGuidance", "progressInsight"],
+              },
+            },
+          });
+
+          if (!response.text) {
+            throw new Error("AI returned an empty response.");
+          }
+
+          let parsedResponse = parseAIResponse(response.text);
+
+          const { z } = require("zod");
+          const schema = z.object({
+            summary: z.string(),
+            primaryAction: z.string(),
+            trainingGuidance: z.object({
+              status: z.enum(["ready", "light", "rest"]),
+              recommendation: z.string(),
+            }),
+            nutritionGuidance: z.object({
+              status: z.enum(["on_track", "needs_attention"]),
+              recommendation: z.string(),
+            }),
+            progressInsight: z.object({
+              observation: z.string(),
+            }),
+          });
+
+          const validationResult = schema.safeParse(parsedResponse);
+          if (!validationResult.success) {
+            throw new Error("AI output validation failed.");
+          }
+
+          return validationResult.data as CoachingResponseDTO;
+        });
+      } catch (error: any) {
+        const classified = classifyGeminiError(error);
+        logger.error("Gemini generateContent failed", {
+          operation: "generateCoaching",
+          isQuotaExhausted: classified.isQuotaExhausted,
+          errorName: error instanceof Error ? error.name : "Unknown",
+          errorMessage: error instanceof Error ? error.message : String(error),
+        });
+        throw error;
+      }
+    });
+  }
 };

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { analyticsLimiter } from "../middleware/rateLimit.middleware";
+import { analyticsLimiter, coachingLimiter } from "../middleware/rateLimit.middleware";
 import { analyticsController } from "../controllers/analytics.controller";
 import { authenticate } from "../middleware/auth.middleware";
 import { validateParams, validateQuery } from "../middleware/validation.middleware";
@@ -11,6 +11,7 @@ const router = Router();
 // All analytics routes require authentication
 router.use(authenticate);
 
+router.get("/coaching", coachingLimiter, validateQuery(dateQuerySchema), analyticsController.getCoaching);
 router.get("/dashboard", analyticsController.getDashboard);
 router.get("/readiness", analyticsController.getTrainingReadiness);
 router.get("/personal-records", analyticsController.getPersonalRecords);

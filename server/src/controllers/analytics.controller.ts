@@ -8,6 +8,7 @@ import { nutritionAnalysisService } from "../services/nutritionAnalysis.service"
 import { workoutAnalysisService } from "../services/workoutAnalysis.service";
 import { readinessAnalysisService } from "../services/readinessAnalysis.service";
 import { dailySummaryService } from "../services/dailySummary.service";
+import { aiCoachingService } from "../services/aiCoaching.service";
 import logger from "../utils/logger";
 
 class AnalyticsController {
@@ -234,6 +235,25 @@ class AnalyticsController {
         logger.error("Failed to generate daily summary", { error });
         next(error);
       }
+    }
+  };
+
+  public getCoaching = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.authenticatedUserId;
+      if (!userId) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+      }
+      const date = req.query.date as string;
+      if (!date) {
+        res.status(400).json({ success: false, message: "Date is required" });
+        return;
+      }
+      const data = await aiCoachingService.getCoaching(userId, date);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
     }
   };
 

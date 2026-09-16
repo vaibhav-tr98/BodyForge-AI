@@ -7,17 +7,11 @@ import { analyticsService } from "../services/analytics.service";
 import { getExercises } from "../services/exercise.service";
 import Loader from "../components/ui/Loader";
 import ExerciseProgressChart from "../components/common/ExerciseProgressChart";
-import { BodyForgeDailySummarySection } from "../components/dashboard/BodyForgeDailySummarySection";
+import { BodyForgeCoachSection } from "../components/dashboard/BodyForgeCoachSection";
 import TrainingReadinessSection from "../components/dashboard/TrainingReadinessSection";
-import { ReadinessAnalysisSection } from "../components/dashboard/ReadinessAnalysisSection";
 import NutritionTodaySection from "../components/dashboard/NutritionTodaySection";
-import { BodyForgeInsightSection } from "../components/dashboard/BodyForgeInsightSection";
 import ProgressSnapshotSection from "../components/dashboard/ProgressSnapshotSection";
-import { ProgressInsightSection } from "../components/dashboard/ProgressInsightSection";
-import { ProgressAnalysisSection } from "../components/dashboard/ProgressAnalysisSection";
-import { NutritionAnalysisSection } from "../components/dashboard/NutritionAnalysisSection";
-import { WorkoutAnalysisSection } from "../components/dashboard/WorkoutAnalysisSection";
-import { Dumbbell, Activity, Trophy, LineChart, Brain, HeartPulse, Target } from "lucide-react";
+import { Dumbbell, Activity, Trophy, LineChart, Target } from "lucide-react";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -108,43 +102,23 @@ export default function DashboardPage() {
             </section>
           )}
 
-          {/* 2. Training & Readiness */}
-          <section className={`space-y-6 ${activeWorkout ? 'pt-6 border-t border-slate-800/50' : ''}`}>
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <HeartPulse className="text-emerald-400" size={24} />
-              TRAINING & READINESS
-            </h2>
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div className="space-y-6">
-                <TrainingReadinessSection />
-                <ReadinessAnalysisSection />
-              </div>
-              <div className="space-y-6">
-                <BodyForgeInsightSection />
-                <WorkoutAnalysisSection />
-              </div>
-            </div>
+          {/* 2. Unified AI Coach */}
+          <section className="space-y-6 pt-6 border-t border-slate-800/50">
+            <BodyForgeCoachSection />
           </section>
 
-          {/* 3. Nutrition & Fuel */}
+          {/* 3. Training & Readiness */}
+          <section className={`space-y-6 pt-6 border-t border-slate-800/50`}>
+            <TrainingReadinessSection />
+          </section>
+
+          {/* 4. Nutrition & Fuel */}
           <section className="space-y-6 pt-6 border-t border-slate-800/50">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Target className="text-amber-400" size={24} />
               NUTRITION & FUEL
             </h2>
-            <div className="grid gap-6 lg:grid-cols-2">
-              <NutritionTodaySection />
-              <NutritionAnalysisSection />
-            </div>
-          </section>
-
-          {/* 4. Daily AI Briefing */}
-          <section className="space-y-6 pt-6 border-t border-slate-800/50">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Brain className="text-purple-400" size={24} />
-              AI DAILY BRIEFING
-            </h2>
-            <BodyForgeDailySummarySection />
+            <NutritionTodaySection />
           </section>
 
           {/* 5. Body & Metrics Progress */}
@@ -153,13 +127,7 @@ export default function DashboardPage() {
               <LineChart className="text-cyan-400" size={24} />
               BODY & METRICS PROGRESS
             </h2>
-            <div className="grid gap-6 lg:grid-cols-2">
-              <ProgressSnapshotSection />
-              <div className="space-y-6">
-                <ProgressInsightSection />
-                <ProgressAnalysisSection />
-              </div>
-            </div>
+            <ProgressSnapshotSection />
           </section>
 
           {/* 5. Performance Tracking */}
