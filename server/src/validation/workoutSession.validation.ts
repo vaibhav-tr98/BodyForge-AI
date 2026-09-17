@@ -15,6 +15,17 @@ export const startSessionSchema = z.object({
     .refine((val) => mongoose.isObjectIdOrHexString(val), {
       message: "Invalid workout ID",
     }),
+  programContext: z
+    .object({
+      programId: z
+        .string({ message: "Invalid program ID" })
+        .refine((val) => mongoose.isObjectIdOrHexString(val), {
+          message: "Invalid program ID",
+        }),
+      programWeek: z.number().int().min(0),
+      programDay: z.number().int().min(0),
+    })
+    .optional(),
 });
 
 export const sessionSetSchema = z
