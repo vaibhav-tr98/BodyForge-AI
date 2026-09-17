@@ -1,3 +1,4 @@
+import ProgramAnalyticsPage from "../pages/ProgramAnalyticsPage";
 import { createBrowserRouter } from "react-router-dom";
 
 import MainLayout from "../components/layout/MainLayout";
@@ -84,6 +85,10 @@ export const router = createBrowserRouter([
       {
         path: "/programs/builder",
         element: <ProgramBuilderPage />,
+      },
+      {
+        path: "/programs/:id/analytics",
+        element: <ProgramAnalyticsPage />,
       },
       {
         path: "/workouts",

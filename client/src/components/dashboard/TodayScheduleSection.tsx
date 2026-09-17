@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Calendar, Play, CheckCircle, Info } from "lucide-react";
+import { Calendar, Play, CheckCircle, Info, BarChart2 } from "lucide-react";
 import { api } from "../../services/api";
 import Loader from "../ui/Loader";
 import { startWorkout } from "../../services/workoutSession.service";
@@ -116,6 +116,13 @@ export default function TodayScheduleSection() {
             <h3 className="text-lg font-bold text-white">Today's Workout Complete</h3>
           </div>
         </div>
+        <Link
+          to={`/programs/${schedule.programId}/analytics`}
+          className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 font-medium text-slate-300 transition hover:bg-slate-700 hover:text-white"
+        >
+          <BarChart2 size={16} />
+          Analytics
+        </Link>
       </div>
     );
   }
@@ -133,12 +140,21 @@ export default function TodayScheduleSection() {
             <p className="text-sm text-slate-500 mt-1">Take it easy and recover.</p>
           </div>
         </div>
-        <Link
-          to="/workouts"
-          className="rounded-lg border border-slate-700 px-4 py-2 font-medium text-white transition hover:bg-slate-800"
-        >
-          Log Ad-Hoc Workout
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Link
+            to="/workouts"
+            className="rounded-lg border border-slate-700 px-4 py-2 font-medium text-white transition hover:bg-slate-800 text-center"
+          >
+            Log Ad-Hoc Workout
+          </Link>
+          <Link
+            to={`/programs/${schedule.programId}/analytics`}
+            className="flex items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 font-medium text-slate-300 transition hover:bg-slate-700 hover:text-white"
+          >
+            <BarChart2 size={16} />
+            Analytics
+          </Link>
+        </div>
       </div>
     );
   }
@@ -155,13 +171,22 @@ export default function TodayScheduleSection() {
         )}
       </div>
       
-      <button
-        onClick={handleStartWorkout}
-        className="flex min-w-[160px] items-center justify-center gap-2 rounded-lg bg-cyan-600 px-6 py-3 font-semibold text-white shadow-[0_0_15px_rgba(8,145,178,0.4)] transition hover:bg-cyan-500"
-      >
-        <Play size={18} className="fill-current" />
-        Start Workout
-      </button>
+      <div className="flex flex-col gap-2">
+        <button
+          onClick={handleStartWorkout}
+          className="flex min-w-[160px] items-center justify-center gap-2 rounded-lg bg-cyan-600 px-6 py-3 font-semibold text-white shadow-[0_0_15px_rgba(8,145,178,0.4)] transition hover:bg-cyan-500"
+        >
+          <Play size={18} className="fill-current" />
+          Start Workout
+        </button>
+        <Link
+          to={`/programs/${schedule.programId}/analytics`}
+          className="flex min-w-[160px] items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-6 py-2.5 font-medium text-slate-300 transition hover:bg-slate-700 hover:text-white"
+        >
+          <BarChart2 size={16} />
+          Program Analytics
+        </Link>
+      </div>
     </div>
   );
 }

@@ -292,6 +292,82 @@ class WorkoutSessionRepository {
       },
     ]);
   }
+
+async getProgramAnalyticsData(userId: string, programId: string): Promise<any> {
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const programObjectId = new mongoose.Types.ObjectId(programId);
+
+    const result = await WorkoutSession.aggregate([
+      {
+        $match: {
+          user: userObjectId,
+          programId: programObjectId,
+          status: "completed"
+        }
+      },
+      {
+        $facet: {
+          adherenceDocs: [
+            {
+              $group: {
+                _id: { week: "$programWeek", day: "$programDay" }
+              }
+            }
+          ],
+          volumeDocs: [
+            { $unwind: "$exercises" },
+            { $unwind: "$exercises.sets" },
+            { $match: { "exercises.sets.completed": true } },
+            {
+              $group: {
+                _id: "$exercises.exerciseName",
+                completedSets: { $sum: 1 },
+                totalReps: { $sum: { $ifNull: ["$exercises.sets.reps", 0] } },
+                loadVolume: {
+                  $sum: {
+                    $multiply: [
+                      { $ifNull: ["$exercises.sets.reps", 0] },
+                      { $ifNull: ["$exercises.sets.weight", 0] }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]);
+
+    const adherenceDocs = result[0]?.adherenceDocs || [];
+    const volumeDocs = result[0]?.volumeDocs || [];
+
+    const completedDays = adherenceDocs
+      .filter((doc: any) => doc._id.week != null && doc._id.day != null)
+      .map((doc: any) => ({
+        week: doc._id.week,
+        day: doc._id.day
+      }));
+
+    let totalCompletedSets = 0;
+    let totalReps = 0;
+    const exerciseVolume = volumeDocs.map((doc: any) => {
+      totalCompletedSets += doc.completedSets;
+      totalReps += doc.totalReps;
+      return {
+        exerciseName: doc._id,
+        completedSets: doc.completedSets,
+        totalReps: doc.totalReps,
+        loadVolume: doc.loadVolume
+      };
+    });
+
+    return {
+      completedDays,
+      totalCompletedSets,
+      totalReps,
+      exerciseVolume
+    };
+  }
 }
 
 export const workoutSessionRepository = new WorkoutSessionRepository();

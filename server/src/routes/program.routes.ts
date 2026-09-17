@@ -1,3 +1,4 @@
+import { getProgramAnalytics } from "../controllers/programAnalytics.controller";
 import express from "express";
 import {
   createProgram,
@@ -16,6 +17,7 @@ router.use(authenticate);
 router.post("/", createProgram);
 router.get("/", getPrograms);
 router.get("/active/today", getTodaySchedule);
+router.get("/:id/analytics", getProgramAnalytics);
 router.get("/:id", getProgramById);
 router.patch("/:id", updateProgram);
 router.delete("/:id", deleteProgram);
