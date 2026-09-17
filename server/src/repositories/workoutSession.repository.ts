@@ -4,6 +4,9 @@ import WorkoutSession, { IWorkoutSession, IWorkoutSessionExercise } from "../mod
 export interface WorkoutSessionCreateData {
   workout: string;
   exercises: IWorkoutSessionExercise[];
+  programId?: string;
+  programWeek?: number;
+  programDay?: number;
 }
 
 export interface WorkoutSessionUpdateData {

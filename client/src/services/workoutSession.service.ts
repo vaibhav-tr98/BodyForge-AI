@@ -5,10 +5,13 @@ import type {
   UpdateWorkoutSessionRequest,
 } from "../types";
 
-export async function startWorkout(workoutId: string): Promise<WorkoutSession> {
+export async function startWorkout(
+  workoutId: string,
+  programContext?: { programId: string; programWeek: number; programDay: number }
+): Promise<WorkoutSession> {
   const { data } = await api.post<ApiResponse<{ session: WorkoutSession }>>(
     "/api/workout-sessions",
-    { workoutId }
+    { workoutId, programContext }
   );
   if (!data.data) {
     throw new Error(data.message ?? "Failed to start workout session");

@@ -11,7 +11,8 @@ import { BodyForgeCoachSection } from "../components/dashboard/BodyForgeCoachSec
 import TrainingReadinessSection from "../components/dashboard/TrainingReadinessSection";
 import NutritionTodaySection from "../components/dashboard/NutritionTodaySection";
 import ProgressSnapshotSection from "../components/dashboard/ProgressSnapshotSection";
-import { Dumbbell, Activity, Trophy, LineChart, Target } from "lucide-react";
+import TodayScheduleSection from "../components/dashboard/TodayScheduleSection";
+import { Dumbbell, Activity, Trophy, LineChart, Target, Calendar } from "lucide-react";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -74,9 +75,18 @@ export default function DashboardPage() {
         </div>
       ) : (
         <>
-          {/* 1. Active Workout (if exists) */}
+          {/* 1. Today's Schedule */}
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Calendar className="text-cyan-400" size={24} />
+              TODAY'S SCHEDULE
+            </h2>
+            <TodayScheduleSection />
+          </section>
+
+          {/* 1.1 Active Workout Info */}
           {activeWorkout && (
-            <section className="space-y-4">
+            <section className="space-y-4 pt-6 border-t border-slate-800/50">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <Dumbbell className="text-cyan-500" size={24} />
                 ACTIVE WORKOUT

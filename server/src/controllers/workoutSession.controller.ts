@@ -16,7 +16,8 @@ export const startSession = async (req: Request, res: Response, next: NextFuncti
   if (!userId) return;
 
   try {
-    const session = await workoutSessionService.startSession(userId, req.body.workoutId);
+    const { workoutId, programContext } = req.body;
+    const session = await workoutSessionService.startSession(userId, workoutId, programContext);
     res.status(201).json({ success: true, data: { session } });
   } catch (error) {
     if (error instanceof AppError) {

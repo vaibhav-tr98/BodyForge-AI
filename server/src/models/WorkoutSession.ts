@@ -27,6 +27,9 @@ export interface IWorkoutSession extends Document {
   completedAt?: Date | null;
   status: "active" | "completed";
   exercises: IWorkoutSessionExercise[];
+  programId?: Types.ObjectId;
+  programWeek?: number;
+  programDay?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -73,12 +76,16 @@ const workoutSessionSchema = new Schema<IWorkoutSession>(
       required: true,
     },
     exercises: { type: [workoutSessionExerciseSchema], required: true },
+    programId: { type: Schema.Types.ObjectId, ref: "Program", required: false },
+    programWeek: { type: Number, required: false },
+    programDay: { type: Number, required: false },
   },
   { timestamps: true }
 );
 
 workoutSessionSchema.index({ user: 1, startedAt: -1 });
 workoutSessionSchema.index({ user: 1, status: 1 });
+workoutSessionSchema.index({ user: 1, programId: 1, programWeek: 1, programDay: 1, status: 1 });
 
 const WorkoutSession = model<IWorkoutSession>("WorkoutSession", workoutSessionSchema);
 

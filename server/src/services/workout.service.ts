@@ -1,6 +1,7 @@
 import { AppError } from "../errors/AppError";
 import { IWorkout } from "../models/Workout";
 import { workoutRepository, WorkoutCreateData, WorkoutUpdateData } from "../repositories/workout.repository";
+import { programRepository } from "../repositories/program.repository";
 
 export interface SafeExercise {
   name: string;
@@ -64,6 +65,11 @@ class WorkoutService {
   }
 
   async deleteWorkout(id: string, userId: string): Promise<void> {
+    const isReferenced = await programRepository.isWorkoutReferenced(id, userId);
+    if (isReferenced) {
+      throw new AppError("Cannot delete workout because it is referenced in a training program", 400);
+    }
+
     const workout = await workoutRepository.deleteByIdAndUser(id, userId);
     
     if (!workout) {

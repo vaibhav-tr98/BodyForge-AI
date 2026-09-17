@@ -12,6 +12,7 @@ import progressionRoutes from "./routes/progression.routes";
 import analyticsRoutes from "./routes/analytics.routes";
 import nutritionRoutes from "./routes/nutrition.routes";
 import progressRoutes from "./routes/progress.routes";
+import programRoutes from "./routes/program.routes";
 import { errorMiddleware } from "./middleware/error.middleware";
 import mongoose from "mongoose";
 const app = express();
@@ -69,6 +70,7 @@ app.use("/api/progression", progressionRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/nutrition", nutritionRoutes);
 app.use("/api/progress", progressRoutes);
+app.use("/api/programs", programRoutes);
 
 // Health Check Route
 app.get("/ready", (req, res) => {

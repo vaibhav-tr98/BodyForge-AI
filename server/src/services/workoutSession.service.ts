@@ -1,10 +1,11 @@
-import { AppError } from "../errors/AppError";
 import { progressionService } from "./progression.service";
 import { workoutRepository } from "../repositories/workout.repository";
 import { workoutSessionRepository, WorkoutSessionUpdateData } from "../repositories/workoutSession.repository";
 import { IWorkoutSession, IWorkoutSessionExercise } from "../models/WorkoutSession";
 import { Types } from "mongoose";
+import { AppError } from "../errors/AppError";
 import { analyticsService } from "./analytics.service";
+import { programService } from "./program.service";
 
 export interface SafeWorkoutSessionSet {
   setNumber: number;
@@ -69,7 +70,11 @@ const toWorkoutSessionResponse = (session: any): SafeWorkoutSession => {
 };
 
 class WorkoutSessionService {
-  async startSession(userId: string, workoutId: string): Promise<SafeWorkoutSession> {
+  async startSession(
+    userId: string,
+    workoutId: string,
+    programContext?: { programId: string; programWeek: number; programDay: number }
+  ): Promise<SafeWorkoutSession> {
     // Check if user already has an active session
     const existingActive = await workoutSessionRepository.findActiveSession(userId);
     if (existingActive) {
@@ -80,6 +85,46 @@ class WorkoutSessionService {
     const workout = await workoutRepository.findByIdAndUser(workoutId, userId);
     if (!workout) {
       throw new AppError("Workout not found or you do not have permission", 404);
+    }
+
+    let programDataToAttach: { programId?: string; programWeek?: number; programDay?: number } = {};
+
+    if (programContext) {
+      const schedule = await programService.getTodaySchedule(userId);
+
+      if (!schedule.hasActiveProgram) {
+        throw new AppError("No active program found", 400);
+      }
+
+      if (schedule.isProgramFinished) {
+        throw new AppError("Program is finished", 400);
+      }
+
+      if (schedule.currentWeek !== programContext.programWeek || schedule.currentDay !== programContext.programDay) {
+        throw new AppError("Requested schedule does not match today's schedule", 400);
+      }
+
+      if (schedule.isRestDay) {
+         throw new AppError("Today is a rest day", 400);
+      }
+
+      if (schedule.workout?._id !== workoutId) {
+        throw new AppError("Requested workout does not match today's scheduled workout", 400);
+      }
+
+      if (schedule.programId !== programContext.programId) {
+        throw new AppError("Requested program ID does not match the active program", 400);
+      }
+
+      if (schedule.isCompletedToday) {
+        throw new AppError("Today's scheduled workout is already completed", 400);
+      }
+
+      programDataToAttach = {
+        programId: schedule.programId,
+        programWeek: schedule.currentWeek,
+        programDay: schedule.currentDay
+      };
     }
 
     // Snapshot exercises and apply progression
@@ -123,6 +168,7 @@ class WorkoutSessionService {
     const session = await workoutSessionRepository.createSession(userId, {
       workout: workoutId,
       exercises: sessionExercises,
+      ...programDataToAttach
     });
 
     return toWorkoutSessionResponse(session);

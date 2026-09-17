@@ -3,10 +3,14 @@ import { workoutSessionService } from "./workoutSession.service";
 import { workoutSessionRepository } from "../repositories/workoutSession.repository";
 import { workoutRepository } from "../repositories/workout.repository";
 import { progressionService } from "./progression.service";
+import { analyticsService } from "./analytics.service";
+import { programService } from "./program.service";
 
-jest.mock("../repositories/workoutSession.repository");
-jest.mock("../repositories/workout.repository");
 jest.mock("./progression.service");
+jest.mock("../repositories/workout.repository");
+jest.mock("../repositories/workoutSession.repository");
+jest.mock("./analytics.service");
+jest.mock("./program.service");
 
 const mockSessionRepo = workoutSessionRepository as jest.Mocked<typeof workoutSessionRepository>;
 const mockWorkoutRepo = workoutRepository as jest.Mocked<typeof workoutRepository>;
@@ -243,6 +247,56 @@ describe("WorkoutSessionService - Adaptive Session Loading", () => {
       
       expect(result.exercises[1].progressionInsight?.reason).toBe("Push Up Reason");
       expect(result.exercises[1].progressionInsight?.previousWeight).toBe(0);
+    });
+  });
+
+  describe("Phase 8.1: Scheduled Sessions", () => {
+    it("should start a scheduled session and attach program data", async () => {
+      mockProgressionService.getRecommendation.mockResolvedValue({
+        recommendation: null,
+      } as any);
+
+      const mockProgramService = programService as jest.Mocked<typeof programService>;
+      const programId = new mongoose.Types.ObjectId().toHexString();
+      mockProgramService.getTodaySchedule.mockResolvedValue({
+        hasActiveProgram: true,
+        programId: programId,
+        currentWeek: 1,
+        currentDay: 2,
+        isRestDay: false,
+        workout: { _id: workoutId, name: "Legs" },
+      });
+
+      const result = await workoutSessionService.startSession(userId, workoutId, {
+        programId,
+        programWeek: 1,
+        programDay: 2
+      });
+
+      expect(mockSessionRepo.createSession).toHaveBeenCalledWith(userId, expect.objectContaining({
+        programId,
+        programWeek: 1,
+        programDay: 2
+      }));
+    });
+
+    it("should reject a scheduled session if program does not match", async () => {
+      const mockProgramService = programService as jest.Mocked<typeof programService>;
+      const programId = new mongoose.Types.ObjectId().toHexString();
+      mockProgramService.getTodaySchedule.mockResolvedValue({
+        hasActiveProgram: true,
+        programId: programId,
+        currentWeek: 1,
+        currentDay: 3, // mismatched
+        isRestDay: false,
+        workout: { _id: workoutId, name: "Legs" },
+      });
+
+      await expect(workoutSessionService.startSession(userId, workoutId, {
+        programId,
+        programWeek: 1,
+        programDay: 2
+      })).rejects.toThrow("Requested schedule does not match today's schedule");
     });
   });
 });
