@@ -19,12 +19,7 @@ export const createProgram = async (req: Request, res: Response, next: NextFunct
     const program = await programService.createProgram(userId, req.body);
     res.status(201).json({ success: true, data: { program } });
   } catch (error) {
-    if (error instanceof AppError) {
-      next(error);
-      return;
-    }
-    logger.error("Create program failed:", error);
-    res.status(500).json({ success: false, message: "Unable to create program" });
+    next(error);
   }
 };
 
@@ -36,12 +31,7 @@ export const getPrograms = async (req: Request, res: Response, next: NextFunctio
     const programs = await programService.getPrograms(userId);
     res.status(200).json({ success: true, data: { programs } });
   } catch (error) {
-    if (error instanceof AppError) {
-      next(error);
-      return;
-    }
-    logger.error("Get programs failed:", error);
-    res.status(500).json({ success: false, message: "Unable to retrieve programs" });
+    next(error);
   }
 };
 
@@ -53,12 +43,7 @@ export const getProgramById = async (req: Request, res: Response, next: NextFunc
     const program = await programService.getProgramById(req.params.id as string, userId);
     res.status(200).json({ success: true, data: { program } });
   } catch (error) {
-    if (error instanceof AppError) {
-      next(error);
-      return;
-    }
-    logger.error("Get program by id failed:", error);
-    res.status(500).json({ success: false, message: "Unable to retrieve program" });
+    next(error);
   }
 };
 
@@ -70,12 +55,7 @@ export const updateProgram = async (req: Request, res: Response, next: NextFunct
     const program = await programService.updateProgram(req.params.id as string, userId, req.body);
     res.status(200).json({ success: true, data: { program } });
   } catch (error) {
-    if (error instanceof AppError) {
-      next(error);
-      return;
-    }
-    logger.error("Update program failed:", error);
-    res.status(500).json({ success: false, message: "Unable to update program" });
+    next(error);
   }
 };
 
@@ -87,12 +67,7 @@ export const deleteProgram = async (req: Request, res: Response, next: NextFunct
     await programService.deleteProgram(req.params.id as string, userId);
     res.status(200).json({ success: true, message: "Program deleted successfully" });
   } catch (error) {
-    if (error instanceof AppError) {
-      next(error);
-      return;
-    }
-    logger.error("Delete program failed:", error);
-    res.status(500).json({ success: false, message: "Unable to delete program" });
+    next(error);
   }
 };
 
@@ -104,11 +79,6 @@ export const getTodaySchedule = async (req: Request, res: Response, next: NextFu
     const schedule = await programService.getTodaySchedule(userId);
     res.status(200).json({ success: true, data: { schedule } });
   } catch (error) {
-    if (error instanceof AppError) {
-      next(error);
-      return;
-    }
-    logger.error("Get today's schedule failed:", error);
-    res.status(500).json({ success: false, message: "Unable to retrieve schedule" });
+    next(error);
   }
 };

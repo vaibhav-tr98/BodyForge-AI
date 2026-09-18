@@ -76,6 +76,27 @@ export const errorMiddleware: ErrorRequestHandler = (err, _req, res, next) => {
     return;
   }
 
+  if (err instanceof MongooseError.ValidationError) {
+    const errors: ValidationErrorDetail[] = Object.values(err.errors).map(
+      (e: any) => ({
+        field: e.path,
+        message: e.message,
+      })
+    );
+
+    const firstMessage =
+      Object.values(err.errors)[0]?.message || "Validation failed";
+
+    logger.warn(`Mongoose validation error: ${firstMessage}`, { errors });
+
+    res.status(400).json({
+      success: false,
+      message: firstMessage,
+      errors,
+    });
+    return;
+  }
+
   logger.error("Unexpected application error:", err);
 
   res.status(500).json({
