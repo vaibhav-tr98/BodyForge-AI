@@ -24,7 +24,7 @@ export default function ProgramBuilderPage() {
   useEffect(() => {
     const fetchWorkouts = async () => {
       try {
-        const response = await api.get("/workouts");
+        const response = await api.get("/api/workouts");
         setWorkouts(response.data.data.workouts);
       } catch (err: any) {
         setError(err.response?.data?.message || "Failed to load workouts");
@@ -69,7 +69,7 @@ export default function ProgramBuilderPage() {
     setError("");
     
     try {
-      const response = await api.post("/programs", {
+      const response = await api.post("/api/programs", {
         name,
         goal,
         startDate,
@@ -80,7 +80,7 @@ export default function ProgramBuilderPage() {
       const programId = response.data.data.program.id;
       
       if (status === "active") {
-        await api.patch(`/programs/${programId}`, { status: "active" });
+        await api.patch(`/api/programs/${programId}`, { status: "active" });
       }
       
       navigate("/");

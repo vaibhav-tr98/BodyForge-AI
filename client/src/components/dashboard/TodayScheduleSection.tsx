@@ -15,7 +15,7 @@ export default function TodayScheduleSection() {
   useEffect(() => {
     const fetchSchedule = async () => {
       try {
-        const response = await api.get("/programs/active/today");
+        const response = await api.get("/api/programs/active/today");
         setSchedule(response.data.data.schedule);
       } catch (err: any) {
         setError(err.response?.data?.message || "Failed to load today's schedule");

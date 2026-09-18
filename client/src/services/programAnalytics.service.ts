@@ -21,7 +21,7 @@ export interface ProgramAnalytics {
 }
 
 export const getProgramAnalytics = async (programId: string): Promise<ProgramAnalytics> => {
-  const response = await api.get(`/programs/${programId}/analytics`);
+  const response = await api.get(`/api/programs/${programId}/analytics`);
   return response.data.data;
 };
 
