@@ -9,6 +9,8 @@ import {
   getTodaySchedule,
 } from "../controllers/program.controller";
 import { authenticate } from "../middleware/auth.middleware";
+import { validateParams } from "../middleware/validation.middleware";
+import { programIdParamSchema } from "../validation/program.validation";
 
 const router = express.Router();
 
@@ -17,9 +19,9 @@ router.use(authenticate);
 router.post("/", createProgram);
 router.get("/", getPrograms);
 router.get("/active/today", getTodaySchedule);
-router.get("/:id/analytics", getProgramAnalytics);
-router.get("/:id", getProgramById);
-router.patch("/:id", updateProgram);
-router.delete("/:id", deleteProgram);
+router.get("/:id/analytics", validateParams(programIdParamSchema), getProgramAnalytics);
+router.get("/:id", validateParams(programIdParamSchema), getProgramById);
+router.patch("/:id", validateParams(programIdParamSchema), updateProgram);
+router.delete("/:id", validateParams(programIdParamSchema), deleteProgram);
 
 export default router;
