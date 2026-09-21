@@ -34,23 +34,44 @@ if (env.clientUrl) {
   allowedOrigins.push(env.clientUrl.replace(/\/$/, ""));
 }
 
+const isAllowedOrigin = (origin: string | undefined): boolean => {
+  // Allow server-to-server / tools without origin
+  if (!origin) {
+    return true;
+  }
+
+  if (allowedOrigins.includes(origin)) {
+    return true;
+  }
+
+  // BodyForge trusted preview pattern
+  if (env.vercelPreviewOriginPattern) {
+    try {
+      const regex = new RegExp(env.vercelPreviewOriginPattern);
+      if (regex.test(origin)) {
+        return true;
+      }
+    } catch (e) {
+      // Ignore invalid regex silently
+    }
+  }
+
+  // Also allow any localhost port in development just in case
+  if (env.nodeEnv !== "production" && /^https?:\/\/localhost:\d+$/.test(origin)) {
+    return true;
+  }
+
+  return false;
+};
+
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow server-to-server / tools without origin
-    if (!origin) {
-      return callback(null, true);
+    if (isAllowedOrigin(origin)) {
+      callback(null, true);
+    } else {
+      // Return false to omit CORS headers instead of throwing an Error that causes a 500
+      callback(null, false);
     }
-    
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    
-    // Also allow any localhost port in development just in case
-    if (env.nodeEnv !== "production" && /^https?:\/\/localhost:\d+$/.test(origin)) {
-      return callback(null, true);
-    }
-    
-    callback(new Error('Not allowed by CORS'));
   },
   credentials: true
 }));

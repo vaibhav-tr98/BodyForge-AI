@@ -19,6 +19,7 @@ export interface AppEnv {
   rateLimitApiMax: number;
   rateLimitAuthMax: number;
   rateLimitAnalyticsMax: number;
+  vercelPreviewOriginPattern: string;
 }
 
 const getRequiredEnv = (key: RequiredEnvKey): string => {
@@ -104,4 +105,5 @@ export const env: AppEnv = {
   rateLimitApiMax: parseInteger(process.env.RATE_LIMIT_API_MAX, 100),
   rateLimitAuthMax: parseInteger(process.env.RATE_LIMIT_AUTH_MAX, 20),
   rateLimitAnalyticsMax: parseInteger(process.env.RATE_LIMIT_ANALYTICS_MAX, 30),
+  vercelPreviewOriginPattern: getOptionalEnv("VERCEL_PREVIEW_ORIGIN_PATTERN", "^https:\\/\\/body-forge-[a-zA-Z0-9-]+-vaibhav-tripathi-s-projects\\.vercel\\.app$"),
 };
