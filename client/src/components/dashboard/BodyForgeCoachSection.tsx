@@ -25,13 +25,39 @@ export const BodyForgeCoachSection: React.FC<BodyForgeCoachSectionProps> = ({ da
 
   if (isLoading) {
     return (
-      <div className="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700 animate-pulse">
-        <div className="flex items-center space-x-2 mb-4">
-          <Sparkles className="w-5 h-5 text-cyan-400" />
-          <h3 className="text-lg font-semibold text-white">BODYFORGE COACH</h3>
+      <div className="bg-slate-800 rounded-xl shadow-xl border border-slate-700 overflow-hidden animate-pulse">
+        {/* Header Skeleton */}
+        <div className="p-5 md:p-6 pb-4 border-b border-slate-700/50">
+          <div className="flex items-center space-x-2 mb-4">
+            <Sparkles className="w-5 h-5 text-cyan-400/50" />
+            <div className="h-6 bg-slate-700 rounded w-40"></div>
+          </div>
+          <div className="space-y-2 mb-5">
+            <div className="h-4 bg-slate-700 rounded w-full"></div>
+            <div className="h-4 bg-slate-700 rounded w-11/12"></div>
+            <div className="h-4 bg-slate-700 rounded w-4/5"></div>
+          </div>
+
+          <div className="flex items-start space-x-3 bg-slate-700/30 rounded-lg p-4">
+            <div className="w-5 h-5 rounded-full bg-slate-600 flex-shrink-0 mt-0.5"></div>
+            <div className="w-full">
+              <div className="h-3 bg-slate-600 rounded w-24 mb-2"></div>
+              <div className="h-4 bg-slate-600 rounded w-3/4"></div>
+            </div>
+          </div>
         </div>
-        <div className="h-4 bg-slate-700 rounded w-3/4 mb-2"></div>
-        <div className="h-4 bg-slate-700 rounded w-1/2"></div>
+        {/* Accordions Skeleton */}
+        <div className="divide-y divide-slate-700/50">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="w-full px-5 py-4 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-lg bg-slate-700"></div>
+                <div className="h-5 bg-slate-700 rounded w-32"></div>
+              </div>
+              <div className="w-5 h-5 rounded bg-slate-700"></div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

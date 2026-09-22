@@ -19,8 +19,23 @@ export default function TrainingReadinessSection() {
           <Activity className="text-cyan-500" size={20} />
           TRAINING READINESS
         </h2>
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center animate-pulse">
-           <div className="h-6 w-32 bg-slate-800 rounded mx-auto mb-4"></div>
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden animate-pulse">
+          <div className="p-6 md:p-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="w-full md:w-2/3">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="h-10 w-16 bg-slate-800 rounded"></div>
+                  <div className="h-4 w-4 rounded-full bg-slate-800"></div>
+                  <div className="h-6 w-40 bg-slate-800 rounded"></div>
+                </div>
+                <div className="h-7 w-64 bg-slate-800 rounded mt-4 mb-1"></div>
+                <div className="h-4 w-full max-w-md bg-slate-800 rounded"></div>
+              </div>
+              <div className="shrink-0 flex flex-col gap-3 w-full md:w-auto">
+                <div className="h-12 md:w-40 bg-slate-800 rounded-lg"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     );

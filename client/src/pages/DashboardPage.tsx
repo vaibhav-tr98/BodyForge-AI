@@ -29,7 +29,7 @@ export default function DashboardPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: prData } = useQuery({
+  const { data: prData, isLoading: isLoadingPRs } = useQuery({
     queryKey: ["analytics", "personal-records"],
     queryFn: () => analyticsService.getPersonalRecords(),
     staleTime: 5 * 60 * 1000,
@@ -166,7 +166,22 @@ export default function DashboardPage() {
                     Recent Personal Records
                   </h3>
                   
-                  {prData && prData.personalRecords && prData.personalRecords.length > 0 ? (
+                  {isLoadingPRs ? (
+                    <div className="space-y-3 flex-1 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar animate-pulse">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex justify-between items-center p-3 rounded-lg bg-slate-950 border border-slate-800">
+                          <div>
+                            <div className="h-4 w-32 bg-slate-800 rounded mb-1"></div>
+                            <div className="h-3 w-20 bg-slate-800 rounded"></div>
+                          </div>
+                          <div className="text-right flex flex-col items-end">
+                            <div className="h-4 w-12 bg-slate-800 rounded mb-1"></div>
+                            <div className="h-3 w-8 bg-slate-800 rounded"></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : prData && prData.personalRecords && prData.personalRecords.length > 0 ? (
                     <div className="space-y-3 flex-1 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
                       {prData.personalRecords.slice(0, 5).map((pr: any, i: number) => (
                         <div key={i} className="flex justify-between items-center p-3 rounded-lg bg-slate-950 border border-slate-800">

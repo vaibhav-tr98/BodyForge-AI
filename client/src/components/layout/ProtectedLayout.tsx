@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useLocation, Link, useMatch } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import Loader from "../ui/Loader";
+import FullScreenLoader from "../ui/FullScreenLoader";
 import { Home, Dumbbell, LineChart, Utensils, User } from "lucide-react";
 import SyncIndicator from "../ui/SyncIndicator";
 
@@ -13,7 +13,7 @@ export default function ProtectedLayout() {
   const location = useLocation();
 
   if (isLoading) {
-    return <Loader />;
+    return <FullScreenLoader />;
   }
 
   if (!isAuthenticated) {

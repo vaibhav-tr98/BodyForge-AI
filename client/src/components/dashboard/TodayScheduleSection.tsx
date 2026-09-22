@@ -1,33 +1,27 @@
-import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Calendar, Play, CheckCircle, Info, BarChart2 } from "lucide-react";
 import { api } from "../../services/api";
-import Loader from "../ui/Loader";
 import { startWorkout } from "../../services/workoutSession.service";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../../context/AuthContext";
 
 export default function TodayScheduleSection() {
-  const [schedule, setSchedule] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchSchedule = async () => {
-      try {
-        const response = await api.get("/api/programs/active/today");
-        setSchedule(response.data.data.schedule);
-      } catch (err: any) {
-        setError(err.response?.data?.message || "Failed to load today's schedule");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchSchedule();
-  }, []);
-
   const queryClient = useQueryClient();
-  
+  const { user } = useAuth();
+
+  const { data: schedule, isLoading: loading, error: queryError } = useQuery({
+    queryKey: ["programs", "active", "today", user?.id],
+    queryFn: async () => {
+      const response = await api.get("/api/programs/active/today");
+      return response.data.data.schedule;
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1,
+  });
+
+  const error = queryError ? (queryError as any).response?.data?.message || "Failed to load today's schedule" : "";
+
   const startMutation = useMutation({
     mutationFn: () => startWorkout(schedule.workout._id, {
       programId: schedule.programId,
@@ -50,15 +44,23 @@ export default function TodayScheduleSection() {
 
   if (loading) {
     return (
-      <div className="flex justify-center p-6 border border-slate-800 rounded-2xl bg-slate-900">
-        <Loader />
+      <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 flex flex-col md:flex-row items-center justify-between gap-6 min-h-[140px] animate-pulse">
+        <div className="w-full">
+          <div className="h-4 w-32 bg-slate-800 rounded mb-3"></div>
+          <div className="h-6 w-48 bg-slate-800 rounded mb-2"></div>
+          <div className="h-4 w-64 max-w-full bg-slate-800 rounded"></div>
+        </div>
+        <div className="flex flex-col gap-2 w-full md:w-auto">
+          <div className="h-12 md:min-w-[160px] bg-slate-800 rounded-lg"></div>
+          <div className="h-10 md:min-w-[160px] bg-slate-800 rounded-lg"></div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-red-400">
+      <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-red-400 min-h-[140px] flex flex-col justify-center">
         <div className="flex items-center gap-2 mb-2">
           <Info size={16} />
           <p className="font-medium">Error loading schedule</p>

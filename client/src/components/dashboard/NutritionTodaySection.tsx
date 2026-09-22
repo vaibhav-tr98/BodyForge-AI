@@ -27,8 +27,50 @@ export default function NutritionTodaySection() {
           <Utensils className="text-cyan-500" size={20} />
           NUTRITION TODAY
         </h2>
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 text-center animate-pulse">
-          <div className="h-6 w-32 bg-slate-800 rounded mx-auto mb-4"></div>
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 animate-pulse">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 items-start">
+            <div className="space-y-3 lg:col-span-1">
+              <div className="flex justify-between items-end">
+                <div className="h-5 w-16 bg-slate-800 rounded"></div>
+                <div className="h-4 w-20 bg-slate-800 rounded"></div>
+              </div>
+              <div className="h-2.5 w-full bg-slate-800 rounded-full"></div>
+              <div className="h-3 w-8 bg-slate-800 rounded ml-auto"></div>
+            </div>
+            <div className="space-y-3 lg:col-span-1">
+              <div className="flex justify-between items-end">
+                <div className="h-5 w-16 bg-slate-800 rounded"></div>
+                <div className="h-4 w-20 bg-slate-800 rounded"></div>
+              </div>
+              <div className="h-2.5 w-full bg-slate-800 rounded-full"></div>
+              <div className="h-3 w-8 bg-slate-800 rounded ml-auto"></div>
+            </div>
+            <div className="lg:col-span-2 grid grid-cols-2 gap-4">
+              <div className="space-y-4 pl-0 md:pl-4 md:border-l border-slate-800">
+                <div>
+                  <div className="h-3 w-12 bg-slate-800 rounded mb-1.5"></div>
+                  <div className="h-5 w-16 bg-slate-800 rounded"></div>
+                </div>
+                <div>
+                  <div className="h-3 w-10 bg-slate-800 rounded mb-1.5"></div>
+                  <div className="h-5 w-16 bg-slate-800 rounded"></div>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <div className="h-3 w-24 bg-slate-800 rounded mb-1.5"></div>
+                  <div className="h-5 w-32 bg-slate-800 rounded"></div>
+                </div>
+                <div>
+                  <div className="h-3 w-28 bg-slate-800 rounded mb-2"></div>
+                  <div className="space-y-2">
+                    <div className="h-4 w-24 bg-slate-800 rounded"></div>
+                    <div className="h-4 w-32 bg-slate-800 rounded"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     );

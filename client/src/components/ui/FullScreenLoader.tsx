@@ -1,6 +1,6 @@
-export default function Loader() {
+export default function FullScreenLoader() {
   return (
-    <div className="flex h-full w-full items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center bg-slate-950">
       <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-700 border-t-cyan-400" />
     </div>
   );

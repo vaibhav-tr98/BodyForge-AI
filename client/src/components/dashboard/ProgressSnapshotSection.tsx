@@ -11,10 +11,28 @@ export default function ProgressSnapshotSection() {
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6">
-        <h2 className="text-xl font-semibold text-white">Progress Snapshot</h2>
-        <div className="mt-6 flex h-24 items-center justify-center">
-          <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-t-2 border-cyan-500"></div>
+      <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 animate-pulse">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+            <Activity className="h-5 w-5 text-cyan-500" />
+            Progress
+          </h2>
+        </div>
+        <div className="mt-6">
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <div className="h-3 w-16 bg-slate-800 rounded mb-2"></div>
+              <div className="h-8 w-20 bg-slate-800 rounded"></div>
+            </div>
+            <div>
+              <div className="h-3 w-16 bg-slate-800 rounded mb-2"></div>
+              <div className="h-8 w-20 bg-slate-800 rounded"></div>
+            </div>
+            <div>
+              <div className="h-3 w-16 bg-slate-800 rounded mb-2"></div>
+              <div className="h-8 w-20 bg-slate-800 rounded"></div>
+            </div>
+          </div>
         </div>
       </div>
     );
