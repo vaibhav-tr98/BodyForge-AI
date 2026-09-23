@@ -13,11 +13,13 @@ import {
   createProgressEntrySchema,
   updateProgressEntrySchema
 } from "../validation/progress.validation";
+import { apiMethodLimiter } from "../middleware/rateLimit.middleware";
 
 const router = Router();
 
 // All routes require authentication
 router.use(authenticate);
+router.use(apiMethodLimiter);
 
 router.get("/summary", getProgressSummary);
 router.get("/", getProgressHistory);

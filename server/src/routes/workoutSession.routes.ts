@@ -20,23 +20,25 @@ import {
   updateSessionSchema,
   completeSessionSchema,
 } from "../validation/workoutSession.validation";
+import { apiMethodLimiter } from "../middleware/rateLimit.middleware";
 
 const router = Router();
 
-router.post("/", authenticate, validateBody(startSessionSchema), startSession);
-router.get("/", authenticate, getSessions);
-router.get("/active", authenticate, getActiveSession);
-router.get("/:id", authenticate, validateParams(sessionIdParamSchema), getSessionById);
+router.use(authenticate);
+router.use(apiMethodLimiter);
+
+router.post("/", validateBody(startSessionSchema), startSession);
+router.get("/", getSessions);
+router.get("/active", getActiveSession);
+router.get("/:id", validateParams(sessionIdParamSchema), getSessionById);
 router.patch(
   "/:id",
-  authenticate,
   idempotencyMiddleware,
   validateRequest({ params: sessionIdParamSchema, body: updateSessionSchema }),
   updateSession
 );
 router.post(
   "/:id/complete",
-  authenticate,
   idempotencyMiddleware,
   validateRequest({ params: sessionIdParamSchema, body: completeSessionSchema }),
   completeSession

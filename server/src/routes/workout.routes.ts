@@ -18,19 +18,22 @@ import {
   updateWorkoutSchema,
   workoutIdParamSchema,
 } from "../validation/workout.validation";
+import { apiMethodLimiter } from "../middleware/rateLimit.middleware";
 
 const router = Router();
 
-router.post("/", authenticate, validateBody(createWorkoutSchema), createWorkout);
-router.get("/", authenticate, getWorkouts);
-router.get("/recommendation/today", authenticate, getTodayRecommendation);
-router.get("/:id", authenticate, validateParams(workoutIdParamSchema), getWorkoutById);
+router.use(authenticate);
+router.use(apiMethodLimiter);
+
+router.post("/", validateBody(createWorkoutSchema), createWorkout);
+router.get("/", getWorkouts);
+router.get("/recommendation/today", getTodayRecommendation);
+router.get("/:id", validateParams(workoutIdParamSchema), getWorkoutById);
 router.patch(
   "/:id",
-  authenticate,
   validateRequest({ params: workoutIdParamSchema, body: updateWorkoutSchema }),
   updateWorkout
 );
-router.delete("/:id", authenticate, validateParams(workoutIdParamSchema), deleteWorkout);
+router.delete("/:id", validateParams(workoutIdParamSchema), deleteWorkout);
 
 export default router;

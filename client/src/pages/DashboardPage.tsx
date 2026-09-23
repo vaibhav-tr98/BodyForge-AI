@@ -21,6 +21,7 @@ export default function DashboardPage() {
   const { data: activeWorkout, isLoading: loadingActive } = useQuery({
     queryKey: ["activeWorkout"],
     queryFn: getActiveWorkout,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: analytics, isLoading: loadingAnalytics, isError: analyticsError } = useQuery({

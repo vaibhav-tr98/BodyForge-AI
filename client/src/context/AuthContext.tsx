@@ -38,16 +38,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearAuth = useCallback(async () => {
     localStorage.removeItem(TOKEN_KEY);
-    const prevUser = user;
-    setUser(null);
+    setUser((prevUser) => {
+      if (prevUser?.id) {
+        import("../lib/syncQueue").then(({ clearUserQueue }) => {
+          clearUserQueue(prevUser.id).catch(console.error);
+        });
+      }
+      return null;
+    });
     queryClient.clear();
     clearBodyForgeCache().catch(console.error);
-    const { setSyncUserId, clearUserQueue } = await import("../lib/syncQueue");
+    const { setSyncUserId } = await import("../lib/syncQueue");
     setSyncUserId(null);
-    if (prevUser?.id) {
-      clearUserQueue(prevUser.id).catch(console.error);
-    }
-  }, [user]);
+  }, []);
 
   const storeToken = (token: string) => {
     localStorage.setItem(TOKEN_KEY, token);

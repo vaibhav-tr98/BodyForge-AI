@@ -11,10 +11,12 @@ import {
 import { authenticate } from "../middleware/auth.middleware";
 import { validateParams } from "../middleware/validation.middleware";
 import { programIdParamSchema } from "../validation/program.validation";
+import { apiMethodLimiter } from "../middleware/rateLimit.middleware";
 
 const router = express.Router();
 
 router.use(authenticate);
+router.use(apiMethodLimiter);
 
 router.post("/", createProgram);
 router.get("/", getPrograms);

@@ -11,6 +11,7 @@ export default function WorkoutListPage() {
   const { data: workouts, isLoading, isError } = useQuery({
     queryKey: ["workouts"],
     queryFn: getWorkouts,
+    staleTime: 5 * 60 * 1000,
   });
 
   const deleteMutation = useMutation({
