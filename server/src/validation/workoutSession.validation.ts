@@ -43,6 +43,13 @@ export const sessionExerciseSchema = z
     plannedSets: z.number().int().min(1),
     plannedReps: z.number().int().min(1),
     plannedWeight: z.number().min(0).optional(),
+    progressionInsight: z
+      .object({
+        reason: z.string(),
+        previousWeight: z.number().optional(),
+        previousReps: z.number().optional(),
+      })
+      .optional(),
     sets: z.array(sessionSetSchema).max(50, "Maximum of 50 sets allowed per exercise"),
   })
   .strict();

@@ -118,7 +118,7 @@ export default function WorkoutSessionPage() {
         const userId = typeof (data as any).user === 'string' ? (data as any).user : (data as any).user?._id || "unknown";
         await enqueueUpdateMutation(userId, data.id, { exercises: data.exercises }, data.updatedAt);
       } else {
-        toast.error("Failed to save workout");
+        toast.error("Failed to save workout", { id: "failed-save-workout" });
       }
     }
   });
