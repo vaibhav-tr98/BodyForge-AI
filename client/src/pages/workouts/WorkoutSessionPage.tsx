@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronLeft, ChevronRight, X, Play, Pause, RotateCcw, Loader2, AlertTriangle } from "lucide-react";
@@ -9,33 +9,53 @@ import { useSessionSyncState, discardLocal } from "../../lib/syncQueue";
 import Loader from "../../components/ui/Loader";
 import type { SessionSet, WorkoutSession } from "../../types";
 
-// Rest Timer Component
 function RestTimer({ defaultSeconds = 90, autoStartTrigger = 0 }: { defaultSeconds?: number; autoStartTrigger?: number }) {
+  const [endTime, setEndTime] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(defaultSeconds);
   const [isActive, setIsActive] = useState(false);
   
+  // When autoStartTrigger changes, start the timer
   useEffect(() => {
     if (autoStartTrigger > 0) {
+      setEndTime(Date.now() + defaultSeconds * 1000);
       setTimeLeft(defaultSeconds);
       setIsActive(true);
     }
   }, [autoStartTrigger, defaultSeconds]);
 
+  // Tick the timer based on the delta to endTime
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
-    if (isActive && timeLeft > 0) {
+    if (isActive && endTime !== null) {
       interval = setInterval(() => {
-        setTimeLeft((time) => time - 1);
-      }, 1000);
-    } else if (timeLeft === 0) {
-      setIsActive(false);
+        const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+        setTimeLeft(remaining);
+        if (remaining <= 0) {
+          setIsActive(false);
+          setEndTime(null);
+        }
+      }, 100); // Check more frequently to keep UI responsive, but calculate exact remaining time
     }
     return () => clearInterval(interval);
-  }, [isActive, timeLeft]);
+  }, [isActive, endTime]);
 
-  const toggleTimer = () => setIsActive(!isActive);
+  const toggleTimer = () => {
+    if (isActive) {
+      // Pause
+      setIsActive(false);
+      setEndTime(null);
+    } else {
+      // Resume
+      if (timeLeft > 0) {
+        setEndTime(Date.now() + timeLeft * 1000);
+        setIsActive(true);
+      }
+    }
+  };
+
   const resetTimer = () => {
     setIsActive(false);
+    setEndTime(null);
     setTimeLeft(defaultSeconds);
   };
   
@@ -62,7 +82,7 @@ function RestTimer({ defaultSeconds = 90, autoStartTrigger = 0 }: { defaultSecon
           <RotateCcw size={20} />
         </button>
         <button
-          onClick={() => { setIsActive(false); setTimeLeft(0); }}
+          onClick={() => { setIsActive(false); setEndTime(null); setTimeLeft(0); }}
           className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:bg-slate-700"
         >
           <X size={20} />
@@ -218,8 +238,11 @@ export default function WorkoutSessionPage() {
     setLocalSession(newSession);
   };
 
+  const isTogglingRef = useRef(false);
+
   const handleToggleComplete = (setIdx: number) => {
-    if (updateMutation.isPending) return;
+    if (updateMutation.isPending || isTogglingRef.current) return;
+    isTogglingRef.current = true;
 
     const newSession = { ...localSession };
     const ex = newSession.exercises[currentExerciseIndex];
@@ -227,16 +250,16 @@ export default function WorkoutSessionPage() {
     ex.sets[setIdx].completed = isNowCompleted;
     setLocalSession(newSession);
     setUpdatingSetIdx(setIdx);
+    // Start timer immediately!
+    if (isNowCompleted) {
+      setTimerTrigger(Date.now());
+    }
     
-    // Auto-save on toggle complete
+    // Auto-save on toggle complete in background
     updateMutation.mutate(newSession, {
-      onSuccess: () => {
-        if (isNowCompleted) {
-          setTimerTrigger(Date.now());
-        }
-      },
       onSettled: () => {
         setUpdatingSetIdx(null);
+        isTogglingRef.current = false;
       }
     });
   };
