@@ -58,17 +58,33 @@ function RestTimer({ defaultSeconds = 90, autoStartTrigger = 0 }: { defaultSecon
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
+
+    const tick = () => {
+      if (!isActive || endTime === null) return;
+      const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+      setTimeLeft(remaining);
+
+      if (remaining <= 0) {
+        setIsActive(false);
+        setEndTime(null);
+        clearInterval(interval);
+      }
+    };
+
     if (isActive && endTime !== null) {
-      interval = setInterval(() => {
-        const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
-        setTimeLeft(remaining);
-        if (remaining <= 0) {
-          setIsActive(false);
-          setEndTime(null);
-        }
-      }, 100);
+      tick();
+      interval = setInterval(tick, 1000);
+
+      const handleVisibilityChange = () => {
+        if (!document.hidden) tick();
+      };
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+
+      return () => {
+        clearInterval(interval);
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      };
     }
-    return () => clearInterval(interval);
   }, [isActive, endTime]);
 
   const toggleTimer = () => {
@@ -141,6 +157,7 @@ export default function WorkoutSessionPage() {
   const [localSession, setLocalSession] = useState<WorkoutSession | null>(null);
   const [timerTrigger, setTimerTrigger] = useState(0);
   const [updatingSetIdx, setUpdatingSetIdx] = useState<number | null>(null);
+  const isTogglingRef = useRef(false);
 
   const { data: session, isLoading, isError } = useQuery({
     queryKey: ["workoutSession", id],
@@ -258,10 +275,6 @@ export default function WorkoutSessionPage() {
       completed: false
     }));
 
-  if (currentExercise.sets.length === 0) {
-    currentExercise.sets = activeSets;
-  }
-
   const handleUpdateSet = (setIdx: number, field: keyof SessionSet, value: number | boolean) => {
     let finalValue = value;
     if (typeof value === "number") {
@@ -274,11 +287,19 @@ export default function WorkoutSessionPage() {
 
     const newSession = { ...localSession };
     const ex = newSession.exercises[currentExerciseIndex];
+
+    if (ex.sets.length === 0) {
+      ex.sets = Array.from({ length: ex.plannedSets }).map((_, i) => ({
+        setNumber: i + 1,
+        weight: ex.plannedWeight || 0,
+        reps: ex.plannedReps,
+        completed: false
+      }));
+    }
+
     ex.sets[setIdx] = { ...ex.sets[setIdx], [field]: finalValue };
     setLocalSession(newSession);
   };
-
-  const isTogglingRef = useRef(false);
 
   const handleToggleComplete = (setIdx: number) => {
     if (updateMutation.isPending || isTogglingRef.current) return;
@@ -286,6 +307,16 @@ export default function WorkoutSessionPage() {
 
     const newSession = { ...localSession };
     const ex = newSession.exercises[currentExerciseIndex];
+
+    if (ex.sets.length === 0) {
+      ex.sets = Array.from({ length: ex.plannedSets }).map((_, i) => ({
+        setNumber: i + 1,
+        weight: ex.plannedWeight || 0,
+        reps: ex.plannedReps,
+        completed: false
+      }));
+    }
+
     const isNowCompleted = !ex.sets[setIdx].completed;
     ex.sets[setIdx].completed = isNowCompleted;
     setLocalSession(newSession);
@@ -315,6 +346,16 @@ export default function WorkoutSessionPage() {
   const handleAddSet = () => {
     const newSession = { ...localSession };
     const ex = newSession.exercises[currentExerciseIndex];
+
+    if (ex.sets.length === 0) {
+      ex.sets = Array.from({ length: ex.plannedSets }).map((_, i) => ({
+        setNumber: i + 1,
+        weight: ex.plannedWeight || 0,
+        reps: ex.plannedReps,
+        completed: false
+      }));
+    }
+
     const lastSet = ex.sets[ex.sets.length - 1];
     ex.sets.push({
       setNumber: ex.sets.length + 1,
