@@ -40,11 +40,15 @@ export interface SafeWorkoutSession {
 const toWorkoutSessionResponse = (session: any): SafeWorkoutSession => {
   return {
     id: session._id.toString(),
-    workout: session.workout && (session.workout as any)._id ? {
-      _id: (session.workout as any)._id.toString(),
-      name: (session.workout as any).name,
-      description: (session.workout as any).description,
-    } : session.workout.toString(),
+    workout: session.workout
+      ? (session.workout as any)._id
+        ? {
+            _id: (session.workout as any)._id.toString(),
+            name: (session.workout as any).name,
+            description: (session.workout as any).description,
+          }
+        : session.workout.toString()
+      : { _id: "deleted", name: "Deleted Workout" },
     startedAt: session.startedAt,
     completedAt: session.completedAt,
     status: session.status,
