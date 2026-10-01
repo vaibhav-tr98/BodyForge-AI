@@ -1,276 +1,187 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getActiveWorkout } from "../services/workoutSession.service";
 import { analyticsService } from "../services/analytics.service";
-import { getExercises } from "../services/exercise.service";
-import Loader from "../components/ui/Loader";
-import ExerciseProgressChart from "../components/common/ExerciseProgressChart";
+import { Link, useNavigate } from "react-router-dom";
+import { Play } from "lucide-react";
+import TodayScheduleSection from "../components/dashboard/TodayScheduleSection";
 import { BodyForgeCoachSection } from "../components/dashboard/BodyForgeCoachSection";
 import TrainingReadinessSection from "../components/dashboard/TrainingReadinessSection";
-import NutritionTodaySection from "../components/dashboard/NutritionTodaySection";
-import ProgressSnapshotSection from "../components/dashboard/ProgressSnapshotSection";
-import TodayScheduleSection from "../components/dashboard/TodayScheduleSection";
-import { Dumbbell, Activity, Trophy, LineChart, Target, Calendar } from "lucide-react";
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const [selectedExercise, setSelectedExercise] = useState<string>("");
+  const navigate = useNavigate();
 
+  // Existing Queries
   const { data: activeWorkout, isLoading: loadingActive } = useQuery({
     queryKey: ["activeWorkout"],
     queryFn: getActiveWorkout,
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: analytics, isLoading: loadingAnalytics, isError: analyticsError } = useQuery({
+  const { data: analytics, isLoading: loadingAnalytics } = useQuery({
     queryKey: ["analytics", "dashboard"],
     queryFn: () => analyticsService.getDashboardAnalytics(),
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: prData, isLoading: isLoadingPRs } = useQuery({
-    queryKey: ["analytics", "personal-records"],
-    queryFn: () => analyticsService.getPersonalRecords(),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: exerciseList } = useQuery({
-    queryKey: ["exercises"],
-    queryFn: () => getExercises({ limit: 100 }),
-    staleTime: 24 * 60 * 60 * 1000,
-  });
-
-  const { data: exerciseProgress, isLoading: loadingProgress } = useQuery({
-    queryKey: ["analytics", "exercise", selectedExercise],
-    queryFn: () => analyticsService.getExerciseProgress(selectedExercise),
-    enabled: !!selectedExercise,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  if (loadingAnalytics || loadingActive) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Loader />
-      </div>
-    );
-  }
-
   const summary = analytics?.summary;
+  const recentWorkouts = analytics?.recentWorkouts || [];
+
+  const today = new Date();
+  const dateFormatted = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric" }).format(today);
 
   return (
-    <div className="space-y-12 pb-12">
-      <header className="border-b border-slate-800 pb-6">
-        <h1 className="text-3xl font-bold text-white tracking-tight">
-          Good {getGreetingTime()}, {user?.name}
+    <div className="space-y-6 sm:space-y-8 max-w-7xl mx-auto">
+      {/* Greeting */}
+      <header className="pt-2">
+        <h1 className="text-2xl font-bold text-[#111827]">
+          Good {getGreetingTime()}, {user?.name?.split(" ")[0] || "Athlete"}
         </h1>
-        <p className="mt-2 text-slate-400">
-          Your intelligent training dashboard.
-        </p>
+        <p className="text-sm font-medium text-[#6B7280]">{dateFormatted}</p>
       </header>
 
-      {analyticsError ? (
-        <div className="rounded-xl border border-red-900 bg-red-950/20 p-6">
-          <p className="text-red-400">Dashboard data is currently unavailable. You can still access other features.</p>
-        </div>
-      ) : (
-        <>
-          {/* 1. Today's Schedule */}
-          <section className="space-y-4">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Calendar className="text-cyan-400" size={24} />
-              TODAY'S SCHEDULE
-            </h2>
-            <TodayScheduleSection />
-          </section>
+      <div className="grid gap-6 md:grid-cols-12 md:items-start">
+        {/* LEFT / MAIN COLUMN (Desktop) */}
+        <div className="space-y-6 md:col-span-7 lg:col-span-8">
 
-          {/* 1.1 Active Workout Info */}
-          {activeWorkout && (
-            <section className="space-y-4 pt-6 border-t border-slate-800/50">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Dumbbell className="text-cyan-500" size={24} />
-                ACTIVE WORKOUT
+          {/* Active Workout Priority OR Today's Workout */}
+          {loadingActive ? (
+            <div className="rounded-xl border border-[#E5E7EB] bg-[#FFFFFF] p-5 shadow-sm min-h-[140px] animate-pulse">
+              <div className="h-4 w-32 bg-[#E5E7EB] rounded mb-3"></div>
+              <div className="h-6 w-48 bg-[#E5E7EB] rounded mb-4"></div>
+              <div className="h-12 w-full bg-[#E5E7EB] rounded-lg mt-auto"></div>
+            </div>
+          ) : activeWorkout ? (
+            <div className="rounded-xl border border-[#E5E7EB] bg-[#FFFFFF] p-5 shadow-sm overflow-hidden relative">
+              <div className="absolute top-0 left-0 w-1 h-full bg-cyan-500"></div>
+              <h2 className="text-xs font-bold tracking-wider text-cyan-600 uppercase mb-1">
+                Workout in Progress
               </h2>
-              <div className="rounded-2xl border border-cyan-900/50 bg-cyan-950/20 p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <h3 className="text-lg font-bold text-white">
-                      {typeof activeWorkout.workout === 'object' ? activeWorkout.workout.name : "Workout Session"}
-                    </h3>
-                    <p className="text-sm text-cyan-200/80 mt-1">
-                      {activeWorkout.exercises.length} exercises planned
-                    </p>
-                  </div>
-                  <Link
-                    to={`/workouts/session/${activeWorkout.id}`}
-                    className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-cyan-600 px-6 py-2.5 font-semibold text-white shadow-lg shadow-cyan-900/20 transition hover:bg-cyan-700 active:scale-95"
-                  >
-                    Resume Workout
-                  </Link>
-                </div>
-              </div>
-            </section>
+              <h3 className="text-lg font-bold text-[#111827] mb-1">
+                {typeof activeWorkout.workout === 'object' && activeWorkout.workout ? activeWorkout.workout.name : "Active Session"}
+              </h3>
+              <p className="text-sm text-[#6B7280] mb-5">
+                Started: {formatTimeAgo(new Date(activeWorkout.startedAt))}
+              </p>
+              <button
+                onClick={() => navigate(`/workouts/session/${activeWorkout.id}`)}
+                className="w-full flex items-center justify-center gap-2 rounded-lg bg-cyan-600 px-4 py-3 font-semibold text-white transition active:bg-cyan-700 hover:bg-cyan-500"
+              >
+                <Play size={18} className="fill-current" />
+                Resume Workout
+              </button>
+            </div>
+          ) : (
+            <TodayScheduleSection />
           )}
 
-          {/* 2. Unified AI Coach */}
-          <section className="space-y-6 pt-6 border-t border-slate-800/50">
-            <BodyForgeCoachSection />
-          </section>
-
-          {/* 3. Training & Readiness */}
-          <section className={`space-y-6 pt-6 border-t border-slate-800/50`}>
-            <TrainingReadinessSection />
-          </section>
-
-          {/* 4. Nutrition & Fuel */}
-          <section className="space-y-6 pt-6 border-t border-slate-800/50">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Target className="text-amber-400" size={24} />
-              NUTRITION & FUEL
+          {/* Recent Activity */}
+          <section>
+            <h2 className="text-sm font-bold tracking-wider text-[#6B7280] uppercase mb-3">
+              Recent Activity
             </h2>
-            <NutritionTodaySection />
-          </section>
-
-          {/* 5. Body & Metrics Progress */}
-          <section className="space-y-6 pt-6 border-t border-slate-800/50">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <LineChart className="text-cyan-400" size={24} />
-              BODY & METRICS PROGRESS
-            </h2>
-            <ProgressSnapshotSection />
-          </section>
-
-          {/* 5. Performance Tracking */}
-          <section className="space-y-6 pt-6 border-t border-slate-800/50">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Trophy className="text-yellow-400" size={24} />
-              PERFORMANCE TRACKING
-            </h2>
-            
-            {summary && summary.totalWorkouts === 0 ? (
-              <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center">
-                <p className="text-lg font-medium text-white mb-2">No completed workouts yet.</p>
-                <p className="text-slate-400 mb-6">Complete your first workout to start tracking your performance.</p>
+            {loadingAnalytics ? (
+              <div className="space-y-3 animate-pulse">
+                {[1, 2].map((i) => (
+                  <div key={i} className="h-20 rounded-xl bg-[#FFFFFF] border border-[#E5E7EB]"></div>
+                ))}
+              </div>
+            ) : recentWorkouts.length > 0 ? (
+              <div className="space-y-3">
+                {recentWorkouts.slice(0, 3).map((rw) => (
+                  <div key={rw.id} className="rounded-xl border border-[#E5E7EB] bg-[#FFFFFF] p-4 flex items-center justify-between shadow-sm">
+                    <div>
+                      <h4 className="font-semibold text-[#111827]">{rw.workoutName || "Workout"}</h4>
+                      <p className="text-xs text-[#6B7280] mt-1">{formatDateRelative(new Date(rw.completedAt))}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-[#111827]">{rw.exerciseCount} exercises</p>
+                      <p className="text-xs text-[#6B7280] mt-1">{Math.round(rw.totalVolume).toLocaleString()} kg vol</p>
+                    </div>
+                  </div>
+                ))}
                 <Link
-                  to="/workouts"
-                  className="inline-block rounded-lg bg-cyan-600 px-6 py-3 font-semibold text-white transition hover:bg-cyan-700"
+                  to="/workouts/history"
+                  className="block w-full text-center py-3 text-sm font-semibold text-cyan-600 hover:bg-[#F1F3F5] rounded-lg transition-colors"
                 >
-                  Start Training
+                  View History
                 </Link>
               </div>
             ) : (
-              <div className="grid gap-6 lg:grid-cols-2">
-                <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 flex flex-col">
-                  <h3 className="mb-4 text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Trophy className="text-yellow-500" size={16} />
-                    Recent Personal Records
-                  </h3>
-                  
-                  {isLoadingPRs ? (
-                    <div className="space-y-3 flex-1 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar animate-pulse">
-                      {[1, 2, 3].map((i) => (
-                        <div key={i} className="flex justify-between items-center p-3 rounded-lg bg-slate-950 border border-slate-800">
-                          <div>
-                            <div className="h-4 w-32 bg-slate-800 rounded mb-1"></div>
-                            <div className="h-3 w-20 bg-slate-800 rounded"></div>
-                          </div>
-                          <div className="text-right flex flex-col items-end">
-                            <div className="h-4 w-12 bg-slate-800 rounded mb-1"></div>
-                            <div className="h-3 w-8 bg-slate-800 rounded"></div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : prData && prData.personalRecords && prData.personalRecords.length > 0 ? (
-                    <div className="space-y-3 flex-1 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
-                      {prData.personalRecords.slice(0, 5).map((pr: any, i: number) => (
-                        <div key={i} className="flex justify-between items-center p-3 rounded-lg bg-slate-950 border border-slate-800">
-                          <div>
-                            <p className="font-medium text-white">{pr.exerciseName}</p>
-                            <p className="text-xs text-slate-500 mt-1">
-                              {(() => {
-                                if (!pr.lastPerformedAt) return "Date unavailable";
-                                const d = new Date(pr.lastPerformedAt);
-                                return isNaN(d.getTime()) ? "Date unavailable" : d.toLocaleDateString();
-                              })()}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-bold text-cyan-400">{pr.heaviestWeight} kg</p>
-                            <p className="text-xs text-slate-400">{pr.bestReps} reps</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="rounded-xl border border-slate-800 bg-slate-950 p-6 text-center flex flex-col items-center justify-center min-h-[160px]">
-                      <p className="text-lg font-medium text-white mb-2">No personal records yet.</p>
-                      <p className="text-slate-400">Complete a workout to start setting records.</p>
-                    </div>
-                  )}
+              <div className="rounded-xl border border-[#E5E7EB] bg-[#FFFFFF] p-6 text-center text-sm text-[#6B7280]">
+                No recent workouts found.
+              </div>
+            )}
+          </section>
+        </div>
+
+        {/* RIGHT COLUMN (Desktop) */}
+        <div className="space-y-6 md:col-span-5 lg:col-span-4">
+
+          {/* Quick Stats */}
+          <section>
+            <h2 className="text-sm font-bold tracking-wider text-[#6B7280] uppercase mb-3">
+              Quick Stats
+            </h2>
+            {loadingAnalytics ? (
+              <div className="grid grid-cols-2 gap-3 animate-pulse">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="h-20 rounded-xl bg-[#FFFFFF] border border-[#E5E7EB]"></div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-[#E5E7EB] bg-[#FFFFFF] p-4 shadow-sm">
+                  <p className="text-xs text-[#6B7280] font-medium mb-1">Workouts</p>
+                  <p className="text-2xl font-bold text-[#111827]">{summary?.totalWorkouts || 0}</p>
                 </div>
-
-                <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-                  <div className="mb-6">
-                    <label htmlFor="exercise-select" className="block text-sm font-medium text-slate-400 mb-2">
-                      Analyze Specific Exercise
-                    </label>
-                    <select
-                      id="exercise-select"
-                      value={selectedExercise}
-                      onChange={(e) => setSelectedExercise(e.target.value)}
-                      className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                    >
-                      <option value="">-- Choose an exercise --</option>
-                      {exerciseList?.exercises?.map((ex: any) => (
-                        <option key={ex.id} value={ex.name}>
-                          {ex.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {selectedExercise && (
-                    <div>
-                      {loadingProgress ? (
-                        <div className="flex h-40 items-center justify-center">
-                          <Loader />
-                        </div>
-                      ) : exerciseProgress && exerciseProgress.sessions.length > 0 ? (
-                        <div className="space-y-6">
-                          <div className="grid gap-4 sm:grid-cols-2">
-                            <div className="rounded-xl bg-slate-950 p-4 border border-slate-800">
-                              <p className="text-xs text-slate-500 uppercase tracking-wider flex items-center gap-1"><Dumbbell size={12}/> Best Weight</p>
-                              <p className="text-2xl font-bold text-white mt-1">
-                                {exerciseProgress.bestWeight > 0 ? `${exerciseProgress.bestWeight} kg` : "-"}
-                              </p>
-                            </div>
-                            <div className="rounded-xl bg-slate-950 p-4 border border-slate-800">
-                              <p className="text-xs text-slate-500 uppercase tracking-wider flex items-center gap-1"><Activity size={12}/> Best Reps</p>
-                              <p className="text-2xl font-bold text-white mt-1">{exerciseProgress.bestReps}</p>
-                            </div>
-                          </div>
-                          <div className="pt-4 border-t border-slate-800">
-                            <h3 className="text-sm font-semibold text-white mb-4 uppercase tracking-wider">Progression</h3>
-                            <div className="h-48">
-                              <ExerciseProgressChart progress={exerciseProgress} />
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="rounded-xl border border-slate-800 bg-slate-950 p-8 text-center">
-                          <p className="text-slate-400">No completed sessions found for this exercise.</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                <div className="rounded-xl border border-[#E5E7EB] bg-[#FFFFFF] p-4 shadow-sm">
+                  <p className="text-xs text-[#6B7280] font-medium mb-1">Weekly Vol</p>
+                  <p className="text-2xl font-bold text-[#111827]">
+                    {summary?.totalVolume ? `${(summary.totalVolume / 1000).toFixed(1)}k` : "0"} kg
+                  </p>
+                </div>
+                <div className="rounded-xl border border-[#E5E7EB] bg-[#FFFFFF] p-4 shadow-sm">
+                  <p className="text-xs text-[#6B7280] font-medium mb-1">Sets</p>
+                  <p className="text-2xl font-bold text-[#111827]">{summary?.totalExercises || 0}</p>
+                </div>
+                <div className="rounded-xl border border-[#E5E7EB] bg-[#FFFFFF] p-4 shadow-sm">
+                  <p className="text-xs text-[#6B7280] font-medium mb-1">Day Streak</p>
+                  <p className="text-2xl font-bold text-[#111827]">{summary?.currentStreak || 0}</p>
                 </div>
               </div>
             )}
           </section>
-        </>
-      )}
+
+          {/* Readiness */}
+          <TrainingReadinessSection />
+
+          {/* Coach */}
+          <BodyForgeCoachSection />
+
+          {/* Quick Links for Removed Dashboard Features */}
+          <section>
+            <div className="grid grid-cols-2 gap-3">
+              <Link
+                to="/progress"
+                className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E5E7EB] bg-[#FFFFFF] shadow-sm hover:bg-[#F1F3F5] transition-colors"
+              >
+                <span className="text-sm font-semibold text-[#111827]">View Progress</span>
+                <span className="text-xs text-[#6B7280] mt-1">PRs & Metrics</span>
+              </Link>
+              <Link
+                to="/nutrition"
+                className="flex flex-col items-center justify-center p-3 rounded-xl border border-[#E5E7EB] bg-[#FFFFFF] shadow-sm hover:bg-[#F1F3F5] transition-colors"
+              >
+                <span className="text-sm font-semibold text-[#111827]">Nutrition</span>
+                <span className="text-xs text-[#6B7280] mt-1">Macros & Diet</span>
+              </Link>
+            </div>
+          </section>
+
+        </div>
+      </div>
     </div>
   );
 }
@@ -282,3 +193,21 @@ function getGreetingTime(): string {
   return "evening";
 }
 
+function formatTimeAgo(date: Date): string {
+  const diffMs = Date.now() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 60) return `${diffMins} min ago`;
+  const diffHrs = Math.floor(diffMins / 60);
+  if (diffHrs < 24) return `${diffHrs} hr ago`;
+  return `${Math.floor(diffHrs / 24)} days ago`;
+}
+
+function formatDateRelative(date: Date): string {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) return "Today";
+  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(date);
+}
