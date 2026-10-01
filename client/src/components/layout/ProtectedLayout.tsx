@@ -1,7 +1,7 @@
 import { Navigate, Outlet, useLocation, Link, useMatch } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import FullScreenLoader from "../ui/FullScreenLoader";
-import { Home, Dumbbell, LineChart, Utensils, User } from "lucide-react";
+import { Home, Dumbbell, History, LineChart, Utensils, User, LogOut } from "lucide-react";
 import SyncIndicator from "../ui/SyncIndicator";
 
 /**
@@ -22,96 +22,101 @@ export default function ProtectedLayout() {
 
   const isActive = (path: string) => {
     if (path === "/dashboard") return location.pathname === "/dashboard";
+    if (path === "/workouts") {
+      // Must not match /workouts/history or /workouts/session
+      return location.pathname === "/workouts" ||
+             location.pathname.startsWith("/workouts/new") ||
+             (location.pathname.startsWith("/workouts/") && !location.pathname.includes("/history") && !location.pathname.includes("/session"));
+    }
     return location.pathname.startsWith(path);
   };
 
   const navItems = [
     { name: "Home", path: "/dashboard", icon: Home },
     { name: "Workouts", path: "/workouts", icon: Dumbbell },
-    { name: "Tracker", path: "/progress", icon: LineChart },
+    { name: "History", path: "/workouts/history", icon: History },
     { name: "Nutrition", path: "/nutrition", icon: Utensils },
-    { name: "Profile", path: "/profile", icon: User },
+    { name: "Progress", path: "/progress", icon: LineChart },
   ];
 
   const isWorkoutSession = useMatch("/workouts/session/:id");
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      {/* Top navigation */}
-      <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/80 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-          <Link
-            to="/dashboard"
-            className="text-xl font-bold text-cyan-400"
-            id="app-logo"
-          >
-            BodyForge AI
-          </Link>
-
-          <nav className="hidden items-center gap-6 sm:flex" id="main-nav">
+    <div className="min-h-screen bg-[#F7F8FA] text-[#111827]">
+      {/* Top navigation - App Shell Header */}
+      {!isWorkoutSession && (
+        <header className="sticky top-0 z-50 border-b border-[#E5E7EB] bg-[#FFFFFF] shadow-sm">
+          <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
             <Link
               to="/dashboard"
-              className="text-sm font-medium text-slate-300 transition hover:text-cyan-400"
+              className="text-lg font-bold text-cyan-600 sm:text-xl"
+              id="app-logo"
             >
-              Dashboard
+              BodyForge AI
             </Link>
-            <Link
-              to="/workouts"
-              className="text-sm font-medium text-slate-300 transition hover:text-cyan-400"
-            >
-              Workouts
-            </Link>
-            <Link
-              to="/workouts/history"
-              className="text-sm font-medium text-slate-300 transition hover:text-cyan-400"
-            >
-              History
-            </Link>
-            <Link
-              to="/nutrition"
-              className="text-sm font-medium text-slate-300 transition hover:text-cyan-400"
-            >
-              Nutrition
-            </Link>
-            <Link
-              to="/progress"
-              className="text-sm font-medium text-slate-300 transition hover:text-cyan-400"
-            >
-              Progress
-            </Link>
-            <Link
-              to="/profile"
-              className="text-sm font-medium text-slate-300 transition hover:text-cyan-400"
-            >
-              Profile
-            </Link>
-          </nav>
 
-          <div className="flex items-center gap-4">
-            <SyncIndicator />
-            <span className="hidden text-sm text-slate-400 sm:inline">
-              {user?.name}
-            </span>
-            <button
-              onClick={logout}
-              id="logout-button"
-              className="rounded-lg border border-slate-700 px-4 py-1.5 text-sm text-slate-300 transition hover:border-red-500 hover:text-red-400"
-            >
-              Logout
-            </button>
+            {/* Desktop Navigation (>= 768px) */}
+            <nav className="hidden items-center gap-6 md:flex" id="main-nav">
+              {navItems.map((item) => {
+                const active = isActive(item.path);
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    aria-current={active ? "page" : undefined}
+                    className={`text-sm font-medium transition-colors ${
+                      active ? "text-cyan-600" : "text-[#6B7280] hover:text-[#111827]"
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <div className="flex items-center gap-3 sm:gap-4">
+              <SyncIndicator />
+
+              {/* Profile Link (Desktop & Mobile) */}
+              <Link
+                to="/profile"
+                className="flex items-center gap-2 rounded-full p-1 transition-colors hover:bg-[#F1F3F5] sm:pr-3 sm:pl-1"
+                aria-label="Profile"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F1F3F5] text-cyan-700">
+                  <User size={18} />
+                </div>
+                <span className="hidden text-sm font-medium text-[#111827] sm:block">
+                  {user?.name}
+                </span>
+              </Link>
+
+              {/* Desktop Logout (>= 768px) */}
+              <button
+                onClick={logout}
+                id="logout-button"
+                title="Logout"
+                className="hidden items-center justify-center rounded-lg p-2 text-[#6B7280] transition hover:bg-[#F1F3F5] hover:text-red-500 md:flex"
+                aria-label="Logout"
+              >
+                <LogOut size={20} />
+              </button>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* Main content area */}
-      <main className={`mx-auto max-w-7xl px-6 py-8 sm:pb-8 ${isWorkoutSession ? 'pb-8' : 'pb-28'}`}>
+      <main className={`mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:pb-8 ${isWorkoutSession ? 'pb-8 pt-4' : 'pb-24'}`}>
         <Outlet />
       </main>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile Bottom Navigation (< 768px) */}
       {!isWorkoutSession && (
-        <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-slate-800 bg-slate-950/95 backdrop-blur">
-          <div className="flex items-center justify-around px-2 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+        <nav
+          className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-[#E5E7EB] bg-[#FFFFFF] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
+        >
+          <div className="flex items-center justify-around px-1 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
             {navItems.map((item) => {
               const active = isActive(item.path);
               const Icon = item.icon;
@@ -119,13 +124,17 @@ export default function ProtectedLayout() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex flex-col items-center justify-center gap-1 flex-1 ${
-                    active ? "text-cyan-400" : "text-slate-400 hover:text-slate-300"
+                  aria-current={active ? "page" : undefined}
+                  className={`flex flex-1 flex-col items-center justify-center gap-1 rounded-xl py-1 min-h-[44px] transition-colors ${
+                    active ? "text-cyan-600" : "text-[#6B7280]"
                   }`}
                   aria-label={item.name}
                 >
-                  <Icon size={24} className={active ? "stroke-cyan-400" : "stroke-current"} />
-                  <span className="text-[10px] font-medium leading-none">
+                  <Icon
+                    size={24}
+                    className={`transition-colors ${active ? "stroke-cyan-600" : "stroke-[#6B7280]"}`}
+                  />
+                  <span className={`text-[10px] leading-none ${active ? 'font-semibold' : 'font-medium'}`}>
                     {item.name}
                   </span>
                 </Link>
