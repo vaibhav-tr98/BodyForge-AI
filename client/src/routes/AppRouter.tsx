@@ -15,6 +15,7 @@ import ProfilePage from "../pages/ProfilePage";
 import NotFoundPage from "../pages/NotFoundPage";
 import NutritionPage from "../pages/NutritionPage";
 import ProgressPage from "../pages/ProgressPage";
+import ProgramsPage from "../pages/ProgramsPage";
 import ProgramBuilderPage from "../pages/ProgramBuilderPage";
 import WorkoutListPage from "../pages/workouts/WorkoutListPage";
 import WorkoutCreatePage from "../pages/workouts/WorkoutCreatePage";
@@ -81,6 +82,10 @@ export const router = createBrowserRouter([
       {
         path: "/progress",
         element: <ProgressPage />,
+      },
+      {
+        path: "/programs",
+        element: <ProgramsPage />,
       },
       {
         path: "/programs/builder",

@@ -150,7 +150,7 @@ export default function WorkoutListPage() {
                     Start a training program to get daily workout recommendations.
                   </p>
                   <Link
-                    to="/programs/builder"
+                    to="/programs"
                     className="inline-flex items-center justify-center w-full rounded-lg bg-[#F1F3F5] px-4 py-3 font-semibold text-[#111827] transition active:bg-[#E5E7EB] min-h-[44px]"
                   >
                     Explore Programs
@@ -164,7 +164,7 @@ export default function WorkoutListPage() {
                     Congratulations! You have finished your training program.
                   </p>
                   <Link
-                    to="/programs/builder"
+                    to="/programs"
                     className="inline-flex items-center justify-center w-full rounded-lg bg-cyan-600 px-4 py-3 font-semibold text-white transition active:bg-cyan-700 min-h-[44px]"
                   >
                     Start New Program
@@ -334,7 +334,7 @@ export default function WorkoutListPage() {
                 Create New Routine
               </Link>
               <Link
-                to="/programs/builder"
+                to="/programs"
                 className="flex items-center justify-center gap-2 rounded-xl border border-[#E5E7EB] bg-[#FFFFFF] p-4 text-sm font-semibold text-[#111827] hover:bg-[#F1F3F5] transition shadow-sm min-h-[44px]"
               >
                 <Calendar size={18} />

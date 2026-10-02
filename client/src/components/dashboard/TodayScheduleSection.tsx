@@ -74,7 +74,7 @@ export default function TodayScheduleSection() {
           Build a multi-week program to get structured training.
         </p>
         <Link
-          to="/programs/builder"
+          to="/programs"
           className="inline-block w-full rounded-lg bg-[#F1F3F5] px-4 py-3 font-semibold text-[#111827] transition active:bg-[#E5E7EB]"
         >
           Create Program
@@ -92,7 +92,7 @@ export default function TodayScheduleSection() {
           Congratulations! You have finished your training program.
         </p>
         <Link
-          to="/programs/builder"
+          to="/programs"
           className="inline-block w-full rounded-lg bg-cyan-600 px-4 py-3 font-semibold text-white transition active:bg-cyan-700"
         >
           Start New Program
