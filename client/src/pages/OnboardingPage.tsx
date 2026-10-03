@@ -80,10 +80,10 @@ export default function OnboardingPage() {
   return (
     <div className="mx-auto max-w-lg space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-white" id="onboarding-heading">
+        <h1 className="text-3xl font-bold text-[#111827]" id="onboarding-heading">
           Complete Your Profile
         </h1>
-        <p className="mt-2 text-slate-400">
+        <p className="mt-2 text-[#6B7280]">
           Tell us about yourself so we can personalize your fitness plan.
           All fields are optional — you can always update later.
         </p>
