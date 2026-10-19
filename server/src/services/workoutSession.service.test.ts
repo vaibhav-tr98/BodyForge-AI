@@ -52,6 +52,21 @@ describe("WorkoutSessionService - Adaptive Session Loading", () => {
     });
   });
 
+  it("regression: rejects starting a session with 400 AppError when an active session already exists", async () => {
+    mockSessionRepo.findActiveSession.mockResolvedValue({
+      _id: new mongoose.Types.ObjectId(),
+      workout: mockWorkout,
+      status: "active",
+    } as any);
+
+    await expect(workoutSessionService.startSession(userId, workoutId))
+      .rejects
+      .toMatchObject({
+        message: "You already have an active workout session",
+        statusCode: 400,
+      });
+  });
+
   it("1. First-ever workout (no history) - template prescription is preserved", async () => {
     mockProgressionService.getRecommendation.mockResolvedValue({
       recommendation: null,

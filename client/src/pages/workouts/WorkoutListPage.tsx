@@ -4,7 +4,7 @@ import { Plus, Trash2, Edit3, Eye, Play, Calendar, CheckCircle, Dumbbell } from 
 import toast from "react-hot-toast";
 import { getWorkouts, deleteWorkout } from "../../services/workout.service";
 import { getActiveWorkout, startWorkout } from "../../services/workoutSession.service";
-import { api } from "../../services/api";
+import { api, getErrorMessage } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 
 export default function WorkoutListPage() {
@@ -41,7 +41,7 @@ export default function WorkoutListPage() {
       toast.success("Workout deleted successfully");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Failed to delete workout");
+      toast.error(getErrorMessage(error));
     },
   });
 
@@ -56,7 +56,7 @@ export default function WorkoutListPage() {
       navigate(`/workouts/session/${session.id}`);
     },
     onError: (error: any) => {
-      toast.error(error.message || "Failed to start scheduled workout");
+      toast.error(getErrorMessage(error));
     },
   });
 
@@ -67,9 +67,18 @@ export default function WorkoutListPage() {
       navigate(`/workouts/session/${session.id}`);
     },
     onError: (error: any) => {
-      toast.error(error.message || "Failed to start workout");
+      toast.error(getErrorMessage(error));
     },
   });
+
+  const handleStartRoutine = (workoutId: string) => {
+    if (activeWorkout) {
+      toast.error("You already have an active workout session. Please finish or resume it first.");
+      navigate(`/workouts/session/${activeWorkout.id}`);
+      return;
+    }
+    startRoutineMutation.mutate(workoutId);
+  };
 
   const handleDelete = (id: string) => {
     if (window.confirm("Are you sure you want to delete this workout?")) {
@@ -258,35 +267,52 @@ export default function WorkoutListPage() {
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2">
-                {workouts.map((workout: any) => (
-                  <div
-                    key={workout.id}
-                    className="flex flex-col justify-between rounded-xl border border-[#E5E7EB] bg-[#FFFFFF] p-4 transition-all hover:shadow-md"
-                  >
-                    <div>
-                      <h3 className="text-base font-bold text-[#111827] line-clamp-1" title={workout.name}>
-                        {workout.name}
-                      </h3>
-                      {workout.description && (
-                        <p className="mt-1 text-xs text-[#6B7280] line-clamp-2">
-                          {workout.description}
-                        </p>
-                      )}
-                      <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-[#6B7280]">
-                        <span className="flex items-center justify-center bg-[#F1F3F5] px-2 py-0.5 rounded text-[#111827]">
-                          {workout.exercises?.length || 0} exercises
-                        </span>
-                      </div>
-                    </div>
+                {workouts.map((workout: any) => {
+                  const activeWorkoutWorkoutId = typeof activeWorkout?.workout === 'object' && activeWorkout?.workout
+                    ? (activeWorkout.workout as any)._id || (activeWorkout.workout as any).id
+                    : activeWorkout?.workout;
+                  const isThisWorkoutActive = !!activeWorkout && (workout.id === activeWorkoutWorkoutId || workout._id === activeWorkoutWorkoutId);
 
-                    <div className="mt-4 flex items-center gap-2 border-t border-[#E5E7EB] pt-4">
-                      <button
-                        onClick={() => startRoutineMutation.mutate(workout.id)}
-                        disabled={startRoutineMutation.isPending}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#F1F3F5] py-2 text-sm font-semibold text-[#111827] transition active:bg-[#E5E7EB] hover:bg-[#E5E7EB] min-h-[44px]"
-                      >
-                        Start
-                      </button>
+                  return (
+                    <div
+                      key={workout.id}
+                      className="flex flex-col justify-between rounded-xl border border-[#E5E7EB] bg-[#FFFFFF] p-4 transition-all hover:shadow-md"
+                    >
+                      <div>
+                        <h3 className="text-base font-bold text-[#111827] line-clamp-1" title={workout.name}>
+                          {workout.name}
+                        </h3>
+                        {workout.description && (
+                          <p className="mt-1 text-xs text-[#6B7280] line-clamp-2">
+                            {workout.description}
+                          </p>
+                        )}
+                        <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-[#6B7280]">
+                          <span className="flex items-center justify-center bg-[#F1F3F5] px-2 py-0.5 rounded text-[#111827]">
+                            {workout.exercises?.length || 0} exercises
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex items-center gap-2 border-t border-[#E5E7EB] pt-4">
+                        {isThisWorkoutActive ? (
+                          <button
+                            onClick={() => navigate(`/workouts/session/${activeWorkout.id}`)}
+                            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-cyan-600 py-2 text-sm font-semibold text-white transition active:bg-cyan-700 hover:bg-cyan-500 min-h-[44px]"
+                          >
+                            <Play size={16} className="fill-current" />
+                            Resume
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleStartRoutine(workout.id || workout._id)}
+                            disabled={startRoutineMutation.isPending || !!activeWorkout}
+                            title={activeWorkout ? "A workout session is already in progress. Please resume or finish it first." : undefined}
+                            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#F1F3F5] py-2 text-sm font-semibold text-[#111827] transition active:bg-[#E5E7EB] hover:bg-[#E5E7EB] disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+                          >
+                            Start
+                          </button>
+                        )}
                       <Link
                         to={`/workouts/${workout.id}/edit`}
                         className="flex h-[44px] w-[44px] items-center justify-center rounded-lg border border-[#E5E7EB] text-[#6B7280] hover:text-[#111827] hover:bg-[#F1F3F5] transition"
@@ -311,7 +337,8 @@ export default function WorkoutListPage() {
                       </button>
                     </div>
                   </div>
-                ))}
+                );
+              })}
               </div>
             )}
           </section>
