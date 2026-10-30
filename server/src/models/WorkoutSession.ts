@@ -85,6 +85,7 @@ const workoutSessionSchema = new Schema<IWorkoutSession>(
 
 workoutSessionSchema.index({ user: 1, startedAt: -1 });
 workoutSessionSchema.index({ user: 1, status: 1 });
+workoutSessionSchema.index({ user: 1, status: 1, completedAt: -1 });
 workoutSessionSchema.index({ user: 1, programId: 1, programWeek: 1, programDay: 1, status: 1 });
 
 const WorkoutSession = model<IWorkoutSession>("WorkoutSession", workoutSessionSchema);

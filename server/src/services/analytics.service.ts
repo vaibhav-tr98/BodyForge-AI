@@ -3,6 +3,7 @@ import { progressionService, ProgressionResponse } from "./progression.service";
 import WorkoutSession from "../models/WorkoutSession";
 import Exercise from "../models/Exercise";
 import logger from "../utils/logger";
+import { DateEngine } from "../utils/dateEngine";
 
 
 
@@ -111,6 +112,17 @@ export interface PRResult {
   exerciseName: string;
   value: number;
   previousValue: number;
+}
+
+export interface WorkoutActivityDay {
+  date: string; // YYYY-MM-DD in user's timezone
+  count: number;
+}
+
+export interface WorkoutActivityResponse {
+  days: WorkoutActivityDay[];
+  totalWorkoutDays: number;
+  totalWorkouts: number;
 }
 
 export class AnalyticsService {
@@ -633,6 +645,30 @@ export class AnalyticsService {
       status: overallStatus,
       recommendation,
       muscleGroups: readinessList.sort((a, b) => a.muscle.localeCompare(b.muscle))
+    };
+  }
+
+  public async getWorkoutActivity(
+    userId: string,
+    startDate?: string,
+    endDate?: string,
+    timezone?: string
+  ): Promise<WorkoutActivityResponse> {
+    const validTz = DateEngine.getValidTimezone(timezone);
+    const days = await workoutSessionRepository.getDailyWorkoutActivity(
+      userId,
+      startDate,
+      endDate,
+      validTz
+    );
+
+    const totalWorkoutDays = days.length;
+    const totalWorkouts = days.reduce((sum, d) => sum + d.count, 0);
+
+    return {
+      days,
+      totalWorkoutDays,
+      totalWorkouts,
     };
   }
 }

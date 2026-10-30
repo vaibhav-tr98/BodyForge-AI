@@ -1,4 +1,6 @@
 import { AnalyticsService } from "./analytics.service";
+import { DateEngine } from "../utils/dateEngine";
+import { activityQuerySchema } from "../validation/analytics.validation";
 
 // Mock dependencies
 jest.mock("../repositories/workoutSession.repository", () => ({
@@ -8,6 +10,7 @@ jest.mock("../repositories/workoutSession.repository", () => ({
     getRecentCompletedSessions: jest.fn(),
     findByIdAndUser: jest.fn(),
     aggregateExerciseProgress: jest.fn(),
+    getDailyWorkoutActivity: jest.fn(),
   },
 }));
 
@@ -339,5 +342,84 @@ describe("AnalyticsService - getTrainingReadiness", () => {
 
     const result = await analyticsService.getTrainingReadiness("testUser");
     expect(result).not.toBeNull();
+  });
+
+  describe("getWorkoutActivity", () => {
+    it("should return empty days and zero counts when no workouts exist", async () => {
+      (workoutSessionRepository.getDailyWorkoutActivity as jest.Mock).mockResolvedValue([]);
+
+      const result = await analyticsService.getWorkoutActivity("testUser", "2025-01-01", "2025-12-31", "UTC");
+
+      expect(result).toEqual({
+        days: [],
+        totalWorkoutDays: 0,
+        totalWorkouts: 0,
+      });
+      expect(workoutSessionRepository.getDailyWorkoutActivity).toHaveBeenCalledWith(
+        "testUser",
+        "2025-01-01",
+        "2025-12-31",
+        "UTC"
+      );
+    });
+
+    it("should calculate totalWorkoutDays and totalWorkouts correctly", async () => {
+      const mockDays = [
+        { date: "2026-01-10", count: 1 },
+        { date: "2026-01-15", count: 2 },
+        { date: "2026-02-01", count: 1 },
+      ];
+      (workoutSessionRepository.getDailyWorkoutActivity as jest.Mock).mockResolvedValue(mockDays);
+
+      const result = await analyticsService.getWorkoutActivity("testUser", "2026-01-01", "2026-02-28", "America/New_York");
+
+      expect(result.days).toHaveLength(3);
+      expect(result.totalWorkoutDays).toBe(3);
+      expect(result.totalWorkouts).toBe(4);
+      expect(workoutSessionRepository.getDailyWorkoutActivity).toHaveBeenCalledWith(
+        "testUser",
+        "2026-01-01",
+        "2026-02-28",
+        "America/New_York"
+      );
+    });
+
+    it("should fallback to UTC for invalid timezone string", async () => {
+      (workoutSessionRepository.getDailyWorkoutActivity as jest.Mock).mockResolvedValue([]);
+
+      await analyticsService.getWorkoutActivity("testUser", undefined, undefined, "NotARealTimezone/Fake");
+
+      expect(workoutSessionRepository.getDailyWorkoutActivity).toHaveBeenCalledWith(
+        "testUser",
+        undefined,
+        undefined,
+        "UTC"
+      );
+    });
+
+    it("should correctly validate and normalize timezones with DateEngine", () => {
+      expect(DateEngine.getValidTimezone("UTC")).toBe("UTC");
+      expect(DateEngine.getValidTimezone("Z")).toBe("UTC");
+      expect(DateEngine.getValidTimezone("America/New_York")).toBe("America/New_York");
+      expect(DateEngine.getValidTimezone("+05:30")).toBe("+05:30");
+      expect(DateEngine.getValidTimezone("+05")).toBe("+05:00");
+      expect(DateEngine.getValidTimezone("Invalid/Tz")).toBe("UTC");
+      expect(DateEngine.getValidTimezone(undefined)).toBe("UTC");
+    });
+
+    it("should enforce date range bounds in activityQuerySchema", () => {
+      // Valid cases
+      expect(activityQuerySchema.safeParse({}).success).toBe(true);
+      expect(activityQuerySchema.safeParse({ startDate: "2026-01-01", endDate: "2026-06-01" }).success).toBe(true);
+      expect(activityQuerySchema.safeParse({ startDate: "2025-01-01", endDate: "2026-12-31" }).success).toBe(true);
+
+      // Invalid: startDate > endDate
+      const invertedResult = activityQuerySchema.safeParse({ startDate: "2026-12-01", endDate: "2026-01-01" });
+      expect(invertedResult.success).toBe(false);
+
+      // Invalid: range exceeds 730 days
+      const excessiveResult = activityQuerySchema.safeParse({ startDate: "2020-01-01", endDate: "2026-01-01" });
+      expect(excessiveResult.success).toBe(false);
+    });
   });
 });

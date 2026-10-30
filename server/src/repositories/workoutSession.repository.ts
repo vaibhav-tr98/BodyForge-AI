@@ -368,6 +368,70 @@ async getProgramAnalyticsData(userId: string, programId: string): Promise<any> {
       exerciseVolume
     };
   }
+
+  async getDailyWorkoutActivity(
+    userId: string,
+    startDate?: string,
+    endDate?: string,
+    timezone: string = "UTC"
+  ): Promise<{ date: string; count: number }[]> {
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    const matchQuery: any = {
+      user: userObjectId,
+      status: "completed",
+      completedAt: { $ne: null },
+    };
+
+    if (startDate) {
+      const startBuffer = new Date(new Date(startDate).getTime() - 48 * 60 * 60 * 1000);
+      matchQuery.completedAt = { ...matchQuery.completedAt, $gte: startBuffer };
+    }
+    if (endDate) {
+      const endBuffer = new Date(new Date(endDate).getTime() + 48 * 60 * 60 * 1000);
+      matchQuery.completedAt = { ...matchQuery.completedAt, $lte: endBuffer };
+    }
+
+    const pipeline: any[] = [
+      { $match: matchQuery },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: "$completedAt",
+              timezone,
+            },
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ];
+
+    const postMatch: any = {};
+    if (startDate) {
+      postMatch._id = { ...postMatch._id, $gte: startDate };
+    }
+    if (endDate) {
+      postMatch._id = { ...postMatch._id, $lte: endDate };
+    }
+    if (Object.keys(postMatch).length > 0) {
+      pipeline.push({ $match: postMatch });
+    }
+
+    pipeline.push(
+      { $sort: { _id: 1 } },
+      {
+        $project: {
+          _id: 0,
+          date: "$_id",
+          count: 1,
+        },
+      }
+    );
+
+    return await WorkoutSession.aggregate(pipeline);
+  }
 }
 
 export const workoutSessionRepository = new WorkoutSessionRepository();

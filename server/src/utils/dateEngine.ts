@@ -49,4 +49,22 @@ export class DateEngine {
 
     return { daysElapsed, week, day, hasStarted: true };
   }
+
+  /**
+   * Safely validate and sanitize timezone for Date calculations and MongoDB aggregation.
+   * Returns a valid IANA or offset timezone, or defaults to "UTC".
+   */
+  static getValidTimezone(tz?: string): string {
+    if (!tz || typeof tz !== "string") return "UTC";
+    const trimmed = tz.trim();
+    if (trimmed === "Z" || trimmed === "UTC") return "UTC";
+    if (/^[+-]\d{2}:\d{2}$/.test(trimmed)) return trimmed;
+    if (/^[+-]\d{2}$/.test(trimmed)) return `${trimmed}:00`;
+    try {
+      Intl.DateTimeFormat(undefined, { timeZone: trimmed });
+      return trimmed;
+    } catch {
+      return "UTC";
+    }
+  }
 }

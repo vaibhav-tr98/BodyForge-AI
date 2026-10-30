@@ -157,6 +157,17 @@ export interface DashboardAnalytics {
   progressionRecommendation: ProgressionResponse | null;
 }
 
+export interface WorkoutActivityDay {
+  date: string; // YYYY-MM-DD
+  count: number;
+}
+
+export interface WorkoutActivityResponse {
+  days: WorkoutActivityDay[];
+  totalWorkoutDays: number;
+  totalWorkouts: number;
+}
+
 export interface ExerciseProgressPoint {
   date: string; // ISO date string from API
   weight: number;

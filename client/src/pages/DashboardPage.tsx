@@ -7,6 +7,7 @@ import { Play } from "lucide-react";
 import TodayScheduleSection from "../components/dashboard/TodayScheduleSection";
 import { BodyForgeCoachSection } from "../components/dashboard/BodyForgeCoachSection";
 import TrainingReadinessSection from "../components/dashboard/TrainingReadinessSection";
+import WorkoutConsistencyHeatmap from "../components/dashboard/WorkoutConsistencyHeatmap";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -75,6 +76,9 @@ export default function DashboardPage() {
           ) : (
             <TodayScheduleSection />
           )}
+
+          {/* Workout Consistency Heatmap */}
+          <WorkoutConsistencyHeatmap />
 
           {/* Recent Activity */}
           <section>

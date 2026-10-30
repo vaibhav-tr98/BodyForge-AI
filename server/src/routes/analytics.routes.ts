@@ -3,7 +3,7 @@ import { analyticsLimiter, coachingLimiter } from "../middleware/rateLimit.middl
 import { analyticsController } from "../controllers/analytics.controller";
 import { authenticate } from "../middleware/auth.middleware";
 import { validateParams, validateQuery } from "../middleware/validation.middleware";
-import { getExerciseProgressSchema, dateQuerySchema } from "../validation/analytics.validation";
+import { getExerciseProgressSchema, dateQuerySchema, activityQuerySchema } from "../validation/analytics.validation";
 import { validateWorkoutGeneratorRequest } from "../validation/workoutGenerator.validation";
 
 const router = Router();
@@ -13,6 +13,7 @@ router.use(authenticate);
 
 router.get("/coaching", coachingLimiter, validateQuery(dateQuerySchema), analyticsController.getCoaching);
 router.get("/dashboard", analyticsController.getDashboard);
+router.get("/activity", validateQuery(activityQuerySchema), analyticsController.getWorkoutActivity);
 router.get("/readiness", analyticsController.getTrainingReadiness);
 router.get("/personal-records", analyticsController.getPersonalRecords);
 router.get("/personal-records/:exerciseName", validateParams(getExerciseProgressSchema), analyticsController.getPersonalRecordByExercise);

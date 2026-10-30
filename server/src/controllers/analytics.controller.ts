@@ -277,6 +277,25 @@ class AnalyticsController {
     }
   };
 
+  public getWorkoutActivity = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.authenticatedUserId;
+      if (!userId) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+      }
+
+      const startDate = req.query.startDate as string | undefined;
+      const endDate = req.query.endDate as string | undefined;
+      const timezone = req.query.timezone as string | undefined;
+
+      const data = await analyticsService.getWorkoutActivity(userId, startDate, endDate, timezone);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  };
+
 }
 
 export const analyticsController = new AnalyticsController();

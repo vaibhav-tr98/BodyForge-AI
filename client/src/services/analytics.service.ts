@@ -87,6 +87,25 @@ class AnalyticsService {
     }
     return response.data.data;
   }
+
+  public async getWorkoutActivity(params?: {
+    startDate?: string;
+    endDate?: string;
+    timezone?: string;
+  }): Promise<import("../types").WorkoutActivityResponse> {
+    const query = new URLSearchParams();
+    if (params?.startDate) query.append("startDate", params.startDate);
+    if (params?.endDate) query.append("endDate", params.endDate);
+    if (params?.timezone) query.append("timezone", params.timezone);
+
+    const queryString = query.toString();
+    const url = `/api/analytics/activity${queryString ? `?${queryString}` : ""}`;
+    const response = await api.get<ApiResponse<import("../types").WorkoutActivityResponse>>(url);
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.message || "Failed to fetch workout activity");
+    }
+    return response.data.data;
+  }
 }
 
 export const analyticsService = new AnalyticsService();
