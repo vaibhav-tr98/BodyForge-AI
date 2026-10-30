@@ -68,7 +68,7 @@ export default function NaturalLanguageLogger({ date }: { date: string }) {
 
   if (proposals.length > 0) {
     return (
-      <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-5 mb-8 shadow-sm relative overflow-hidden">
+      <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 shadow-sm relative overflow-hidden">
         <div className="flex justify-between items-center mb-5 relative z-10">
           <h2 className="text-lg font-bold text-[#111827] flex items-center gap-2">
             <Sparkles className="text-cyan-600" size={20} />
@@ -77,6 +77,7 @@ export default function NaturalLanguageLogger({ date }: { date: string }) {
           <button
             onClick={() => setProposals([])}
             className="p-2 text-[#6B7280] hover:text-[#111827] bg-[#F1F3F5] hover:bg-[#E5E7EB] rounded-lg transition min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Close review"
           >
             <X size={18} />
           </button>
@@ -99,7 +100,11 @@ export default function NaturalLanguageLogger({ date }: { date: string }) {
                     <p className="text-amber-600 text-xs mt-1 font-medium">Multiple matches found. Please review.</p>
                   )}
                 </div>
-                <button onClick={() => handleRemove(i)} className="text-[#6B7280] hover:text-red-500 p-2 rounded-lg hover:bg-white min-h-[44px] min-w-[44px] flex items-center justify-center transition">
+                <button
+                  onClick={() => handleRemove(i)}
+                  className="text-[#6B7280] hover:text-red-500 p-2 rounded-lg hover:bg-[#E5E7EB] min-h-[44px] min-w-[44px] flex items-center justify-center transition"
+                  aria-label="Remove food"
+                >
                   <X size={18} />
                 </button>
               </div>
@@ -119,12 +124,12 @@ export default function NaturalLanguageLogger({ date }: { date: string }) {
                   </select>
 
                   {proposal.confirmedCandidate && (
-                    <div className="flex gap-4 text-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-lg px-3 py-2">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm bg-[#FFFFFF] border border-[#E5E7EB] rounded-lg px-3 py-2">
                        <div className="font-bold text-[#111827]">{proposal.confirmedCandidate.preview.calories} kcal</div>
                        <div className="text-[#6B7280] flex gap-3 font-medium">
-                         <span><span className="text-cyan-600">P</span> {proposal.confirmedCandidate.preview.protein}g</span>
-                         <span><span className="text-blue-600">C</span> {proposal.confirmedCandidate.preview.carbs}g</span>
-                         <span><span className="text-orange-500">F</span> {proposal.confirmedCandidate.preview.fat}g</span>
+                         <span><span className="text-cyan-600 font-bold">P</span> {proposal.confirmedCandidate.preview.protein}g</span>
+                         <span><span className="text-blue-600 font-bold">C</span> {proposal.confirmedCandidate.preview.carbs}g</span>
+                         <span><span className="text-orange-500 font-bold">F</span> {proposal.confirmedCandidate.preview.fat}g</span>
                        </div>
                     </div>
                   )}
@@ -151,24 +156,24 @@ export default function NaturalLanguageLogger({ date }: { date: string }) {
   }
 
   return (
-    <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-5 mb-6 shadow-sm">
+    <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 shadow-sm">
       <h2 className="text-base font-bold text-[#111827] flex items-center gap-2 mb-3 uppercase tracking-wide">
         <Sparkles className="text-cyan-600" size={18} />
         Quick Log
       </h2>
-      <form onSubmit={handleAnalyze} className="flex flex-col sm:flex-row gap-3">
+      <form onSubmit={handleAnalyze} className="flex flex-col sm:flex-row gap-3 items-stretch">
         <input
           type="text"
           value={text}
           onChange={e => setText(e.target.value)}
           maxLength={500}
           placeholder="e.g., I had 2 eggs and a banana"
-          className="flex-1 bg-[#F7F8FA] border border-[#E5E7EB] rounded-xl px-4 py-3 text-[#111827] font-medium placeholder:text-[#6B7280] focus:outline-none focus:border-cyan-500 focus:bg-[#FFFFFF] transition min-h-[44px]"
+          className="w-full sm:flex-1 min-w-0 bg-[#F7F8FA] border border-[#E5E7EB] rounded-xl px-4 py-2.5 text-[#111827] font-medium placeholder:text-[#6B7280] focus:outline-none focus:border-cyan-500 focus:bg-[#FFFFFF] transition min-h-[44px]"
         />
         <button
           disabled={!text.trim() || analyzeMutation.isPending}
           type="submit"
-          className="bg-[#111827] hover:bg-[#374151] text-white px-6 py-3 rounded-xl font-bold transition disabled:opacity-50 whitespace-nowrap flex items-center justify-center min-w-[120px] min-h-[44px]"
+          className="w-full sm:w-auto shrink-0 bg-[#111827] hover:bg-[#374151] text-white px-5 py-2.5 rounded-xl font-bold transition disabled:opacity-50 whitespace-nowrap flex items-center justify-center min-h-[44px]"
         >
           {analyzeMutation.isPending ? (
             <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />

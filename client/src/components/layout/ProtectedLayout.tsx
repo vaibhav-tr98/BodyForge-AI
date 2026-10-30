@@ -11,6 +11,7 @@ import SyncIndicator from "../ui/SyncIndicator";
 export default function ProtectedLayout() {
   const { isAuthenticated, isLoading, user, logout } = useAuth();
   const location = useLocation();
+  const isWorkoutSession = useMatch("/workouts/session/:id");
 
   if (isLoading) {
     return <FullScreenLoader />;
@@ -38,8 +39,6 @@ export default function ProtectedLayout() {
     { name: "Nutrition", path: "/nutrition", icon: Utensils },
     { name: "Progress", path: "/progress", icon: LineChart },
   ];
-
-  const isWorkoutSession = useMatch("/workouts/session/:id");
 
   return (
     <div className="min-h-screen bg-[#F7F8FA] text-[#111827]">

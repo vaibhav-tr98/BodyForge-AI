@@ -205,7 +205,7 @@ export default function NutritionPage() {
 
   // React #310 Safety: Loading & Error states happen AFTER all hooks.
   return (
-    <div className="mx-auto max-w-5xl space-y-6 sm:space-y-8 pb-12">
+    <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8 pb-12">
       {/* Header */}
       <header className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -459,12 +459,12 @@ export default function NutritionPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-sm px-4">
+              <div className="text-center py-12 px-6 bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl shadow-sm">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#F1F3F5] mb-4">
                   <PieChart className="text-[#6B7280]" size={32} />
                 </div>
                 <h3 className="text-lg font-bold text-[#111827] mb-2 uppercase tracking-wide">No food logged yet</h3>
-                <p className="text-[#6B7280] mb-8 max-w-sm mx-auto font-medium text-sm">
+                <p className="text-[#6B7280] max-w-sm mx-auto font-medium text-sm">
                   Start tracking your nutrition to hit your daily goals and optimize your performance.
                 </p>
               </div>
@@ -488,7 +488,7 @@ export default function NutritionPage() {
 
           {/* Goals/Insights Box if we want one */}
           {targetCals > 0 && overview?.progress && (
-             <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-5 shadow-sm">
+             <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 shadow-sm">
                <h3 className="text-sm font-bold text-[#111827] uppercase tracking-wide mb-3 flex items-center gap-2">
                  <Target className="text-cyan-600" size={16} /> Daily Goal Status
                </h3>

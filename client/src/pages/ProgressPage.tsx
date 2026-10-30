@@ -144,11 +144,15 @@ export default function ProgressPage() {
       {
         label: 'Weight (kg)',
         data: (history || []).slice().reverse().map(e => e.weight),
-        borderColor: '#06b6d4',
-        backgroundColor: 'rgba(6, 182, 212, 0.1)',
+        borderColor: '#0891b2',
+        backgroundColor: 'rgba(8, 145, 178, 0.1)',
         borderWidth: 2,
         fill: true,
         tension: 0.4,
+        pointRadius: 4,
+        pointBackgroundColor: '#FFFFFF',
+        pointBorderColor: '#0891b2',
+        pointBorderWidth: 2,
       }
     ]
   };
@@ -160,100 +164,116 @@ export default function ProgressPage() {
       legend: {
         display: false,
       },
+      tooltip: {
+        backgroundColor: '#111827',
+        titleColor: '#FFFFFF',
+        bodyColor: '#F7F8FA',
+        padding: 10,
+        cornerRadius: 8,
+        displayColors: false,
+      },
     },
     scales: {
       y: {
         grid: {
-          color: '#1e293b',
+          color: '#E5E7EB',
+          borderDash: [4, 4],
         },
         ticks: {
-          color: '#94a3b8',
-        }
+          color: '#6B7280',
+          font: { family: 'inherit' },
+        },
+        border: { display: false }
       },
       x: {
         grid: {
           display: false,
         },
         ticks: {
-          color: '#94a3b8',
+          color: '#6B7280',
+          font: { family: 'inherit' },
         }
       }
-    }
+    },
+    interaction: {
+      intersect: false,
+      mode: 'index' as const,
+    },
   };
 
   if (isLoadingSummary || isLoadingHistory) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-cyan-500"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-cyan-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
+    <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8 pb-12">
       <div>
-        <h1 className="text-3xl font-bold text-white">Progress Tracking</h1>
-        <p className="mt-2 text-slate-400">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#111827]">Progress Tracking</h1>
+        <p className="mt-1 text-sm sm:text-base font-medium text-[#6B7280]">
           Track your weight, body measurements, and visualize your progress over time.
         </p>
       </div>
 
       {/* SUMMARY STATS */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6">
-          <div className="flex items-center gap-3 text-slate-400">
-            <Activity className="h-5 w-5 text-cyan-500" />
-            <h3 className="font-medium">Current Weight</h3>
+        <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 shadow-sm">
+          <div className="flex items-center gap-3 text-[#6B7280]">
+            <Activity className="h-5 w-5 text-cyan-600" />
+            <h3 className="text-xs font-bold uppercase tracking-wider">Current Weight</h3>
           </div>
-          <p className="mt-2 text-3xl font-bold text-white">
+          <p className="mt-2 text-3xl font-bold text-[#111827]">
             {summary?.currentWeight ? `${summary.currentWeight} kg` : "-"}
           </p>
         </div>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6">
-          <div className="flex items-center gap-3 text-slate-400">
+        <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 shadow-sm">
+          <div className="flex items-center gap-3 text-[#6B7280]">
             <Calendar className="h-5 w-5 text-indigo-500" />
-            <h3 className="font-medium">Starting Weight</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider">Starting Weight</h3>
           </div>
-          <p className="mt-2 text-3xl font-bold text-white">
+          <p className="mt-2 text-3xl font-bold text-[#111827]">
             {summary?.startingWeight ? `${summary.startingWeight} kg` : "-"}
           </p>
         </div>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6">
-          <div className="flex items-center gap-3 text-slate-400">
+        <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 shadow-sm">
+          <div className="flex items-center gap-3 text-[#6B7280]">
             <TrendingUp className="h-5 w-5 text-emerald-500" />
-            <h3 className="font-medium">Total Change</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider">Total Change</h3>
           </div>
-          <p className="mt-2 text-3xl font-bold text-white">
+          <p className="mt-2 text-3xl font-bold text-[#111827]">
             {summary?.weightChange != null ? `${summary.weightChange > 0 ? '+' : ''}${summary.weightChange} kg` : "-"}
           </p>
           {summary?.weightChangePercentage != null && (
-            <p className="text-sm text-slate-400">{summary.weightChangePercentage > 0 ? '+' : ''}{summary.weightChangePercentage}%</p>
+            <p className="mt-1 text-xs font-medium text-[#6B7280]">{summary.weightChangePercentage > 0 ? '+' : ''}{summary.weightChangePercentage}%</p>
           )}
         </div>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6">
-          <div className="flex items-center gap-3 text-slate-400">
+        <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 shadow-sm">
+          <div className="flex items-center gap-3 text-[#6B7280]">
             {summary?.trend === "losing" ? (
               <TrendingDown className="h-5 w-5 text-emerald-500" />
             ) : summary?.trend === "gaining" ? (
               <TrendingUp className="h-5 w-5 text-rose-500" />
             ) : (
-              <Minus className="h-5 w-5 text-slate-400" />
+              <Minus className="h-5 w-5 text-[#6B7280]" />
             )}
-            <h3 className="font-medium">Trend</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider">Trend</h3>
           </div>
-          <p className="mt-2 text-3xl font-bold text-white capitalize">
+          <p className="mt-2 text-3xl font-bold text-[#111827] capitalize">
             {summary?.trend === "no_history" ? "No History" : summary?.trend}
           </p>
         </div>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-3">
+      <div className="grid gap-8 lg:grid-cols-3 items-start">
         {/* ADD ENTRY FORM */}
-        <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6">
-          <h2 className="mb-6 text-xl font-bold text-white">
+        <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 shadow-sm">
+          <h2 className="mb-6 text-xl font-bold text-[#111827]">
             {editingId ? "Edit Entry" : "Record Progress"}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -315,7 +335,7 @@ export default function ProgressPage() {
             <div className="pt-2">
               <Button 
                 type="submit" 
-                className="w-full" 
+                className="w-full bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl font-bold min-h-[44px] transition shadow-sm"
                 loading={createMutation.isPending || updateMutation.isPending}
               >
                 {editingId ? "Update Entry" : "Add Entry"}
@@ -324,7 +344,7 @@ export default function ProgressPage() {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="mt-2 w-full text-sm text-slate-400 hover:text-white"
+                  className="mt-3 w-full text-sm font-semibold text-[#6B7280] hover:text-[#111827] hover:bg-[#F1F3F5] rounded-xl p-2 min-h-[44px] transition"
                 >
                   Cancel Edit
                 </button>
@@ -336,13 +356,13 @@ export default function ProgressPage() {
         {/* CHART & HISTORY */}
         <div className="space-y-8 lg:col-span-2">
           {/* CHART */}
-          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6">
-            <h2 className="mb-6 text-xl font-bold text-white">Weight Trend</h2>
+          <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 shadow-sm">
+            <h2 className="mb-6 text-xl font-bold text-[#111827]">Weight Trend</h2>
             <div className="h-64">
               {history && history.length > 0 ? (
                 <Line data={chartData} options={chartOptions} />
               ) : (
-                <div className="flex h-full items-center justify-center text-slate-500">
+                <div className="flex h-full items-center justify-center text-[#6B7280] font-medium text-sm">
                   No progress history to display
                 </div>
               )}
@@ -350,38 +370,40 @@ export default function ProgressPage() {
           </div>
 
           {/* HISTORY TABLE */}
-          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6">
-            <h2 className="mb-6 text-xl font-bold text-white">History</h2>
+          <div className="bg-[#FFFFFF] border border-[#E5E7EB] rounded-2xl p-5 sm:p-6 shadow-sm">
+            <h2 className="mb-6 text-xl font-bold text-[#111827]">History</h2>
             {history && history.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <thead className="border-b border-slate-800 text-slate-400">
+                  <thead className="border-b border-[#E5E7EB] text-[#6B7280]">
                     <tr>
-                      <th className="pb-3 font-medium">Date</th>
-                      <th className="pb-3 font-medium">Weight</th>
-                      <th className="pb-3 font-medium">Body Fat</th>
-                      <th className="pb-3 font-medium">Actions</th>
+                      <th className="pb-3 text-xs font-bold uppercase tracking-wider">Date</th>
+                      <th className="pb-3 text-xs font-bold uppercase tracking-wider">Weight</th>
+                      <th className="pb-3 text-xs font-bold uppercase tracking-wider hidden sm:table-cell">Body Fat</th>
+                      <th className="pb-3 text-xs font-bold uppercase tracking-wider text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/50 text-slate-300">
+                  <tbody className="divide-y divide-[#E5E7EB] text-[#111827]">
                     {history.map((entry) => (
-                      <tr key={entry._id}>
-                        <td className="py-4">{formatDate(entry.date, "long")}</td>
-                        <td className="py-4 font-medium text-white">{entry.weight} kg</td>
-                        <td className="py-4">{entry.bodyFatPercentage ? `${entry.bodyFatPercentage}%` : "-"}</td>
-                        <td className="py-4">
-                          <div className="flex items-center gap-2">
+                      <tr key={entry._id} className="group">
+                        <td className="py-4 font-medium">{formatDate(entry.date, "long")}</td>
+                        <td className="py-4 font-bold text-[#111827]">{entry.weight} kg</td>
+                        <td className="py-4 font-medium text-[#6B7280] hidden sm:table-cell">{entry.bodyFatPercentage ? `${entry.bodyFatPercentage}%` : "-"}</td>
+                        <td className="py-4 text-right">
+                          <div className="flex items-center justify-end gap-1">
                             <button 
                               onClick={() => handleEdit(entry)}
-                              className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                              className="rounded-lg p-2 text-[#6B7280] hover:bg-[#F1F3F5] hover:text-[#111827] transition min-h-[40px] min-w-[40px] flex items-center justify-center"
+                              aria-label="Edit entry"
                             >
-                              <Edit2 className="h-4 w-4" />
+                              <Edit2 size={16} />
                             </button>
                             <button 
                               onClick={() => handleDelete(entry._id)}
-                              className="rounded p-1 text-slate-400 hover:bg-red-900/30 hover:text-red-500 transition-colors"
+                              className="rounded-lg p-2 text-[#6B7280] hover:bg-red-50 hover:text-red-500 transition min-h-[40px] min-w-[40px] flex items-center justify-center"
+                              aria-label="Delete entry"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 size={16} />
                             </button>
                           </div>
                         </td>
@@ -391,7 +413,7 @@ export default function ProgressPage() {
                 </table>
               </div>
             ) : (
-              <div className="py-8 text-center text-slate-500">
+              <div className="py-8 text-center text-[#6B7280] font-medium text-sm">
                 No entries found. Start tracking today!
               </div>
             )}
