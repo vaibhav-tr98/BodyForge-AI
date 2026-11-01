@@ -3,20 +3,11 @@ import { Calendar, AlertTriangle, Sparkles, TrendingUp, ChevronRight } from "luc
 import { Link } from "react-router-dom";
 import { useWorkoutActivity } from "../../hooks/useWorkoutActivity";
 
-const LEVEL_COLORS: Record<number, string> = {
-  0: "#E5E7EB", // No workout
-  1: "#DBEAFE", // Level 1 (1 workout)
-  2: "#93C5FD", // Level 2 (2 workouts)
-  3: "#3B82F6", // Level 3 (3 workouts)
-  4: "#1D4ED8", // Level 4 (4+ workouts)
-};
+const COLOR_INACTIVE = "#E5E7EB"; // 0 workouts (light gray)
+const COLOR_ACTIVE = "#2563EB";   // 1+ workouts (solid blue)
 
-function getActivityLevel(count: number): 0 | 1 | 2 | 3 | 4 {
-  if (count <= 0) return 0;
-  if (count === 1) return 1;
-  if (count === 2) return 2;
-  if (count === 3) return 3;
-  return 4;
+function getCellColor(count: number): string {
+  return count > 0 ? COLOR_ACTIVE : COLOR_INACTIVE;
 }
 
 function getWorkoutMessage(count: number): string {
@@ -39,7 +30,6 @@ interface HeatmapDay {
   dateObj: Date;
   dayOfWeek: number; // 0 = Mon, 6 = Sun
   count: number;
-  level: 0 | 1 | 2 | 3 | 4;
   isFuture: boolean;
   isToday: boolean;
 }
@@ -159,17 +149,15 @@ export default function WorkoutConsistencyHeatmap() {
   const totalWorkouts = activityData?.totalWorkouts ?? 0;
   const totalWorkoutDays = activityData?.totalWorkoutDays ?? 0;
 
-  // Hydrate full heatmap weeks with counts and levels
+  // Hydrate full heatmap weeks with counts
   const hydratedWeeks = useMemo(() => {
     return weeks.map((week) => ({
       ...week,
       days: week.days.map((day): HeatmapDay => {
         const count = day.isFuture ? 0 : (activityMap.get(day.date) || 0);
-        const level = day.isFuture ? 0 : getActivityLevel(count);
         return {
           ...day,
           count,
-          level,
         };
       }),
     }));
@@ -224,9 +212,8 @@ export default function WorkoutConsistencyHeatmap() {
           </div>
         </div>
         <div className="h-28 w-full bg-[#F1F3F5] rounded-xl mb-3"></div>
-        <div className="flex justify-between items-center pt-3 border-t border-[#E5E7EB]">
+        <div className="flex items-center pt-3 border-t border-[#E5E7EB]">
           <div className="h-3 w-40 bg-[#E5E7EB] rounded"></div>
-          <div className="h-3 w-28 bg-[#E5E7EB] rounded"></div>
         </div>
       </div>
     );
@@ -302,7 +289,7 @@ export default function WorkoutConsistencyHeatmap() {
                 <div className="flex items-center justify-center gap-1.5 text-xs font-bold leading-tight">
                   <span
                     className="w-2 h-2 rounded-[2px] shrink-0"
-                    style={{ backgroundColor: LEVEL_COLORS[hoveredDay.level] }}
+                    style={{ backgroundColor: getCellColor(hoveredDay.count) }}
                   />
                   <span>{getWorkoutMessage(hoveredDay.count)}</span>
                 </div>
@@ -365,7 +352,7 @@ export default function WorkoutConsistencyHeatmap() {
                         day.isToday ? "border border-cyan-500" : ""
                       }`}
                       style={{
-                        backgroundColor: day.isFuture ? "transparent" : LEVEL_COLORS[day.level],
+                        backgroundColor: day.isFuture ? "transparent" : getCellColor(day.count),
                       }}
                     />
                   );
@@ -382,7 +369,7 @@ export default function WorkoutConsistencyHeatmap() {
           <div className="flex items-center gap-2">
             <span
               className="w-3 h-3 rounded-[2px] shrink-0"
-              style={{ backgroundColor: LEVEL_COLORS[activeDay.level] }}
+              style={{ backgroundColor: getCellColor(activeDay.count) }}
             />
             <span className="font-bold text-[#111827]">
               {formatFullDate(activeDay.dateObj)}
@@ -413,9 +400,9 @@ export default function WorkoutConsistencyHeatmap() {
         </div>
       )}
 
-      {/* Footer: Legend & Encouragement */}
+      {/* Footer: Motivational Message */}
       <div className="flex items-center justify-between pt-3.5 mt-3.5 border-t border-[#E5E7EB] text-xs text-[#6B7280]">
-        <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-medium text-[#6B7280]">
+        <div className="flex items-center gap-1.5 text-[11px] font-medium text-[#6B7280]">
           <TrendingUp size={13} className="text-cyan-600" />
           <span>
             {totalWorkouts >= 50
@@ -424,28 +411,6 @@ export default function WorkoutConsistencyHeatmap() {
               ? "Every session counts. Keep showing up!"
               : "Consistency turns effort into routine."}
           </span>
-        </div>
-
-        {/* Legend */}
-        <div className="flex items-center gap-2 ml-auto">
-          <span className="text-[10px] font-bold text-[#6B7280]">Less</span>
-          <div className="flex items-center gap-1">
-            {[0, 1, 2, 3, 4].map((level) => (
-              <span
-                key={level}
-                className="w-2.5 h-2.5 rounded-[2px]"
-                style={{ backgroundColor: LEVEL_COLORS[level] }}
-                title={
-                  level === 0
-                    ? "0 workouts"
-                    : level === 4
-                    ? "4+ workouts"
-                    : `${level} workout${level > 1 ? "s" : ""}`
-                }
-              />
-            ))}
-          </div>
-          <span className="text-[10px] font-bold text-[#6B7280]">More</span>
         </div>
       </div>
     </section>
