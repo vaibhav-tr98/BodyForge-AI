@@ -6,12 +6,16 @@ import { userRepository } from "../repositories/user.repository";
 
 import { foodService } from "./food.service";
 import { nutritionTargetService } from "./nutritionTarget.service";
-import { AIProvider } from "./aiProvider.service";
+import { AIProvider, classifyGeminiError } from "./aiProvider.service";
 
 class NutritionService {
   async addEntry(userId: string, data: Partial<INutritionEntry>): Promise<INutritionEntry> {
     if (!data.foodName || data.quantity === undefined || !data.unit) {
       throw new AppError("foodName, quantity, and unit are required", 400);
+    }
+
+    if (typeof data.quantity !== "number" || !Number.isFinite(data.quantity) || data.quantity <= 0) {
+      throw new AppError("Quantity must be a positive finite number", 400);
     }
 
     const calculatedMacros = await foodService.calculateMacros(data.foodName, data.quantity, data.unit);
@@ -172,11 +176,55 @@ class NutritionService {
   }
 
   async analyzeLog(text: string): Promise<import("../types/foodExtraction.types").AnalyzeMealResponseDTO> {
-    const extractionResult = await AIProvider.extractFoodFromText(text);
+    let extractionResult;
+    try {
+      extractionResult = await AIProvider.extractFoodFromText(text);
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      const classified = classifyGeminiError(error);
+      if (classified.isQuotaExhausted || classified.isRateLimit) {
+        throw new AppError("AI service rate limit reached. Please wait a moment or log your food manually.", 429);
+      }
+      if (error?.message?.includes("GEMINI_API_KEY") || error?.message?.includes("not configured")) {
+        throw new AppError("AI Quick Log is not configured. Please log food manually.", 503);
+      }
+      if (error?.code === "ECONNABORTED" || error?.message?.includes("timeout")) {
+        throw new AppError("AI analysis timed out. Please try again or log manually.", 504);
+      }
+      throw new AppError(error?.message || "AI service is currently unavailable. Please try again or log manually.", 503);
+    }
+
+    if (!extractionResult || !Array.isArray(extractionResult.items) || extractionResult.items.length === 0) {
+      return { proposals: [] };
+    }
+
     const proposals = [];
 
     for (const item of extractionResult.items) {
-      let normalizedText = item.foodText.trim().toLowerCase();
+      const foodText = (item.foodText || "").trim();
+      if (!foodText) continue;
+
+      const unit = (item.unit || "piece").trim();
+
+      // Validate quantity: zero, negative, NaN, Infinity, or non-finite numbers must NOT be silently converted to 1
+      if (typeof item.quantity !== "number" || !Number.isFinite(item.quantity) || item.quantity <= 0) {
+        proposals.push({
+          extractedFood: item.foodText,
+          quantity: item.quantity,
+          unit,
+          candidates: [],
+          selectedCandidateId: null,
+          requiresReview: false,
+          status: "not_found" as const
+        });
+        continue;
+      }
+
+      const quantity = item.quantity;
+
+      let normalizedText = foodText.toLowerCase();
       if (normalizedText.endsWith('s') && !normalizedText.endsWith('ss') && !normalizedText.endsWith('us')) {
         normalizedText = normalizedText.slice(0, -1);
       }
@@ -186,22 +234,36 @@ class NutritionService {
 
       for (const food of searchResults) {
         try {
-          const preview = await foodService.calculateMacros(food.name, item.quantity, item.unit);
+          const preview = await foodService.calculateMacros(food.name, quantity, unit);
           candidates.push({
             food: {
-              _id: food._id.toString(),
+              _id: food._id ? food._id.toString() : food.name,
               name: food.name
             },
             preview: preview
           });
         } catch (e) {
-          continue;
+          // If unit failed, try "piece" or baseUnit fallback before giving up
+          if (unit !== "piece" && unit !== food.baseUnit) {
+            try {
+              const fallbackPreview = await foodService.calculateMacros(food.name, quantity, "piece");
+              candidates.push({
+                food: {
+                  _id: food._id ? food._id.toString() : food.name,
+                  name: food.name
+                },
+                preview: fallbackPreview
+              });
+            } catch {
+              continue;
+            }
+          }
         }
       }
 
       let status: "not_found" | "matched" | "ambiguous" = "not_found";
       let requiresReview = false;
-      let selectedCandidateId = null;
+      let selectedCandidateId: string | null = null;
 
       if (candidates.length === 0) {
         status = "not_found";
@@ -216,8 +278,8 @@ class NutritionService {
 
       proposals.push({
         extractedFood: item.foodText,
-        quantity: item.quantity,
-        unit: item.unit,
+        quantity,
+        unit,
         candidates,
         selectedCandidateId,
         requiresReview,
@@ -230,4 +292,3 @@ class NutritionService {
 }
 
 export const nutritionService = new NutritionService();
-

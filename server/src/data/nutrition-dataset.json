@@ -70414,7 +70414,9 @@
       "egg whole raw",
       "egg, whole, raw, fresh",
       "raw egg",
-      "whole egg"
+      "whole egg",
+      "eggs",
+      "fresh egg"
     ],
     "category": "Dairy and Egg Products",
     "baseQuantity": 100,
@@ -70423,7 +70425,19 @@
     "protein": 12.56,
     "carbs": 0.72,
     "fat": 9.51,
-    "source": "USDA FoodData Central"
+    "source": "USDA FoodData Central",
+    "servings": [
+      {
+        "unit": "piece",
+        "quantity": 1,
+        "equivalent": 50
+      },
+      {
+        "unit": "egg",
+        "quantity": 1,
+        "equivalent": 50
+      }
+    ]
   },
   {
     "name": "Cheese, Mexican blend",
@@ -105814,7 +105828,12 @@
       "beverages",
       "beverages whey protein powder isolate",
       "beverages, whey protein powder isolate",
-      "whey protein powder isolate beverages"
+      "whey protein powder isolate beverages",
+      "whey protein",
+      "whey",
+      "protein powder",
+      "whey protein powder",
+      "whey protein isolate"
     ],
     "category": "Beverages",
     "baseQuantity": 100,
@@ -105823,7 +105842,14 @@
     "protein": 58.14,
     "carbs": 29.07,
     "fat": 1.16,
-    "source": "USDA FoodData Central"
+    "source": "USDA FoodData Central",
+    "servings": [
+      {
+        "unit": "scoop",
+        "quantity": 1,
+        "equivalent": 30
+      }
+    ]
   },
   {
     "name": "Beverages, Orange juice, light, No pulp",
@@ -105869,7 +105895,11 @@
       "beverages",
       "beverages protein powder whey based",
       "beverages, protein powder whey based",
-      "protein powder whey based beverages"
+      "protein powder whey based beverages",
+      "whey protein",
+      "whey",
+      "protein powder",
+      "whey protein powder"
     ],
     "category": "Beverages",
     "baseQuantity": 100,
@@ -105878,7 +105908,14 @@
     "protein": 78.13,
     "carbs": 6.25,
     "fat": 1.56,
-    "source": "USDA FoodData Central"
+    "source": "USDA FoodData Central",
+    "servings": [
+      {
+        "unit": "scoop",
+        "quantity": 1,
+        "equivalent": 30
+      }
+    ]
   },
   {
     "name": "Beverages, Protein powder soy based",
@@ -110377,7 +110414,13 @@
       "egg whole",
       "egg whole cooked",
       "egg, whole, cooked, hard-boiled",
-      "whole egg"
+      "whole egg",
+      "boiled egg",
+      "boiled eggs",
+      "hard boiled egg",
+      "hard-boiled egg",
+      "hard boiled eggs",
+      "eggs"
     ],
     "category": "Dairy and Egg Products",
     "baseQuantity": 100,
@@ -110386,7 +110429,19 @@
     "protein": 12.58,
     "carbs": 1.12,
     "fat": 10.61,
-    "source": "USDA FoodData Central"
+    "source": "USDA FoodData Central",
+    "servings": [
+      {
+        "unit": "piece",
+        "quantity": 1,
+        "equivalent": 50
+      },
+      {
+        "unit": "egg",
+        "quantity": 1,
+        "equivalent": 50
+      }
+    ]
   },
   {
     "name": "Egg, whole, dried, stabilized, glucose reduced",
@@ -120052,7 +120107,10 @@
       "bananas",
       "bananas raw",
       "bananas, raw",
-      "raw bananas"
+      "raw bananas",
+      "banana",
+      "raw banana",
+      "banana raw"
     ],
     "category": "Fruits and Fruit Juices",
     "baseQuantity": 100,
@@ -120061,7 +120119,19 @@
     "protein": 1.09,
     "carbs": 22.84,
     "fat": 0.33,
-    "source": "USDA FoodData Central"
+    "source": "USDA FoodData Central",
+    "servings": [
+      {
+        "unit": "piece",
+        "quantity": 1,
+        "equivalent": 118
+      },
+      {
+        "unit": "banana",
+        "quantity": 1,
+        "equivalent": 118
+      }
+    ]
   },
   {
     "name": "Bananas, dehydrated, or banana powder",
@@ -146048,7 +146118,8 @@
       "eggs grade a large",
       "eggs, grade a, large, egg whole",
       "grade a eggs",
-      "large eggs"
+      "large eggs",
+      "egg"
     ],
     "category": "Dairy and Egg Products",
     "baseQuantity": 100,
@@ -146057,7 +146128,19 @@
     "protein": 12.4,
     "carbs": 0.96,
     "fat": 9.96,
-    "source": "USDA FoodData Central"
+    "source": "USDA FoodData Central",
+    "servings": [
+      {
+        "unit": "piece",
+        "quantity": 1,
+        "equivalent": 50
+      },
+      {
+        "unit": "egg",
+        "quantity": 1,
+        "equivalent": 50
+      }
+    ]
   },
   {
     "name": "Pork, cured, bacon, cooked, restaurant",
@@ -146502,7 +146585,10 @@
       "soy chunks",
       "nutrela",
       "meal maker",
-      "soybean chunks"
+      "soybean chunks",
+      "soya chunks",
+      "soya chunk",
+      "soy chunk"
     ],
     "category": "Soy Products",
     "baseQuantity": 100,
@@ -146511,7 +146597,14 @@
     "protein": 52,
     "carbs": 33,
     "fat": 0.5,
-    "source": "MVP reference dataset"
+    "source": "MVP reference dataset",
+    "servings": [
+      {
+        "unit": "cup",
+        "quantity": 1,
+        "equivalent": 30
+      }
+    ]
   },
   {
     "name": "Paneer",
@@ -146532,7 +146625,8 @@
     "name": "White Rice (Raw)",
     "aliases": [
       "rice",
-      "chawal"
+      "chawal",
+      "white rice"
     ],
     "category": "Cereals & Grains",
     "baseQuantity": 100,
@@ -146564,7 +146658,10 @@
       "chapati",
       "phulka",
       "indian flatbread",
-      "wheat roti"
+      "wheat roti",
+      "roti",
+      "rotis",
+      "chapatis"
     ],
     "category": "Cereals & Grains",
     "baseQuantity": 100,
@@ -146577,6 +146674,11 @@
     "servings": [
       {
         "unit": "piece",
+        "quantity": 1,
+        "equivalent": 40
+      },
+      {
+        "unit": "roti",
         "quantity": 1,
         "equivalent": 40
       }
@@ -146636,7 +146738,9 @@
     "name": "Chicken Breast (Raw)",
     "aliases": [
       "chicken",
-      "murgh"
+      "murgh",
+      "chicken breast",
+      "raw chicken breast"
     ],
     "category": "Poultry",
     "baseQuantity": 100,
@@ -146652,7 +146756,8 @@
     "aliases": [
       "milk",
       "dudh",
-      "whole milk"
+      "whole milk",
+      "cow milk"
     ],
     "category": "Dairy",
     "baseQuantity": 100,
@@ -146661,7 +146766,24 @@
     "protein": 3.2,
     "carbs": 4.8,
     "fat": 3.3,
-    "source": "MVP reference dataset"
+    "source": "MVP reference dataset",
+    "servings": [
+      {
+        "unit": "glass",
+        "quantity": 1,
+        "equivalent": 250
+      },
+      {
+        "unit": "cup",
+        "quantity": 1,
+        "equivalent": 240
+      },
+      {
+        "unit": "ml",
+        "quantity": 1,
+        "equivalent": 1
+      }
+    ]
   },
   {
     "name": "Curd",

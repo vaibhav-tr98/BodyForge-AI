@@ -232,14 +232,131 @@ describe("FoodService", () => {
       });
     });
 
+    it("should calculate macros for 1 glass milk (using standard 250ml/g serving)", async () => {
+      (foodRepository.getFoodByName as jest.Mock).mockResolvedValue({
+        name: "Cow Milk",
+        category: "Dairy and Egg Products",
+        baseQuantity: 100,
+        baseUnit: "g",
+        calories: 61,
+        protein: 3.2,
+        carbs: 4.8,
+        fat: 3.3
+      });
+      const macros = await foodService.calculateMacros("Cow Milk", 1, "glass");
+      // 1 glass = 250g. 250/100 = 2.5 multiplier
+      expect(macros).toEqual({
+        calories: 153,
+        protein: 8,
+        carbs: 12,
+        fat: 8
+      });
+    });
+
+    it("should calculate macros for 1 scoop whey protein (using standard 30g serving)", async () => {
+      (foodRepository.getFoodByName as jest.Mock).mockResolvedValue({
+        name: "Beverages, Whey protein powder isolate",
+        category: "Beverages",
+        baseQuantity: 100,
+        baseUnit: "g",
+        calories: 359,
+        protein: 58.14,
+        carbs: 29.07,
+        fat: 1.16
+      });
+      const macros = await foodService.calculateMacros("Beverages, Whey protein powder isolate", 1, "scoop");
+      // 1 scoop = 30g. 30/100 = 0.3 multiplier
+      expect(macros).toEqual({
+        calories: 108,
+        protein: 17,
+        carbs: 9,
+        fat: 0
+      });
+    });
+
+    it("should calculate macros for 1 banana (piece fallback: 118g)", async () => {
+      (foodRepository.getFoodByName as jest.Mock).mockResolvedValue({
+        name: "Bananas, raw",
+        baseQuantity: 100,
+        baseUnit: "g",
+        calories: 89,
+        protein: 1.09,
+        carbs: 22.84,
+        fat: 0.33
+      });
+      const macros = await foodService.calculateMacros("Bananas, raw", 1, "piece");
+      // 1 banana = 118g. 89 * 1.18 = 105
+      expect(macros).toEqual({
+        calories: 105,
+        protein: 1,
+        carbs: 27,
+        fat: 0
+      });
+    });
+
+    it("should calculate macros for 2 rotis with unit 'rotis' matching 'piece' serving", async () => {
+      (foodRepository.getFoodByName as jest.Mock).mockResolvedValue(mockRoti);
+      const macros = await foodService.calculateMacros("Roti", 2, "rotis");
+      expect(macros).toEqual({
+        calories: 208,
+        protein: 6,
+        carbs: 44,
+        fat: 1
+      });
+    });
+
+    it("should NOT apply egg fallback to eggplant", async () => {
+      (foodRepository.getFoodByName as jest.Mock).mockResolvedValue({
+        name: "Eggplant, cooked, boiled, drained, without salt",
+        baseQuantity: 100,
+        baseUnit: "g",
+        calories: 35,
+        protein: 0.8,
+        carbs: 8.7,
+        fat: 0.2
+      });
+      // Eggplant does not have piece serving; must NOT mistakenly use 50g egg fallback
+      await expect(foodService.calculateMacros("Eggplant, cooked, boiled, drained, without salt", 1, "piece")).rejects.toThrow(AppError);
+    });
+
+    it("should NOT apply roti fallback to rotisserie chicken", async () => {
+      (foodRepository.getFoodByName as jest.Mock).mockResolvedValue({
+        name: "Chicken, broiler, rotisserie, BBQ, drumstick, meat only",
+        baseQuantity: 100,
+        baseUnit: "g",
+        calories: 177,
+        protein: 24,
+        carbs: 0,
+        fat: 9
+      });
+      await expect(foodService.calculateMacros("Chicken, broiler, rotisserie, BBQ, drumstick, meat only", 1, "piece")).rejects.toThrow(AppError);
+    });
+
+    it("should NOT apply ml-to-g conversion to solid dairy like paneer or cheese", async () => {
+      (foodRepository.getFoodByName as jest.Mock).mockResolvedValue({
+        name: "Paneer",
+        category: "Dairy and Egg Products",
+        baseQuantity: 100,
+        baseUnit: "g",
+        calories: 265,
+        protein: 18,
+        carbs: 1.2,
+        fat: 20
+      });
+      await expect(foodService.calculateMacros("Paneer", 100, "ml")).rejects.toThrow(AppError);
+    });
+
     it("should reject invalid/unknown food", async () => {
       (foodRepository.getFoodByName as jest.Mock).mockResolvedValue(null);
       await expect(foodService.calculateMacros("Unknown Alien Meat", 100, "g")).rejects.toThrow(AppError);
     });
 
-    it("should reject quantity <= 0", async () => {
+    it("should reject quantity <= 0 or non-finite (NaN, Infinity)", async () => {
       await expect(foodService.calculateMacros("Chicken Breast", 0, "g")).rejects.toThrow(AppError);
       await expect(foodService.calculateMacros("Chicken Breast", -50, "g")).rejects.toThrow(AppError);
+      await expect(foodService.calculateMacros("Chicken Breast", NaN, "g")).rejects.toThrow(AppError);
+      await expect(foodService.calculateMacros("Chicken Breast", Infinity, "g")).rejects.toThrow(AppError);
+      await expect(foodService.calculateMacros("Chicken Breast", -Infinity, "g")).rejects.toThrow(AppError);
     });
 
     it("should reject invalid unit if not in servings and not matching baseUnit", async () => {

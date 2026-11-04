@@ -2,7 +2,9 @@ import { nutritionService } from "./nutrition.service";
 import { nutritionRepository } from "../repositories/nutrition.repository";
 import { AppError } from "../errors/AppError";
 import { userRepository } from "../repositories/user.repository";
-import { workoutRecommendationService } from "./workoutRecommendation.service"; import { foodService } from "./food.service";
+import { workoutRecommendationService } from "./workoutRecommendation.service";
+import { foodService } from "./food.service";
+import { AIProvider, classifyGeminiError } from "./aiProvider.service";
 
 jest.mock("../repositories/nutrition.repository", () => ({
   nutritionRepository: {
@@ -20,21 +22,49 @@ jest.mock("../repositories/user.repository", () => ({
   }
 }));
 
-jest.mock("./food.service", () => ({ foodService: { calculateMacros: jest.fn().mockReturnValue({ calories: 165, protein: 31, carbs: 0, fat: 3.6 }) } }));
+jest.mock("./food.service", () => ({
+  foodService: {
+    calculateMacros: jest.fn(),
+    searchFoods: jest.fn(),
+    getFoodByName: jest.fn(),
+  }
+}));
+
 jest.mock("./workoutRecommendation.service", () => ({
   workoutRecommendationService: {
     getTodayRecommendation: jest.fn(),
   }
 }));
+
 jest.mock("./nutritionTarget.service", () => ({
   nutritionTargetService: {
     calculateTargets: jest.fn(),
   }
 }));
 
+jest.mock("./aiProvider.service", () => ({
+  AIProvider: {
+    extractFoodFromText: jest.fn(),
+  },
+  classifyGeminiError: jest.fn(),
+}));
+
 describe("NutritionService", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (foodService.calculateMacros as jest.Mock).mockResolvedValue({
+      calories: 165,
+      protein: 31,
+      carbs: 0,
+      fat: 3.6
+    });
+    (classifyGeminiError as jest.Mock).mockReturnValue({
+      isQuotaExhausted: false,
+      isRateLimit: false,
+      isServerError: false,
+      isRetryable: false,
+      retryAfterMs: null
+    });
   });
 
   const mockUserId = "user123";
@@ -52,6 +82,13 @@ describe("NutritionService", () => {
       
       expect(nutritionRepository.create).toHaveBeenCalledWith(expect.objectContaining({ foodName: "Chicken Breast", user: mockUserId, calories: 165 }));
       expect(result).toEqual(mockCreated);
+    });
+
+    it("should reject adding an entry with non-positive or non-finite quantity", async () => {
+      await expect(nutritionService.addEntry(mockUserId, { foodName: "Chicken", quantity: 0, unit: "g" })).rejects.toThrow(AppError);
+      await expect(nutritionService.addEntry(mockUserId, { foodName: "Chicken", quantity: -10, unit: "g" })).rejects.toThrow(AppError);
+      await expect(nutritionService.addEntry(mockUserId, { foodName: "Chicken", quantity: NaN, unit: "g" })).rejects.toThrow(AppError);
+      await expect(nutritionService.addEntry(mockUserId, { foodName: "Chicken", quantity: Infinity, unit: "g" })).rejects.toThrow(AppError);
     });
   });
 
@@ -183,6 +220,147 @@ describe("NutritionService", () => {
       
       expect(result.workout.hasWorkout).toBe(false);
       expect(result.workout.workoutName).toBeUndefined();
+    });
+  });
+
+  describe("analyzeLog", () => {
+    it("should extract foods, match database records, and calculate macros for each proposal", async () => {
+      (AIProvider.extractFoodFromText as jest.Mock).mockResolvedValue({
+        items: [
+          { foodText: "egg", quantity: 2, unit: "piece" },
+          { foodText: "banana", quantity: 1, unit: "piece" }
+        ]
+      });
+
+      const mockEgg = { _id: "egg1", name: "Egg, whole, raw, fresh", baseQuantity: 100, baseUnit: "g" };
+      const mockBanana = { _id: "banana1", name: "Bananas, raw", baseQuantity: 100, baseUnit: "g" };
+
+      (foodService.searchFoods as jest.Mock).mockImplementation(async (query: string) => {
+        if (query.includes("egg")) return [mockEgg];
+        if (query.includes("banana")) return [mockBanana];
+        return [];
+      });
+
+      (foodService.calculateMacros as jest.Mock).mockImplementation(async (foodName: string) => {
+        if (foodName.includes("Egg")) return { calories: 143, protein: 13, carbs: 1, fat: 10 };
+        if (foodName.includes("Banana")) return { calories: 105, protein: 1, carbs: 27, fat: 0 };
+        return { calories: 100, protein: 10, carbs: 10, fat: 10 };
+      });
+
+      const response = await nutritionService.analyzeLog("I had 2 eggs and 1 banana");
+
+      expect(response.proposals).toHaveLength(2);
+
+      const eggProposal = response.proposals[0];
+      expect(eggProposal.extractedFood).toBe("egg");
+      expect(eggProposal.quantity).toBe(2);
+      expect(eggProposal.unit).toBe("piece");
+      expect(eggProposal.status).toBe("matched");
+      expect(eggProposal.selectedCandidateId).toBe("egg1");
+      expect(eggProposal.candidates[0].preview.calories).toBe(143);
+
+      const bananaProposal = response.proposals[1];
+      expect(bananaProposal.extractedFood).toBe("banana");
+      expect(bananaProposal.quantity).toBe(1);
+      expect(bananaProposal.unit).toBe("piece");
+      expect(bananaProposal.status).toBe("matched");
+      expect(bananaProposal.selectedCandidateId).toBe("banana1");
+      expect(bananaProposal.candidates[0].preview.calories).toBe(105);
+    });
+
+    it("should return empty proposals when no foods are detected", async () => {
+      (AIProvider.extractFoodFromText as jest.Mock).mockResolvedValue({
+        items: []
+      });
+
+      const response = await nutritionService.analyzeLog("I went for a run today");
+
+      expect(response.proposals).toHaveLength(0);
+    });
+
+    it("should mark proposal as not_found when food has no database matches", async () => {
+      (AIProvider.extractFoodFromText as jest.Mock).mockResolvedValue({
+        items: [
+          { foodText: "mysterious moonfruit", quantity: 1, unit: "piece" }
+        ]
+      });
+
+      (foodService.searchFoods as jest.Mock).mockResolvedValue([]);
+
+      const response = await nutritionService.analyzeLog("I ate 1 mysterious moonfruit");
+
+      expect(response.proposals).toHaveLength(1);
+      expect(response.proposals[0].extractedFood).toBe("mysterious moonfruit");
+      expect(response.proposals[0].status).toBe("not_found");
+      expect(response.proposals[0].candidates).toHaveLength(0);
+      expect(response.proposals[0].selectedCandidateId).toBeNull();
+    });
+
+    it("should mark proposal as ambiguous when multiple foods match", async () => {
+      (AIProvider.extractFoodFromText as jest.Mock).mockResolvedValue({
+        items: [
+          { foodText: "chicken", quantity: 200, unit: "g" }
+        ]
+      });
+
+      const mockChicken1 = { _id: "c1", name: "Chicken Breast (Raw)", baseQuantity: 100, baseUnit: "g" };
+      const mockChicken2 = { _id: "c2", name: "Chicken thigh, cooked", baseQuantity: 100, baseUnit: "g" };
+
+      (foodService.searchFoods as jest.Mock).mockResolvedValue([mockChicken1, mockChicken2]);
+      (foodService.calculateMacros as jest.Mock).mockResolvedValue({ calories: 330, protein: 62, carbs: 0, fat: 7 });
+
+      const response = await nutritionService.analyzeLog("200g chicken");
+
+      expect(response.proposals).toHaveLength(1);
+      expect(response.proposals[0].status).toBe("ambiguous");
+      expect(response.proposals[0].requiresReview).toBe(true);
+      expect(response.proposals[0].candidates).toHaveLength(2);
+      expect(response.proposals[0].selectedCandidateId).toBe("c1");
+    });
+
+    it("should mark foods with zero, negative, or non-finite quantities as not_found without silently defaulting to 1", async () => {
+      (AIProvider.extractFoodFromText as jest.Mock).mockResolvedValue({
+        items: [
+          { foodText: "paneer", quantity: 0, unit: "g" },
+          { foodText: "banana", quantity: -2, unit: "piece" },
+          { foodText: "milk", quantity: NaN, unit: "glass" },
+          { foodText: "egg", quantity: Infinity, unit: "piece" }
+        ]
+      });
+
+      const response = await nutritionService.analyzeLog("invalid items");
+
+      expect(response.proposals).toHaveLength(4);
+      expect(response.proposals[0].status).toBe("not_found");
+      expect(response.proposals[0].candidates).toHaveLength(0);
+      expect(response.proposals[1].status).toBe("not_found");
+      expect(response.proposals[1].candidates).toHaveLength(0);
+      expect(response.proposals[2].status).toBe("not_found");
+      expect(response.proposals[2].candidates).toHaveLength(0);
+      expect(response.proposals[3].status).toBe("not_found");
+      expect(response.proposals[3].candidates).toHaveLength(0);
+      expect(foodService.calculateMacros).not.toHaveBeenCalled();
+    });
+
+    it("should throw 429 when AI rate limit is reached", async () => {
+      (AIProvider.extractFoodFromText as jest.Mock).mockRejectedValue(new Error("429 Too Many Requests"));
+      (classifyGeminiError as jest.Mock).mockReturnValue({
+        isQuotaExhausted: false,
+        isRateLimit: true,
+        isServerError: false,
+        isRetryable: true,
+        retryAfterMs: null
+      });
+
+      await expect(nutritionService.analyzeLog("I had an apple")).rejects.toThrow(AppError);
+      await expect(nutritionService.analyzeLog("I had an apple")).rejects.toMatchObject({ statusCode: 429 });
+    });
+
+    it("should throw 503 when AI provider is not configured", async () => {
+      (AIProvider.extractFoodFromText as jest.Mock).mockRejectedValue(new Error("GEMINI_API_KEY is missing"));
+
+      await expect(nutritionService.analyzeLog("I had an apple")).rejects.toThrow(AppError);
+      await expect(nutritionService.analyzeLog("I had an apple")).rejects.toMatchObject({ statusCode: 503 });
     });
   });
 });
