@@ -74,4 +74,13 @@ describe("DateEngine", () => {
       });
     });
   });
+
+  describe("getPreviousCalendarDay", () => {
+    it("should return correct previous calendar day", () => {
+      expect(DateEngine.getPreviousCalendarDay("2026-09-02")).toBe("2026-09-01");
+      expect(DateEngine.getPreviousCalendarDay("2026-09-01")).toBe("2026-08-31");
+      expect(DateEngine.getPreviousCalendarDay("2024-03-01")).toBe("2024-02-29");
+      expect(DateEngine.getPreviousCalendarDay("2026-01-01")).toBe("2025-12-31");
+    });
+  });
 });

@@ -4,6 +4,8 @@ import WorkoutSession from "../models/WorkoutSession";
 import Exercise from "../models/Exercise";
 import logger from "../utils/logger";
 import { DateEngine } from "../utils/dateEngine";
+import { userRepository } from "../repositories/user.repository";
+import programRepository from "../repositories/program.repository";
 
 
 
@@ -126,47 +128,68 @@ export interface WorkoutActivityResponse {
 }
 
 export class AnalyticsService {
-  private calculateStreak(dates: Date[]): number {
-    if (dates.length === 0) return 0;
+  public async resolveUserTimezone(userId: string, requestedTz?: string): Promise<string> {
+    if (requestedTz && typeof requestedTz === "string" && requestedTz.trim()) {
+      return DateEngine.getValidTimezone(requestedTz);
+    }
 
-    // Remove time component to compare calendar days
-    const normalizeDate = (d: Date) => {
-      const copy = new Date(d);
-      copy.setHours(0, 0, 0, 0);
-      return copy.getTime();
-    };
+    try {
+      const user = await userRepository.findById(userId);
+      if (user && (user as any).timezone) {
+        return DateEngine.getValidTimezone((user as any).timezone);
+      }
+    } catch {
+      // ignore lookup error
+    }
 
-    // Sort descending
-    const sortedTimes = dates.map(normalizeDate).sort((a, b) => b - a);
+    try {
+      const activeProgram = await programRepository.findActiveProgram(userId);
+      if (activeProgram && activeProgram.timezone) {
+        return DateEngine.getValidTimezone(activeProgram.timezone);
+      }
+    } catch {
+      // ignore lookup error
+    }
 
-    // Get unique days
-    const uniqueDays = Array.from(new Set(sortedTimes));
+    return "UTC";
+  }
 
-    const today = normalizeDate(new Date());
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayTime = yesterday.getTime();
+  public calculateStreak(
+    dates: Date[],
+    timezone: string = "UTC",
+    now: Date = new Date()
+  ): number {
+    if (!dates || dates.length === 0) return 0;
 
-    let currentStreak = 0;
-    let expectedNextDay = today;
+    const validTz = DateEngine.getValidTimezone(timezone);
 
-    // Check if streak is active (worked out today or yesterday)
-    if (uniqueDays[0] !== today && uniqueDays[0] !== yesterdayTime) {
+    // Convert workout timestamps into local calendar dates (YYYY-MM-DD)
+    const localDateStrings = dates
+      .filter((d) => d instanceof Date && !isNaN(d.getTime()))
+      .map((d) => DateEngine.getCurrentDateInTimezone(d, validTz));
+
+    if (localDateStrings.length === 0) return 0;
+
+    // Deduplicate and sort descending (newest date first)
+    const uniqueDays = Array.from(new Set(localDateStrings)).sort((a, b) => (a < b ? 1 : -1));
+
+    const todayStr = DateEngine.getCurrentDateInTimezone(now, validTz);
+    const yesterdayStr = DateEngine.getPreviousCalendarDay(todayStr);
+
+    const latestWorkoutDay = uniqueDays[0];
+
+    // Check if streak is active (worked out today or yesterday in local calendar)
+    if (latestWorkoutDay !== todayStr && latestWorkoutDay !== yesterdayStr) {
       return 0; // Streak broken
     }
 
-    // If latest workout was yesterday, the streak logic starts expecting yesterday
-    if (uniqueDays[0] === yesterdayTime) {
-      expectedNextDay = yesterdayTime;
-    }
+    let currentStreak = 0;
+    let expectedDay = latestWorkoutDay;
 
     for (const day of uniqueDays) {
-      if (day === expectedNextDay) {
+      if (day === expectedDay) {
         currentStreak++;
-        // Calculate the previous day for the next iteration
-        const prevDay = new Date(expectedNextDay);
-        prevDay.setDate(prevDay.getDate() - 1);
-        expectedNextDay = prevDay.getTime();
+        expectedDay = DateEngine.getPreviousCalendarDay(expectedDay);
       } else {
         break; // Gap found, streak ends
       }
@@ -175,13 +198,19 @@ export class AnalyticsService {
     return currentStreak;
   }
 
-  public async getDashboardAnalytics(userId: string): Promise<DashboardAnalytics> {
-    const today = new Date();
-    // Calculate start of current week (assuming Monday is the first day)
-    const day = today.getDay();
-    const diff = today.getDate() - day + (day === 0 ? -6 : 1);
-    const weekStart = new Date(today.setDate(diff));
-    weekStart.setHours(0, 0, 0, 0);
+  public async getDashboardAnalytics(userId: string, timezone?: string): Promise<DashboardAnalytics> {
+    const validTz = await this.resolveUserTimezone(userId, timezone);
+    const now = new Date();
+
+    // Calculate start of current week (Monday) in user's timezone
+    const todayLocalStr = DateEngine.getCurrentDateInTimezone(now, validTz);
+    const [year, month, dayNum] = todayLocalStr.split("-").map(Number);
+    const localTodayDate = new Date(Date.UTC(year, month - 1, dayNum));
+    const dayOfWeek = localTodayDate.getUTCDay(); // 0 is Sunday, 1 is Monday
+    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    localTodayDate.setUTCDate(localTodayDate.getUTCDate() + diffToMonday);
+    const weekStartLocalStr = localTodayDate.toISOString().split("T")[0];
+    const weekStart = new Date(`${weekStartLocalStr}T00:00:00.000Z`);
 
     const [aggregations, workoutDates, recentRaw] = await Promise.all([
       workoutSessionRepository.getDashboardAggregations(userId, weekStart),
@@ -189,7 +218,7 @@ export class AnalyticsService {
       workoutSessionRepository.getRecentCompletedSessions(userId, 5),
     ]);
 
-    const currentStreak = this.calculateStreak(workoutDates);
+    const currentStreak = this.calculateStreak(workoutDates, validTz, now);
 
     const recentWorkouts: RecentWorkout[] = recentRaw.map((raw) => ({
       id: raw._id.toString(),

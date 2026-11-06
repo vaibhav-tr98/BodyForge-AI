@@ -1,9 +1,17 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
 
+export type AICacheType =
+  | "nutrition"
+  | "workout"
+  | "readiness"
+  | "daily-summary"
+  | "progress"
+  | "coaching";
+
 export interface IAIAnalysisCache extends Document {
   userId: Types.ObjectId;
   date: string; // YYYY-MM-DD, or empty string for readiness (no specific date)
-  type: "nutrition" | "workout" | "readiness" | "daily-summary" | "progress";
+  type: AICacheType;
   inputHash: string;
   result: unknown;
   modelName: string; // renamed from 'model' to avoid collision with Mongoose Document.model()
@@ -25,7 +33,7 @@ const aiAnalysisCacheSchema = new Schema<IAIAnalysisCache>(
     },
     type: {
       type: String,
-      enum: ["nutrition", "workout", "readiness", "daily-summary", "progress"],
+      enum: ["nutrition", "workout", "readiness", "daily-summary", "progress", "coaching"],
       required: true,
     },
     inputHash: {

@@ -53,6 +53,11 @@ export const updateProfileSchema = z
         message: "Invalid fitness goal",
       })
       .optional(),
+    timezone: z
+      .string({ message: "Timezone must be a string" })
+      .trim()
+      .max(100, { message: "Timezone must be at most 100 characters" })
+      .optional(),
   })
   .strict();
 

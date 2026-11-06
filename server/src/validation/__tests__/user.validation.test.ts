@@ -48,6 +48,14 @@ describe("User Profile Validation", () => {
     expect(result.success).toBe(false);
 
     const result2 = updateProfileSchema.safeParse({ activityLevel: "super_lazy" });
-    expect(result.success).toBe(false);
+    expect(result2.success).toBe(false);
+  });
+
+  it("accepts valid timezone and rejects oversized timezone", () => {
+    const valid = updateProfileSchema.safeParse({ timezone: "America/New_York" });
+    expect(valid.success).toBe(true);
+
+    const invalid = updateProfileSchema.safeParse({ timezone: "a".repeat(101) });
+    expect(invalid.success).toBe(false);
   });
 });

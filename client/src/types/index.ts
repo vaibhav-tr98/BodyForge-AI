@@ -12,6 +12,7 @@ export interface User {
   gender?: string;
   activityLevel?: string;
   fitnessGoal?: string;
+  timezone?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,6 +42,7 @@ export interface ProfileUpdateData {
   gender?: string;
   activityLevel?: string;
   fitnessGoal?: string;
+  timezone?: string;
 }
 
 // ── Workouts ────────────────────────────────────────────────────────────────────

@@ -56,6 +56,7 @@ class AIAnalysisCacheRepository {
     const saved = await AIAnalysisCache.findOneAndUpdate(filter, update, {
       upsert: true,
       new: true,
+      runValidators: true,
     });
     // findOneAndUpdate with upsert always returns a document when new: true
     return saved as IAIAnalysisCache;

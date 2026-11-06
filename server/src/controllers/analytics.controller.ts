@@ -19,7 +19,8 @@ class AnalyticsController {
         res.status(401).json({ success: false, message: "Unauthorized" });
         return;
       }
-      const data = await analyticsService.getDashboardAnalytics(userId);
+      const timezone = req.query.timezone as string | undefined;
+      const data = await analyticsService.getDashboardAnalytics(userId, timezone);
       res.status(200).json({ success: true, data });
     } catch (error) {
       next(error);

@@ -6,6 +6,7 @@ import User from "../models/User";
 import Program from "../models/Program";
 import WorkoutSession from "../models/WorkoutSession";
 import jwt from "jsonwebtoken";
+import { DateEngine } from "../utils/dateEngine";
 
 describe("Phase 8.2 Program Analytics Historical Adherence", () => {
   let token: string;
@@ -41,7 +42,7 @@ describe("Phase 8.2 Program Analytics Historical Adherence", () => {
       user: user._id,
       name: "Test Analytics Program",
       description: "Testing historical changes",
-      startDate: new Date().toISOString().split("T")[0],
+      startDate: DateEngine.getCurrentDateInTimezone(new Date(), "America/New_York"),
       timezone: "America/New_York",
       status: "active",
       weeks: [
@@ -95,6 +96,57 @@ describe("Phase 8.2 Program Analytics Historical Adherence", () => {
     expect(res.status).toBe(200);
     expect(res.body.data.adherence.completedSessions).toBe(1);
     // Because it is now a rest day, it gets conditionally ADDED to elapsed schedules precisely BECAUSE it was completed.
+  });
+
+  it("should accurately calculate adherence across UTC date boundaries using timezone-aware dates", async () => {
+    await Program.deleteMany({ user: user._id });
+    await WorkoutSession.deleteMany({ user: user._id });
+
+    // Simulate a user in Tokyo (UTC+9) where local date may differ from UTC date
+    const tokyoTz = "Asia/Tokyo";
+    const tokyoLocalToday = DateEngine.getCurrentDateInTimezone(new Date(), tokyoTz);
+
+    const boundaryProgram = await Program.create({
+      user: user._id,
+      name: "Tokyo Boundary Program",
+      startDate: tokyoLocalToday,
+      timezone: tokyoTz,
+      status: "active",
+      weeks: [
+        {
+          days: [
+            { dayIndex: 0, workoutId: new mongoose.Types.ObjectId() },
+            { dayIndex: 1, workoutId: null },
+            { dayIndex: 2, workoutId: null },
+            { dayIndex: 3, workoutId: null },
+            { dayIndex: 4, workoutId: null },
+            { dayIndex: 5, workoutId: null },
+            { dayIndex: 6, workoutId: null }
+          ]
+        }
+      ]
+    });
+
+    await WorkoutSession.create({
+      user: user._id,
+      programId: boundaryProgram._id,
+      programWeek: 0,
+      programDay: 0,
+      workout: new mongoose.Types.ObjectId(),
+      status: "completed",
+      startedAt: new Date(),
+      completedAt: new Date(),
+      exercises: []
+    });
+
+    const res = await request(app)
+      .get(`/api/programs/${boundaryProgram._id}/analytics`)
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.adherence.scheduledDaysElapsed).toBe(1);
+    expect(res.body.data.adherence.completedSessions).toBe(1);
+    expect(res.body.data.adherence.percentage).toBe(100);
   });
 });
 

@@ -2,8 +2,10 @@ import { api } from "./api";
 import type { ApiResponse, DashboardAnalytics, ExerciseProgress } from "../types";
 
 class AnalyticsService {
-  public async getDashboardAnalytics(): Promise<DashboardAnalytics> {
-    const response = await api.get<ApiResponse<DashboardAnalytics>>("/api/analytics/dashboard");
+  public async getDashboardAnalytics(timezone?: string): Promise<DashboardAnalytics> {
+    const tz = timezone || (typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : undefined);
+    const query = tz ? `?timezone=${encodeURIComponent(tz)}` : "";
+    const response = await api.get<ApiResponse<DashboardAnalytics>>(`/api/analytics/dashboard${query}`);
     if (!response.data.success || !response.data.data) {
       throw new Error(response.data.message || "Failed to fetch dashboard analytics");
     }

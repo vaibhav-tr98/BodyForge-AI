@@ -20,8 +20,26 @@ jest.mock("./progression.service", () => ({
   },
 }));
 
+jest.mock("../repositories/user.repository", () => ({
+  userRepository: {
+    findById: jest.fn().mockResolvedValue(null),
+  },
+}));
+
+jest.mock("../repositories/program.repository", () => ({
+  programRepository: {
+    findActiveProgram: jest.fn().mockResolvedValue(null),
+  },
+  __esModule: true,
+  default: {
+    findActiveProgram: jest.fn().mockResolvedValue(null),
+  },
+}));
+
 import { workoutSessionRepository } from "../repositories/workoutSession.repository";
 import { progressionService } from "./progression.service";
+import { userRepository } from "../repositories/user.repository";
+import programRepository from "../repositories/program.repository";
 
 describe("AnalyticsService", () => {
   let analyticsService: AnalyticsService;
@@ -72,9 +90,71 @@ describe("AnalyticsService", () => {
       const streak = (analyticsService as any).calculateStreak([today, yesterday, threeDaysAgo]);
       expect(streak).toBe(2); // Only today and yesterday count
     });
+
+    it("should accurately calculate streak across UTC midnight using timezone-aware dates", () => {
+      // Reference 'now' in Asia/Kolkata (UTC+5:30): 2026-11-05T06:00:00Z -> Local is 2026-11-05 11:30 AM
+      const referenceNow = new Date("2026-11-05T06:00:00Z");
+
+      // Workout 1: 2026-11-04T23:30:00Z (Nov 4 in UTC, but 05:00 AM Nov 5 in Kolkata = TODAY)
+      const workoutTodayKolkata = new Date("2026-11-04T23:30:00Z");
+      // Workout 2: 2026-11-03T23:30:00Z (Nov 3 in UTC, but 05:00 AM Nov 4 in Kolkata = YESTERDAY)
+      const workoutYesterdayKolkata = new Date("2026-11-03T23:30:00Z");
+
+      const kolkataStreak = analyticsService.calculateStreak(
+        [workoutTodayKolkata, workoutYesterdayKolkata],
+        "Asia/Kolkata",
+        referenceNow
+      );
+      expect(kolkataStreak).toBe(2);
+
+      // In New York (UTC-5), 2026-11-04T23:30:00Z was 18:30 Nov 4 (YESTERDAY relative to 2026-11-05 01:00 AM local)
+      // and 2026-11-03T23:30:00Z was 18:30 Nov 3 (TWO DAYS AGO)
+      const nyStreak = analyticsService.calculateStreak(
+        [workoutTodayKolkata, workoutYesterdayKolkata],
+        "America/New_York",
+        referenceNow
+      );
+      expect(nyStreak).toBe(2);
+    });
+
+    it("should gracefully fallback to UTC for invalid timezones in streak calculation", () => {
+      const now = new Date("2026-11-05T12:00:00Z");
+      const todayWorkout = new Date("2026-11-05T08:00:00Z");
+
+      const streak = analyticsService.calculateStreak(
+        [todayWorkout],
+        "Invalid/NonExistent_Timezone",
+        now
+      );
+      expect(streak).toBe(1);
+    });
   });
 
   describe("getDashboardAnalytics", () => {
+    it("should resolve authoritative timezone in priority order (explicit > profile > program > UTC)", async () => {
+      const userId = "testUser123";
+
+      // 1. Explicit timezone parameter
+      const tz1 = await analyticsService.resolveUserTimezone(userId, "America/Chicago");
+      expect(tz1).toBe("America/Chicago");
+
+      // 2. User profile timezone
+      (userRepository.findById as jest.Mock).mockResolvedValueOnce({ _id: userId, timezone: "Europe/London" });
+      const tz2 = await analyticsService.resolveUserTimezone(userId);
+      expect(tz2).toBe("Europe/London");
+
+      // 3. Active program timezone
+      (userRepository.findById as jest.Mock).mockResolvedValueOnce({ _id: userId });
+      (programRepository.findActiveProgram as jest.Mock).mockResolvedValueOnce({ timezone: "Asia/Singapore" });
+      const tz3 = await analyticsService.resolveUserTimezone(userId);
+      expect(tz3).toBe("Asia/Singapore");
+
+      // 4. Default fallback to UTC
+      (userRepository.findById as jest.Mock).mockResolvedValueOnce(null);
+      (programRepository.findActiveProgram as jest.Mock).mockResolvedValueOnce(null);
+      const tz4 = await analyticsService.resolveUserTimezone(userId);
+      expect(tz4).toBe("UTC");
+    });
     it("should assemble dashboard analytics correctly", async () => {
       const userId = "testUser123";
 

@@ -16,6 +16,8 @@ import { workoutRecommendationService } from "../workoutRecommendation.service";
 import { analyticsService } from "../analytics.service";
 import { userRepository } from "../../repositories/user.repository";
 import { progressAnalysisService } from "../progressAnalysis.service";
+import AIAnalysisCache from "../../models/AIAnalysisCache";
+import mongoose from "mongoose";
 
 // classifyGeminiError is a pure utility — import the real implementation directly
 // rather than the jest.mock() auto-mock (which would make it return undefined)
@@ -455,5 +457,56 @@ describe("Test 12: Deterministic workout fallback (new user)", () => {
     expect(aiAnalysisCacheRepository.save).not.toHaveBeenCalled();
     expect(result.summary).toContain("No workout history available yet");
     expect(result.nextAction).toContain("Complete your first workout");
+  });
+});
+
+// ===========================================================================
+// Test 13: Schema validation for AIAnalysisCache
+// ===========================================================================
+describe("Test 13: AIAnalysisCache schema enum validation", () => {
+  it("should validate successfully for 'coaching' type", () => {
+    const doc = new AIAnalysisCache({
+      userId: new mongoose.Types.ObjectId(),
+      date: "2026-11-05",
+      type: "coaching",
+      inputHash: "hash123",
+      result: { summary: "Great workout" },
+      modelName: "gemini-3.6-flash",
+      expiresAt: new Date(Date.now() + 3600000),
+    });
+    const err = doc.validateSync();
+    expect(err).toBeUndefined();
+  });
+
+  it("should validate all supported cache types", () => {
+    const supportedTypes = ["nutrition", "workout", "readiness", "daily-summary", "progress", "coaching"];
+    for (const t of supportedTypes) {
+      const doc = new AIAnalysisCache({
+        userId: new mongoose.Types.ObjectId(),
+        date: "2026-11-05",
+        type: t,
+        inputHash: "hash123",
+        result: { test: true },
+        modelName: "gemini-3.6-flash",
+        expiresAt: new Date(Date.now() + 3600000),
+      });
+      const err = doc.validateSync();
+      expect(err).toBeUndefined();
+    }
+  });
+
+  it("should fail validation for unsupported type", () => {
+    const doc = new AIAnalysisCache({
+      userId: new mongoose.Types.ObjectId(),
+      date: "2026-11-05",
+      type: "unsupported_type",
+      inputHash: "hash123",
+      result: {},
+      modelName: "gemini-3.6-flash",
+      expiresAt: new Date(),
+    });
+    const err = doc.validateSync();
+    expect(err).toBeDefined();
+    expect(err?.errors["type"]).toBeDefined();
   });
 });

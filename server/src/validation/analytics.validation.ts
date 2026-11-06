@@ -10,6 +10,10 @@ export const getExerciseProgressSchema = z.object({
 
 export const dateQuerySchema = z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format. Expected YYYY-MM-DD') });
 
+export const dashboardQuerySchema = z.object({
+  timezone: z.string().max(100, "Timezone too long").optional(),
+});
+
 export const activityQuerySchema = z
   .object({
     startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid startDate format. Expected YYYY-MM-DD').optional(),

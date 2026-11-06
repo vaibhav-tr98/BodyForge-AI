@@ -67,4 +67,15 @@ export class DateEngine {
       return "UTC";
     }
   }
+
+  /**
+   * Calculate the preceding calendar day string (YYYY-MM-DD).
+   * Safe against DST transitions by performing math on UTC dates.
+   */
+  static getPreviousCalendarDay(dateStr: string): string {
+    const [year, month, day] = dateStr.split("-").map(Number);
+    const d = new Date(Date.UTC(year, month - 1, day));
+    d.setUTCDate(d.getUTCDate() - 1);
+    return d.toISOString().split("T")[0];
+  }
 }

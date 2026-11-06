@@ -12,6 +12,7 @@ export interface IUser extends Document {
   gender?: string;
   activityLevel?: string;
   fitnessGoal?: string;
+  timezone?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -82,6 +83,11 @@ const userSchema = new Schema<IUser>(
     fitnessGoal: {
       type: String,
       enum: ["lose_fat", "maintain", "build_muscle", "improve_fitness"],
+    },
+    timezone: {
+      type: String,
+      trim: true,
+      maxlength: 100,
     },
   },
   {
