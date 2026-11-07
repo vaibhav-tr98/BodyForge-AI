@@ -7,7 +7,10 @@ import { getProgressHistory, getProgressSummary, createProgressEntry, deleteProg
 import Button from "../components/ui/Button";
 import Input from "../components/ui/Input";
 import { getErrorMessage } from "../services/api";
-import type { ProgressEntry } from "../types";
+import type { ProgressEntry, CreateProgressEntryRequest, UpdateProgressEntryRequest } from "../types";
+import PersonalRecordsSection from "../components/common/PersonalRecordsSection";
+import { ProgressAnalysisSection } from "../components/dashboard/ProgressAnalysisSection";
+import { Trophy, Sparkles, Scale } from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -49,6 +52,7 @@ export default function ProgressPage() {
   const [chest, setChest] = useState("");
   const [arm, setArm] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"metrics" | "prs" | "ai">("metrics");
 
   const { data: summary, isLoading: isLoadingSummary } = useQuery({
     queryKey: ["progress", "summary"],
@@ -71,7 +75,7 @@ export default function ProgressPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => updateProgressEntry(id, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdateProgressEntryRequest }) => updateProgressEntry(id, data),
     onSuccess: () => {
       toast.success("Progress entry updated");
       queryClient.invalidateQueries({ queryKey: ["progress"] });
@@ -120,7 +124,7 @@ export default function ProgressPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const data: any = {
+    const data: CreateProgressEntryRequest = {
       date,
       weight: Number(weight),
     };
@@ -269,6 +273,51 @@ export default function ProgressPage() {
           </p>
         </div>
       </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-[#E5E7EB] gap-2 overflow-x-auto no-scrollbar">
+        <button
+          onClick={() => setActiveTab("metrics")}
+          className={`flex items-center gap-2 pb-3 px-3 text-sm font-bold border-b-2 transition whitespace-nowrap ${
+            activeTab === "metrics"
+              ? "border-cyan-600 text-cyan-600"
+              : "border-transparent text-[#6B7280] hover:text-[#111827]"
+          }`}
+        >
+          <Scale size={16} />
+          Body Metrics & Measurements
+        </button>
+
+        <button
+          onClick={() => setActiveTab("prs")}
+          className={`flex items-center gap-2 pb-3 px-3 text-sm font-bold border-b-2 transition whitespace-nowrap ${
+            activeTab === "prs"
+              ? "border-cyan-600 text-cyan-600"
+              : "border-transparent text-[#6B7280] hover:text-[#111827]"
+          }`}
+        >
+          <Trophy size={16} />
+          Personal Records (PRs)
+        </button>
+
+        <button
+          onClick={() => setActiveTab("ai")}
+          className={`flex items-center gap-2 pb-3 px-3 text-sm font-bold border-b-2 transition whitespace-nowrap ${
+            activeTab === "ai"
+              ? "border-cyan-600 text-cyan-600"
+              : "border-transparent text-[#6B7280] hover:text-[#111827]"
+          }`}
+        >
+          <Sparkles size={16} />
+          AI Progress Analysis
+        </button>
+      </div>
+
+      {activeTab === "prs" && <PersonalRecordsSection />}
+
+      {activeTab === "ai" && <ProgressAnalysisSection />}
+
+      {activeTab === "metrics" && (
 
       <div className="grid gap-8 lg:grid-cols-3 items-start">
         {/* ADD ENTRY FORM */}
@@ -420,6 +469,7 @@ export default function ProgressPage() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

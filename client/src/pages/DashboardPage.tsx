@@ -8,6 +8,7 @@ import TodayScheduleSection from "../components/dashboard/TodayScheduleSection";
 import { BodyForgeCoachSection } from "../components/dashboard/BodyForgeCoachSection";
 import TrainingReadinessSection from "../components/dashboard/TrainingReadinessSection";
 import WorkoutConsistencyHeatmap from "../components/dashboard/WorkoutConsistencyHeatmap";
+import AIAnalyticsHubSection from "../components/dashboard/AIAnalyticsHubSection";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -76,6 +77,9 @@ export default function DashboardPage() {
           ) : (
             <TodayScheduleSection />
           )}
+
+          {/* AI Coaching & Multi-Domain Analytics */}
+          <AIAnalyticsHubSection />
 
           {/* Workout Consistency Heatmap */}
           <WorkoutConsistencyHeatmap />
@@ -164,7 +168,7 @@ export default function DashboardPage() {
           {/* Coach */}
           <BodyForgeCoachSection />
 
-          {/* Quick Links for Removed Dashboard Features */}
+          {/* Quick Links for Progress & Nutrition */}
           <section>
             <div className="grid grid-cols-2 gap-3">
               <Link

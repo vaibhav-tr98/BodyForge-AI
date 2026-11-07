@@ -98,6 +98,29 @@ class NutritionController {
     }
   };
 
+  public getHistory = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = getAuthenticatedUserId(req, res);
+      if (!userId) return;
+
+      const { startDate, endDate, days, timezone } = req.query;
+      const history = await nutritionService.getHistory(
+        userId,
+        startDate as string | undefined,
+        endDate as string | undefined,
+        days ? Number(days) : undefined,
+        timezone as string | undefined
+      );
+
+      res.status(200).json({
+        success: true,
+        data: history,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   public getSummary = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const userId = getAuthenticatedUserId(req, res);

@@ -7,6 +7,7 @@ import { userRepository } from "../repositories/user.repository";
 import { foodService } from "./food.service";
 import { nutritionTargetService } from "./nutritionTarget.service";
 import { AIProvider, classifyGeminiError } from "./aiProvider.service";
+import { DateEngine } from "../utils/dateEngine";
 
 class NutritionService {
   async addEntry(userId: string, data: Partial<INutritionEntry>): Promise<INutritionEntry> {
@@ -107,6 +108,96 @@ class NutritionService {
       totalCarbs,
       totalFat,
       entryCount: entries.length,
+    };
+  }
+
+  async getHistory(
+    userId: string,
+    startDate?: string,
+    endDate?: string,
+    days: number = 7,
+    timezone?: string
+  ) {
+    let tz = DateEngine.getValidTimezone(timezone);
+    if (tz === "UTC" && !timezone) {
+      const user = await userRepository.findById(userId);
+      if (user?.timezone) {
+        tz = DateEngine.getValidTimezone(user.timezone);
+      }
+    }
+
+    const todayStr = DateEngine.getCurrentDateInTimezone(new Date(), tz);
+    let endStr = endDate || todayStr;
+    let startStr = startDate;
+
+    if (!startStr) {
+      let curr = endStr;
+      for (let i = 1; i < days; i++) {
+        curr = DateEngine.getPreviousCalendarDay(curr);
+      }
+      startStr = curr;
+    }
+
+    if (startStr > endStr) {
+      const temp = startStr;
+      startStr = endStr;
+      endStr = temp;
+    }
+
+    const entries = await nutritionRepository.find({
+      user: userId as any,
+      date: { $gte: startStr, $lte: endStr },
+    });
+
+    const dailyMap = new Map<string, { calories: number; protein: number; carbs: number; fat: number; entryCount: number }>();
+    for (const entry of entries) {
+      const existing = dailyMap.get(entry.date) || { calories: 0, protein: 0, carbs: 0, fat: 0, entryCount: 0 };
+      existing.calories += entry.calories;
+      existing.protein += entry.protein;
+      existing.carbs += entry.carbs;
+      existing.fat += entry.fat;
+      existing.entryCount += 1;
+      dailyMap.set(entry.date, existing);
+    }
+
+    const resultDays: Array<{
+      date: string;
+      calories: number;
+      protein: number;
+      carbs: number;
+      fat: number;
+      entryCount: number;
+    }> = [];
+
+    let cursor = startStr;
+    while (cursor <= endStr) {
+      const stats = dailyMap.get(cursor) || { calories: 0, protein: 0, carbs: 0, fat: 0, entryCount: 0 };
+      resultDays.push({
+        date: cursor,
+        calories: Math.round(stats.calories),
+        protein: Math.round(stats.protein * 10) / 10,
+        carbs: Math.round(stats.carbs * 10) / 10,
+        fat: Math.round(stats.fat * 10) / 10,
+        entryCount: stats.entryCount,
+      });
+
+      const [y, m, d] = cursor.split("-").map(Number);
+      const nextD = new Date(Date.UTC(y, m - 1, d + 1));
+      cursor = nextD.toISOString().split("T")[0];
+    }
+
+    const totalDaysCount = resultDays.length || 1;
+    const totalCal = resultDays.reduce((acc, d) => acc + d.calories, 0);
+    const totalProt = resultDays.reduce((acc, d) => acc + d.protein, 0);
+    const totalCarb = resultDays.reduce((acc, d) => acc + d.carbs, 0);
+    const totalF = resultDays.reduce((acc, d) => acc + d.fat, 0);
+
+    return {
+      days: resultDays,
+      averageCalories: Math.round(totalCal / totalDaysCount),
+      averageProtein: Math.round((totalProt / totalDaysCount) * 10) / 10,
+      averageCarbs: Math.round((totalCarb / totalDaysCount) * 10) / 10,
+      averageFat: Math.round((totalF / totalDaysCount) * 10) / 10,
     };
   }
 

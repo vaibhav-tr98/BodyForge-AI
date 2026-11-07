@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Clock, Calendar, CheckCircle, ChevronLeft, ChevronRight, Activity, Dumbbell, AlertTriangle, Play } from "lucide-react";
+import { Clock, Calendar, CheckCircle, ChevronLeft, ChevronRight, Activity, Dumbbell, AlertTriangle, Play, Sparkles } from "lucide-react";
+import { WorkoutAnalysisSection } from "../../components/dashboard/WorkoutAnalysisSection";
 import { getWorkoutSessions } from "../../services/workoutSession.service";
 
 // Format duration into readable string (e.g. 45 min, 1h 20m, 3d 4h)
@@ -43,6 +44,7 @@ function formatTime(dateStr: string) {
 
 export default function WorkoutHistoryPage() {
   const [page, setPage] = useState(1);
+  const [showAI, setShowAI] = useState(false);
   const limit = 20;
 
   const { data, isLoading, isError, isFetching, refetch } = useQuery({
@@ -68,7 +70,16 @@ export default function WorkoutHistoryPage() {
             Your completed training sessions
           </p>
         </div>
+        <button
+          onClick={() => setShowAI(!showAI)}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-cyan-700 bg-cyan-50 border border-cyan-100 hover:bg-cyan-100 transition w-fit min-h-[38px]"
+        >
+          <Sparkles size={14} className="text-cyan-600" />
+          {showAI ? "Hide AI Analysis" : "Workout AI Analysis"}
+        </button>
       </header>
+
+      {showAI && <WorkoutAnalysisSection />}
 
       {/* Summary Area */}
       {!isLoading && !isError && total > 0 && (
@@ -130,17 +141,17 @@ export default function WorkoutHistoryPage() {
       ) : (
         <div className="space-y-4">
           <div className="grid gap-4">
-            {sessions.map((session: any) => {
+            {sessions.map((session) => {
               const workoutName = typeof session.workout === 'object' && session.workout ? session.workout.name : "Unknown Workout";
               const isDeleted = workoutName === "Deleted Workout";
               const isCompleted = session.status === "completed";
 
-              const volume = session.exercises?.reduce((total: number, ex: any) =>
-                total + (ex.sets?.filter((s: any) => s.completed)?.reduce((sum: number, s: any) => sum + (s.weight || 0) * s.reps, 0) || 0)
+              const volume = session.exercises?.reduce((total, ex) =>
+                total + (ex.sets?.filter((s) => s.completed)?.reduce((sum, s) => sum + (s.weight || 0) * s.reps, 0) || 0)
               , 0) || 0;
 
-              const totalCompletedSets = session.exercises?.reduce((total: number, ex: any) =>
-                total + (ex.sets?.filter((s: any) => s.completed)?.length || 0)
+              const totalCompletedSets = session.exercises?.reduce((total, ex) =>
+                total + (ex.sets?.filter((s) => s.completed)?.length || 0)
               , 0) || 0;
 
               return (

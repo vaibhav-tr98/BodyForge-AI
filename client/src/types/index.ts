@@ -315,6 +315,23 @@ export interface NutritionSummary {
   entryCount: number;
 }
 
+export interface NutritionHistoryDay {
+  date: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  entryCount: number;
+}
+
+export interface NutritionHistoryResponse {
+  days: NutritionHistoryDay[];
+  averageCalories: number;
+  averageProtein: number;
+  averageCarbs: number;
+  averageFat: number;
+}
+
 export interface NutritionOverview {
   date: string;
   nutrition: {

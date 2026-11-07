@@ -4,6 +4,7 @@ import type {
   CreateNutritionEntryRequest, 
   UpdateNutritionEntryRequest, 
   NutritionSummary,
+  NutritionHistoryResponse,
   NutritionOverview,
   ApiResponse,
   NutritionFood
@@ -21,6 +22,27 @@ export const getNutritionEntries = async (date: string): Promise<NutritionEntry[
 
 export const getNutritionSummary = async (date: string): Promise<NutritionSummary> => {
   const response = await api.get<ApiResponse<NutritionSummary>>(`/api/nutrition/summary?date=${date}`);
+  return response.data.data!;
+};
+
+export const getNutritionHistory = async (params?: {
+  startDate?: string;
+  endDate?: string;
+  days?: number;
+  timezone?: string;
+}): Promise<NutritionHistoryResponse> => {
+  const query = new URLSearchParams();
+  if (params?.startDate) query.append("startDate", params.startDate);
+  if (params?.endDate) query.append("endDate", params.endDate);
+  if (params?.days) query.append("days", params.days.toString());
+  if (params?.timezone) query.append("timezone", params.timezone);
+  else if (typeof Intl !== "undefined") {
+    query.append("timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
+  }
+
+  const queryString = query.toString();
+  const url = `/api/nutrition/history${queryString ? `?${queryString}` : ""}`;
+  const response = await api.get<ApiResponse<NutritionHistoryResponse>>(url);
   return response.data.data!;
 };
 

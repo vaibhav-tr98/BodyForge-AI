@@ -125,6 +125,56 @@ describe("NutritionService", () => {
     });
   });
 
+  describe("getHistory", () => {
+    it("should aggregate entries across dates and zero-fill missing dates", async () => {
+      const mockEntries = [
+        { date: "2026-11-01", calories: 500, protein: 40, carbs: 50, fat: 15 },
+        { date: "2026-11-01", calories: 300, protein: 20, carbs: 30, fat: 10 },
+        { date: "2026-11-03", calories: 600, protein: 50, carbs: 60, fat: 20 }
+      ];
+      (nutritionRepository.find as jest.Mock).mockResolvedValue(mockEntries);
+
+      const result = await nutritionService.getHistory(mockUserId, "2026-11-01", "2026-11-03", 3, "UTC");
+
+      expect(result.days).toHaveLength(3);
+      expect(result.days[0]).toEqual({
+        date: "2026-11-01",
+        calories: 800,
+        protein: 60,
+        carbs: 80,
+        fat: 25,
+        entryCount: 2
+      });
+      expect(result.days[1]).toEqual({
+        date: "2026-11-02",
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+        entryCount: 0
+      });
+      expect(result.days[2]).toEqual({
+        date: "2026-11-03",
+        calories: 600,
+        protein: 50,
+        carbs: 60,
+        fat: 20,
+        entryCount: 1
+      });
+      expect(result.averageCalories).toBe(Math.round(1400 / 3));
+    });
+
+    it("should handle empty history across the range", async () => {
+      (nutritionRepository.find as jest.Mock).mockResolvedValue([]);
+
+      const result = await nutritionService.getHistory(mockUserId, "2026-11-01", "2026-11-02", 2, "UTC");
+
+      expect(result.days).toHaveLength(2);
+      expect(result.averageCalories).toBe(0);
+      expect(result.averageProtein).toBe(0);
+    });
+  });
+
   describe("updateEntry", () => {
     it("should update entry if it belongs to user", async () => {
       const mockEntry = { _id: mockEntryId, user: mockUserId, foodName: "Apple" };

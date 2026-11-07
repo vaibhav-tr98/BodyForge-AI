@@ -10,6 +10,8 @@ import {
   searchFoods
 } from "../services/nutrition.service";
 import NaturalLanguageLogger from "../components/nutrition/NaturalLanguageLogger";
+import NutritionTrendsChart from "../components/nutrition/NutritionTrendsChart";
+import { NutritionAnalysisSection } from "../components/dashboard/NutritionAnalysisSection";
 import type { NutritionEntry, NutritionFood } from "../types";
 
 // Format date nicely (e.g. Today, Yesterday, Sep 12)
@@ -95,7 +97,7 @@ export default function NutritionPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: any }) => updateNutritionEntry(id, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdateNutritionEntryRequest }) => updateNutritionEntry(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nutrition", "entries", date] });
       queryClient.invalidateQueries({ queryKey: ["nutrition", "today-overview", date] });
@@ -177,7 +179,7 @@ export default function NutritionPage() {
   };
 
   // Local Macro Preview Calculation
-  let preview: any = null;
+  let preview: { calories: number; protein: number; carbs: number; fat: number } | null = null;
   if (selectedFood && quantity > 0) {
     let multiplier = 0;
     if (isMeasurementUnit(unit)) {
@@ -470,9 +472,13 @@ export default function NutritionPage() {
               </div>
             )}
           </div>
-        </div>
+        {/* Historical Trends */}
+            <div className="pt-2">
+              <NutritionTrendsChart />
+            </div>
+          </div>
 
-        {/* Right Column - Quick Log & Goals */}
+          {/* Right Column - Quick Log & Goals */}
         <div className="md:col-span-5 lg:col-span-4 space-y-6 md:sticky md:top-6">
           <NaturalLanguageLogger date={date} />
 
@@ -497,6 +503,8 @@ export default function NutritionPage() {
                </p>
              </div>
           )}
+          {/* AI Nutrition Analysis */}
+          <NutritionAnalysisSection date={new Date(date)} />
         </div>
       </div>
     </div>

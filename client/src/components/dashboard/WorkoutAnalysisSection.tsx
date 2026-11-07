@@ -1,5 +1,5 @@
 import React from "react";
-import { Sparkles, CheckCircle2, AlertTriangle, ArrowRightCircle } from "lucide-react";
+import { Sparkles, CheckCircle2, AlertTriangle, ArrowRightCircle, RefreshCw } from "lucide-react";
 import { useWorkoutAnalysis } from "../../hooks/useWorkoutAnalysis";
 
 interface WorkoutAnalysisSectionProps {
@@ -8,19 +8,18 @@ interface WorkoutAnalysisSectionProps {
 
 export const WorkoutAnalysisSection: React.FC<WorkoutAnalysisSectionProps> = ({ date = new Date() }) => {
   const dateString = date.toISOString().split("T")[0];
-  const { data, isLoading, isError } = useWorkoutAnalysis(dateString);
+  const { data, isLoading, isError, refetch } = useWorkoutAnalysis(dateString);
 
   if (isLoading) {
     return (
-      <div className="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700 animate-pulse">
+      <div className="rounded-2xl border border-[#E5E7EB] bg-[#FFFFFF] p-5 sm:p-6 shadow-sm animate-pulse">
         <div className="flex items-center space-x-2 mb-4">
-          <Sparkles className="w-5 h-5 text-cyan-400" />
-          <h3 className="text-lg font-semibold text-white tracking-wide">AI WORKOUT ANALYSIS</h3>
+          <Sparkles className="w-5 h-5 text-cyan-600" />
+          <div className="h-5 bg-[#E5E7EB] rounded w-48"></div>
         </div>
-        <div className="space-y-4">
-          <div className="h-4 bg-slate-700 rounded w-3/4"></div>
-          <div className="h-4 bg-slate-700 rounded w-1/2"></div>
-          <div className="h-4 bg-slate-700 rounded w-5/6"></div>
+        <div className="space-y-3">
+          <div className="h-4 bg-[#E5E7EB] rounded w-3/4"></div>
+          <div className="h-4 bg-[#E5E7EB] rounded w-1/2"></div>
         </div>
       </div>
     );
@@ -28,12 +27,23 @@ export const WorkoutAnalysisSection: React.FC<WorkoutAnalysisSectionProps> = ({ 
 
   if (isError) {
     return (
-      <div className="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700">
-        <div className="flex items-center space-x-2 mb-4">
-          <Sparkles className="w-5 h-5 text-cyan-400" />
-          <h3 className="text-lg font-semibold text-white tracking-wide">AI WORKOUT ANALYSIS</h3>
+      <div className="rounded-2xl border border-[#E5E7EB] bg-[#FFFFFF] p-5 sm:p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center space-x-2">
+            <Sparkles className="w-5 h-5 text-cyan-600" />
+            <h3 className="text-base font-bold text-[#111827]">AI Workout Analysis</h3>
+          </div>
+          <button
+            onClick={() => refetch()}
+            className="flex items-center gap-1 text-xs font-semibold text-cyan-600 hover:text-cyan-700"
+          >
+            <RefreshCw size={12} />
+            Retry
+          </button>
         </div>
-        <p className="text-slate-400 text-sm">AI analysis is temporarily unavailable.</p>
+        <p className="text-sm text-[#6B7280]">
+          Workout analysis is temporarily unavailable. Log workouts to trigger automated coaching feedback.
+        </p>
       </div>
     );
   }
@@ -41,26 +51,30 @@ export const WorkoutAnalysisSection: React.FC<WorkoutAnalysisSectionProps> = ({ 
   if (!data) return null;
 
   return (
-    <div className="bg-slate-800 rounded-xl p-6 shadow-lg border border-slate-700">
+    <div className="rounded-2xl border border-[#E5E7EB] bg-[#FFFFFF] p-5 sm:p-6 shadow-sm">
       <div className="flex items-center space-x-2 mb-4">
-        <Sparkles className="w-5 h-5 text-cyan-400" />
-        <h3 className="text-lg font-semibold text-white tracking-wide">AI WORKOUT ANALYSIS</h3>
+        <Sparkles className="w-5 h-5 text-cyan-600" />
+        <h3 className="text-base sm:text-lg font-bold text-[#111827] tracking-tight">
+          AI Workout Analysis
+        </h3>
       </div>
-      
-      <div className="space-y-6 text-sm text-slate-300">
+
+      <div className="space-y-5 text-sm text-[#374151]">
         <div>
-          <p className="leading-relaxed">{data.summary}</p>
+          <p className="leading-relaxed text-sm sm:text-base text-[#111827] font-medium">
+            {data.summary}
+          </p>
         </div>
 
         {data.positives && data.positives.length > 0 && (
-          <div>
-            <h4 className="flex items-center space-x-2 font-medium text-white mb-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>What is going well</span>
+          <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-4">
+            <h4 className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-emerald-800 mb-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>What is Going Well</span>
             </h4>
-            <ul className="space-y-1 list-none pl-6">
+            <ul className="space-y-1.5 list-none pl-4">
               {data.positives.map((item: string, idx: number) => (
-                <li key={idx} className="relative before:content-['•'] before:absolute before:-left-4 before:text-slate-500">
+                <li key={idx} className="relative text-xs sm:text-sm text-emerald-950 font-medium before:content-['•'] before:absolute before:-left-3 before:text-emerald-500">
                   {item}
                 </li>
               ))}
@@ -69,14 +83,14 @@ export const WorkoutAnalysisSection: React.FC<WorkoutAnalysisSectionProps> = ({ 
         )}
 
         {data.attention && data.attention.length > 0 && (
-          <div>
-            <h4 className="flex items-center space-x-2 font-medium text-white mb-2">
-              <AlertTriangle className="w-4 h-4 text-amber-400" />
-              <span>Needs attention</span>
+          <div className="rounded-xl border border-amber-100 bg-amber-50/50 p-4">
+            <h4 className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-amber-800 mb-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600" />
+              <span>Needs Attention</span>
             </h4>
-            <ul className="space-y-1 list-none pl-6">
+            <ul className="space-y-1.5 list-none pl-4">
               {data.attention.map((item: string, idx: number) => (
-                <li key={idx} className="relative before:content-['•'] before:absolute before:-left-4 before:text-slate-500">
+                <li key={idx} className="relative text-xs sm:text-sm text-amber-950 font-medium before:content-['•'] before:absolute before:-left-3 before:text-amber-500">
                   {item}
                 </li>
               ))}
@@ -85,12 +99,14 @@ export const WorkoutAnalysisSection: React.FC<WorkoutAnalysisSectionProps> = ({ 
         )}
 
         {data.nextAction && (
-          <div className="bg-slate-700/50 rounded-lg p-4 mt-2">
-            <h4 className="flex items-center space-x-2 font-medium text-white mb-2">
-              <ArrowRightCircle className="w-4 h-4 text-cyan-400" />
-              <span>Next action</span>
+          <div className="rounded-xl border border-cyan-100 bg-cyan-50/50 p-4">
+            <h4 className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-cyan-800 mb-1.5">
+              <ArrowRightCircle className="w-4 h-4 text-cyan-600" />
+              <span>Next Action</span>
             </h4>
-            <p className="text-slate-300">{data.nextAction}</p>
+            <p className="text-xs sm:text-sm text-cyan-950 font-semibold leading-normal">
+              {data.nextAction}
+            </p>
           </div>
         )}
       </div>

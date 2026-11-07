@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Activity } from "lucide-react";
+import { Activity, Sparkles } from "lucide-react";
 import { analyticsService } from "../../services/analytics.service";
+import { ReadinessAnalysisSection } from "./ReadinessAnalysisSection";
 
 export default function TrainingReadinessSection() {
+  const [showAnalysis, setShowAnalysis] = useState(false);
+
   const { data: readiness, isLoading } = useQuery({
     queryKey: ["analytics", "readiness"],
     queryFn: () => analyticsService.getTrainingReadiness(),
@@ -59,10 +63,20 @@ export default function TrainingReadinessSection() {
 
   return (
     <section>
-      <h2 className="text-sm font-bold tracking-wider text-[#6B7280] uppercase mb-3 flex items-center gap-2">
-        <Activity size={14} className="text-cyan-600" />
-        Readiness
-      </h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-bold tracking-wider text-[#6B7280] uppercase flex items-center gap-2">
+          <Activity size={14} className="text-cyan-600" />
+          Readiness
+        </h2>
+        <button
+          onClick={() => setShowAnalysis(!showAnalysis)}
+          className="text-xs font-semibold text-cyan-600 hover:text-cyan-700 flex items-center gap-1 transition"
+        >
+          <Sparkles size={12} />
+          {showAnalysis ? "Hide AI" : "AI Breakdown"}
+        </button>
+      </div>
+
       <div className="rounded-xl border border-[#E5E7EB] bg-[#FFFFFF] p-4 shadow-sm flex items-center justify-between">
         <div>
           <h3 className="text-sm font-bold text-[#111827] mb-1">
@@ -79,6 +93,12 @@ export default function TrainingReadinessSection() {
           <span className="text-[9px] font-bold tracking-wider uppercase">{statusText[readiness.status]}</span>
         </div>
       </div>
+
+      {showAnalysis && (
+        <div className="mt-3">
+          <ReadinessAnalysisSection />
+        </div>
+      )}
     </section>
   );
 }

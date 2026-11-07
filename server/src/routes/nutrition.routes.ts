@@ -6,6 +6,7 @@ import {
   createNutritionEntrySchema,
   updateNutritionEntrySchema,
   getNutritionByDateSchema,
+  getNutritionHistorySchema,
   analyzeLogSchema
 } from "../validation/nutrition.validation";
 import { nutritionNlpLimiter } from "../middleware/rateLimit.middleware";
@@ -19,6 +20,7 @@ router.get("/foods/search", nutritionController.searchFoods);
 router.post("/analyze-log", nutritionNlpLimiter, validateRequest(analyzeLogSchema), nutritionController.analyzeLog);
 router.post("/", validateRequest(createNutritionEntrySchema), nutritionController.addEntry);
 router.get("/today-overview", validateRequest(getNutritionByDateSchema), nutritionController.getTodayOverview);
+router.get("/history", validateRequest(getNutritionHistorySchema), nutritionController.getHistory);
 router.get("/", validateRequest(getNutritionByDateSchema), nutritionController.getEntries);
 router.get("/summary", validateRequest(getNutritionByDateSchema), nutritionController.getSummary);
 router.patch("/:id", validateRequest(updateNutritionEntrySchema), nutritionController.updateEntry);
