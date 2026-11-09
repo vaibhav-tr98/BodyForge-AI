@@ -17,6 +17,7 @@ import { buildFoodExtractionPrompt } from "./prompts/foodExtraction.prompt";
 import { env } from "../config/env";
 import logger from "../utils/logger";
 import { hashContext } from "../utils/hashContext";
+import { EXPECTED_EMBEDDING_DIMENSIONS } from "../models/KnowledgeChunk";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -738,6 +739,170 @@ export const AIProvider = {
       }
 
       return validationResult.data as import("../types/foodExtraction.types").FoodExtractionResultDTO;
+    });
+  },
+
+  async generateConversationalCoaching(
+    userId: string,
+    history: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }>,
+    systemInstruction: string
+  ): Promise<{ text: string; tokenCount?: number; finishReason?: string }> {
+    return await withGeminiRetry("generateConversationalCoaching", async () => {
+      if (!env.geminiApiKey) {
+        throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
+      }
+
+      const { GoogleGenAI } = await eval('import("@google/genai")');
+      const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
+
+      const model = env.aiModel;
+
+      const response = await ai.models.generateContent({
+        model,
+        contents: history,
+        config: {
+          systemInstruction,
+          temperature: 0.7,
+        },
+      });
+
+      if (!response.text || response.text.trim() === "") {
+        throw new Error("AI returned an empty response.");
+      }
+
+      const finishReason = response.candidates?.[0]?.finishReason;
+      const tokenCount = response.usageMetadata?.totalTokenCount;
+
+      return {
+        text: response.text.trim(),
+        tokenCount,
+        finishReason,
+      };
+    });
+  },
+
+  async streamConversationalCoaching(
+    userId: string,
+    history: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }>,
+    systemInstruction: string,
+    onChunk: (chunk: string) => Promise<void> | void,
+    abortSignal?: AbortSignal
+  ): Promise<{ text: string; finishReason?: string }> {
+    if (!env.geminiApiKey) {
+      throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
+    }
+
+    const { GoogleGenAI } = await eval('import("@google/genai")');
+    const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
+
+    const model = env.aiModel;
+
+    const stream = await ai.models.generateContentStream({
+      model,
+      contents: history,
+      config: {
+        systemInstruction,
+        temperature: 0.7,
+      },
+    });
+
+    let fullText = "";
+    let finishReason: string | undefined;
+
+    for await (const chunk of stream) {
+      if (abortSignal?.aborted) {
+        throw new Error("Generation aborted by client disconnect");
+      }
+      const chunkText = chunk.text || "";
+      if (chunkText) {
+        fullText += chunkText;
+        await onChunk(chunkText);
+      }
+      if (chunk.candidates?.[0]?.finishReason) {
+        finishReason = chunk.candidates[0].finishReason;
+      }
+    }
+
+    if (!fullText || fullText.trim() === "") {
+      throw new Error("AI returned an empty response.");
+    }
+
+    return {
+      text: fullText.trim(),
+      finishReason,
+    };
+  },
+
+  async generateEmbedding(text: string, abortSignal?: AbortSignal): Promise<number[]> {
+    const embeddings = await this.generateEmbeddings([text], abortSignal);
+    if (!embeddings || embeddings.length === 0) {
+      throw new Error("Failed to generate embedding");
+    }
+    return embeddings[0];
+  },
+
+  async generateEmbeddings(texts: string[], abortSignal?: AbortSignal): Promise<number[][]> {
+    if (!texts || texts.length === 0) return [];
+    if (abortSignal?.aborted) {
+      throw new Error("Embedding request aborted");
+    }
+
+    return await withGeminiRetry("generateEmbeddings", async () => {
+      if (abortSignal?.aborted) {
+        throw new Error("Embedding request aborted");
+      }
+      if (!env.geminiApiKey) {
+        throw new Error("AI provider not configured: GEMINI_API_KEY is missing");
+      }
+
+      const { GoogleGenAI } = await eval('import("@google/genai")');
+      const ai = new GoogleGenAI({ apiKey: env.geminiApiKey });
+
+      const model = env.embeddingModel || "text-embedding-004";
+
+      // Process in batches of up to 16 texts to respect payload boundaries
+      const batchSize = 16;
+      const allEmbeddings: number[][] = [];
+
+      for (let i = 0; i < texts.length; i += batchSize) {
+        if (abortSignal?.aborted) {
+          throw new Error("Embedding request aborted");
+        }
+        const batch = texts.slice(i, i + batchSize);
+        const response = await ai.models.embedContent({
+          model,
+          contents: batch,
+        });
+
+        const batchVectors: number[][] = [];
+        if (response.embeddings && Array.isArray(response.embeddings)) {
+          for (const item of response.embeddings) {
+            if (item.values) {
+              batchVectors.push(item.values);
+            }
+          }
+        } else if (response.embedding && response.embedding.values) {
+          batchVectors.push(response.embedding.values);
+        } else {
+          throw new Error("Invalid embedding response structure from Gemini API");
+        }
+
+        // Validate expected embedding dimensions (768) and finite numbers
+        for (const vec of batchVectors) {
+          if (
+            !Array.isArray(vec) ||
+            vec.length !== EXPECTED_EMBEDDING_DIMENSIONS ||
+            !vec.every(Number.isFinite)
+          ) {
+            throw new Error(
+              `Embedding dimension mismatch: expected ${EXPECTED_EMBEDDING_DIMENSIONS} finite floats, received ${vec ? vec.length : 'invalid'}`
+            );
+          }
+          allEmbeddings.push(vec);
+        }
+      }
+
+      return allEmbeddings;
     });
   }
 };

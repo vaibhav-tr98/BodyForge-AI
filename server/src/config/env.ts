@@ -15,6 +15,7 @@ export interface AppEnv {
   logLevel: LogLevel;
   geminiApiKey: string;
   aiModel: string;
+  embeddingModel: string;
   nodeEnv: NodeEnv;
   rateLimitApiMax: number;
   rateLimitAuthMax: number;
@@ -101,6 +102,7 @@ export const env: AppEnv = {
   logLevel: parseLogLevel(process.env.LOG_LEVEL),
   geminiApiKey: getRequiredEnv("GEMINI_API_KEY"),
   aiModel: getOptionalEnv("AI_MODEL", "gemini-3.6-flash"),
+  embeddingModel: getOptionalEnv("EMBEDDING_MODEL", "text-embedding-004"),
   nodeEnv: parseNodeEnv(process.env.NODE_ENV),
   rateLimitApiMax: parseInteger(process.env.RATE_LIMIT_API_MAX, 100),
   rateLimitAuthMax: parseInteger(process.env.RATE_LIMIT_AUTH_MAX, 20),
