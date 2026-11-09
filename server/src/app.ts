@@ -13,6 +13,7 @@ import analyticsRoutes from "./routes/analytics.routes";
 import nutritionRoutes from "./routes/nutrition.routes";
 import progressRoutes from "./routes/progress.routes";
 import programRoutes from "./routes/program.routes";
+import conversationRoutes from "./routes/conversation.routes";
 import { errorMiddleware } from "./middleware/error.middleware";
 import mongoose from "mongoose";
 const app = express();
@@ -92,6 +93,7 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/nutrition", nutritionRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/programs", programRoutes);
+app.use("/api/conversations", conversationRoutes);
 
 // Health Check Route
 app.get("/ready", (req, res) => {

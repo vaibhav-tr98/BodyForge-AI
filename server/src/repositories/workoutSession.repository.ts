@@ -176,6 +176,16 @@ class WorkoutSessionRepository {
       .filter((date): date is Date => date != null);
   }
 
+  async findRecentCompletedDetailed(userId: string, limit: number = 5): Promise<IWorkoutSession[]> {
+    return await WorkoutSession.find({
+      user: userId,
+      status: "completed",
+    })
+      .sort({ completedAt: -1 })
+      .limit(limit)
+      .populate("workout", "name description");
+  }
+
   async getRecentCompletedSessions(userId: string, limit: number): Promise<any[]> {
     return await WorkoutSession.aggregate([
       {
