@@ -393,3 +393,6 @@ export interface ProgressSummary {
   latestEntry: ProgressEntry | null;
   totalEntries: number;
 }
+
+// ── AI Coach ────────────────────────────────────────────────────────────────────
+export * from "./coach.types";

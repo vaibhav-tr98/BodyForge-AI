@@ -24,6 +24,7 @@ import WorkoutEditPage from "../pages/workouts/WorkoutEditPage";
 import WorkoutSessionPage from "../pages/workouts/WorkoutSessionPage";
 import WorkoutHistoryPage from "../pages/workouts/WorkoutHistoryPage";
 import WorkoutSessionDetailPage from "../pages/workouts/WorkoutSessionDetailPage";
+import AICoachPage from "../pages/AICoachPage";
 
 export const router = createBrowserRouter([
   // ── Public website ──────────────────────────────────────────────────────────
@@ -66,6 +67,14 @@ export const router = createBrowserRouter([
       {
         path: "/dashboard",
         element: <DashboardPage />,
+      },
+      {
+        path: "/coach",
+        element: <AICoachPage />,
+      },
+      {
+        path: "/ai-coach",
+        element: <AICoachPage />,
       },
       {
         path: "/onboarding",

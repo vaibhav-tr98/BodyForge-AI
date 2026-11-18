@@ -12,7 +12,7 @@ import {
 import NaturalLanguageLogger from "../components/nutrition/NaturalLanguageLogger";
 import NutritionTrendsChart from "../components/nutrition/NutritionTrendsChart";
 import { NutritionAnalysisSection } from "../components/dashboard/NutritionAnalysisSection";
-import type { NutritionEntry, NutritionFood } from "../types";
+import type { NutritionEntry, NutritionFood, UpdateNutritionEntryRequest } from "../types";
 
 // Format date nicely (e.g. Today, Yesterday, Sep 12)
 function formatFriendlyDate(dateStr: string) {
